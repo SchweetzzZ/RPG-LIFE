@@ -1,0 +1,137 @@
+# 🎯 Plano de Implementação — HabitsModule (Hábitos & Nutrição Gamificada)
+
+Design técnico e de produto para o **HabitsModule**, expandindo a rotina diária do usuário com rastreamento de hidratação, nutrição (macros/calorias), hábitos de estudo/sono e hábitos customizados integrados ao sistema RPG.
+
+---
+
+## 💡 Visão Geral do Módulo
+
+O **`HabitsModule`** transformará atividades cotidianas em "Quests Diárias" categorizadas por atributos RPG:
+
+```mermaid
+graph TD
+    HabitsModule[HabitsModule] --> Water[💧 Hidratação: Vitality]
+    HabitsModule --> Nutrition[🥗 Nutrição & Macros: Vitality/Strength]
+    HabitsModule --> Mind[📚 Leitura & Estudos: Intelligence]
+    HabitsModule --> Wellness[🧘 Meditação & Sono: Focus/HP Restore]
+    HabitsModule --> Custom[⚡ Hábitos Customizados: Atributo Escolhido]
+
+    Nutrition -->|API Externa Grátis| OFF[Open Food Facts API / Tabela TACO]
+    HabitsModule -->|Ganha XP / Coins / Buffs| CharacterService[CharacterModule]
+```
+
+---
+
+## 🥑 1. Nutrição & Tabelas Nutricionais Gratuítas
+
+### APIs / Datasets Recomendados (100% Grátis):
+
+1. **Open Food Facts API (Global + Brasil)**:
+   - **Custo**: 100% Gratuito & Open Source (sem necessidade de API Key para leitura).
+   - **Recursos**: Busca por nome de alimento ou leitura de **Código de Barras (EAN)**. Retorna calorias, proteínas, carboidratos, gorduras e Nutri-Score.
+   - **Endpoint Exemplo**: `https://br.openfoodfacts.org/api/v2/product/{barcode}.json` ou `https://br.openfoodfacts.org/cgi/search.pl?search_terms={query}&json=true`
+
+2. **Tabela TACO (Tabela Brasileira de Composição de Alimentos)**:
+   - **Custo**: Grátis.
+   - **Uso**: Tabela oficial de alimentos brasileiros (arroz, feijão carioca, tapioca, pão de queijo). Pode ser importada diretamente para uma coleção do MongoDB ou pacote npm (`taco-api` / JSON local no backend) para busca instantânea sem dependência de rede externa.
+
+---
+
+## 🗄️ 2. Schemas Mongoose Propostos
+
+### A. `Habit` (Template / Definição do Hábito do Usuário)
+```typescript
+@Schema({ timestamps: true, collection: 'habits' })
+export class Habit {
+    @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+    user: Types.ObjectId;
+
+    @Prop({ required: true, trim: true })
+    title: string;
+
+    @Prop({ type: String, enum: HabitCategory, required: true })
+    category: HabitCategory; // WATER, NUTRITION, STUDY, MEDITATION, SLEEP, CUSTOM
+
+    @Prop({ type: String, enum: StatTypeEnum, required: true })
+    targetStat: StatTypeEnum; // strength, intelligence, vitality, focus
+
+    @Prop({ default: 100 })
+    xpReward: number;
+
+    @Prop({ default: 10 })
+    coinsReward: number;
+
+    @Prop({ type: Object }) // Meta específica (ex: { targetValue: 2500, unit: 'ml' } ou { targetValue: 150, unit: 'g_protein' })
+    goal: {
+        targetValue: number;
+        unit: string;
+    };
+
+    @Prop({ default: true })
+    isDaily: boolean;
+
+    @Prop({ type: [Number], default: [0, 1, 2, 3, 4, 5, 6] }) // Dias da semana ativos
+    frequencyDays: number[];
+
+    @Prop({ default: 0 })
+    currentStreak: number;
+}
+```
+
+### B. `DailyHabitLog` (Registro Diário de Progresso)
+```typescript
+@Schema({ timestamps: true, collection: 'daily_habit_logs' })
+export class DailyHabitLog {
+    @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+    user: Types.ObjectId;
+
+    @Prop({ type: Types.ObjectId, ref: 'Habit', required: true })
+    habit: Types.ObjectId;
+
+    @Prop({ required: true }) // Data no formato YYYY-MM-DD
+    date: string;
+
+    @Prop({ default: 0 })
+    currentProgress: number; // Ex: 1500ml de 2500ml
+
+    @Prop({ default: false })
+    isCompleted: boolean;
+}
+```
+
+---
+
+## ⚙️ 3. Endpoints Principais do `HabitsModule`
+
+### **Nutrição & Busca de Alimentos**:
+- `GET /habits/nutrition/search?query=arroz` (Busca na API Open Food Facts / Tabela TACO local)
+- `GET /habits/nutrition/barcode/:ean` (Leitura de código de barras)
+
+### **Hábitos & Quests**:
+- `POST /habits` (Criar hábito customizado ou ativar template de água/sono/nutrição)
+- `GET /habits/today` (Retorna a lista de hábitos ativos do dia com o progresso atual)
+- `POST /habits/:id/log` (Registra avanço: ex: `+300ml de água` ou `+25g de proteína` ou `+30min de estudo`)
+
+---
+
+## 🎮 4. Gamificação & Recompensas
+
+1. **Bater Meta Diária de Hidratação**: `+Vitality` + `+50 XP`.
+2. **Bater Meta Diária de Proteína/Nutrição**: `+Strength` / `+Vitality` + `+75 XP`.
+3. **Leitura/Estudo**: `+Intelligence` proporcional aos minutos (ex: 30min = `+1 Intelligence` + `+40 XP`).
+4. **Ofensiva (Streak Multiplier)**:
+   - 7 dias seguidos completando o hábito: **+20% de Moedas** e bônus de **5 Gems**.
+
+---
+
+## 📋 Plano de Execução Passo a Passo
+
+1. **Fase 1: Módulo `HabitsModule` & Schemas Base**
+   - Criar módulo NestJS, DTOs e Schemas (`Habit` e `DailyHabitLog`).
+2. **Fase 2: Hidratação e Hábitos Simples**
+   - Lógica de cálculo automático de meta de água baseada no peso do usuário (`peso * 35ml`).
+   - Endpoint de progresso diário com disparo para `CharacterService.addXpAndCoin`.
+3. **Fase 3: Integração Nutricional (Open Food Facts / TACO)**
+   - Criar `NutritionService` integrando a API REST pública do Open Food Facts.
+4. **Fase 4: Sistema de Streaks e Recompensas Semanais**
+   - Cálculo automático de sequências e bônus no perfil do personagem.

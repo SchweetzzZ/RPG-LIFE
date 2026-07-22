@@ -4,7 +4,7 @@ import { RegisterUserDto, LoginUserDto } from './dto/user.dto';
 import express from 'express';
 
 
-@Controller('player')
+@Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) { }
 

@@ -4,17 +4,13 @@ import { User } from "src/modules/user/schema/user-schema"
 
 export type characterDocument = Character & Document
 
-@Schema({ timestamps: true, collection: 'Stats' })
+@Schema({ _id: false })
 export class Stats {
-
-    @Prop({ required: true })
-    name: string
-
     @Prop({ default: 1 })
     strength: number
 
     @Prop({ default: 1 })
-    inteligence: number
+    intelligence: number
 
     @Prop({ default: 1 })
     vitality: number
@@ -22,6 +18,8 @@ export class Stats {
     @Prop({ default: 1 })
     focus: number
 }
+
+export const StatsSchema = SchemaFactory.createForClass(Stats)
 
 @Schema({ timestamps: true, collection: 'character' })
 export class Character {
@@ -39,19 +37,23 @@ export class Character {
     currentXp: number
 
     @Prop({ default: 100 })
-    nextLevelUp: number
+    nextLevelXp: number
 
     @Prop({ default: 0 })
-    coins: number;
+    coins: number
 
     @Prop({ default: 0 })
-    gems: number;
+    gems: number
 
-    @Prop({ type: Stats, default: () => ({}) })
-    stats: Stats;
+    @Prop({ default: 0 })
+    waterQuantity: number
+
+    @Prop({ type: StatsSchema, default: () => ({}) })
+    stats: Stats
 
     @Prop({ type: String, default: 'default_avatar' })
-    eqquipedSkin: string
+    equippedSkin: string
+
 }
 
 export const CharacterSchema = SchemaFactory.createForClass(Character)

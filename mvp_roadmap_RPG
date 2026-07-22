@@ -1,0 +1,91 @@
+# 🛡️ RPG-Life — Arquitetura & Roadmap do MVP
+
+Documento de planejamento de produto e arquitetura para a transformação da rotina do usuário em uma experiência gamificada (RPG).
+
+---
+
+## 🏗️ 1. Estado Atual vs. Visão do MVP
+
+```mermaid
+graph TD
+    User[User Module] -->|1:1 Relacionamento| Character[Character Module]
+    Character -->|Status & XP| LevelEngine[CharacterService: addXpAndCoin]
+    
+    subgraph Novos Módulos do MVP
+        Quests[Quests & Habits Module] -->|Ganha XP/Vitality/Coins| Character
+        Workouts[Workout Module] -->|Ganha Strength/XP - Perde HP no Miss| Character
+        Shop[Shop & Inventory Module] -->|Gasta Coins/Gems| Character
+    end
+```
+
+---
+
+## 🧩 2. Módulos Necessários no NestJS
+
+| Módulo | Responsabilidade | Gamificação & Recompensas |
+| :--- | :--- | :--- |
+| **`UserModule`** *(Pronto)* | Autenticação, cadastro, JWT | Vincula conta e segurança. |
+| **`CharacterModule`** *(Em Progresso)* | Atributos, Level Up, XP, Moedas, Água | Core do Avatar (Level, Strength, Focus, Vitality, Intelligence). |
+| **`HabitsModule` (Quests)** | Registro de hábitos diários (Água, Leitura, Meditação) | **Vitality** / **Focus** / **Intelligence** + XP + Coins. |
+| **`WorkoutModule`** | Agendamento de treinos, Check-ins e Frequência | **Strength** + XP + Penalty se faltar. |
+| **`ShopModule`** | Catalogo de Skins, Bordas e Consumíveis (Poções) | Troca Coins/Gems por itens cosméticos ou buffs. |
+
+---
+
+## 📊 3. Especificação Detalhada dos Recursos
+
+### 💧 A. Hidratação (Água)
+- **Fórmula de Meta**: `Peso (kg) * 35ml` (ex: `70kg * 35ml = 2450ml`).
+- **Mecânica**:
+  - O usuário registra ingestão de água ao longo do dia (`addWater Intake`).
+  - Ao bater $100\%$ da meta diária:
+    - `+Vitality` (ex: +1).
+    - `+XP` (ex: +50) e `+Coins` (ex: +10).
+  - Streak de hidratação: 7 dias seguidos dá bônus de Gems/Coins.
+
+### 🏋️‍♂️ B. Treinos & Ofensivas (Streaks & Penalidades)
+- **Configuração**: O usuário escolhe quais dias da semana treina (ex: Seg, Quarta, Sexta).
+- **Check-in**:
+  - Check-in feito no dia planejado: `+Strength`, `+XP`, `+Coins` + Aumenta Streak.
+- **Penalidade (Missed Workout)**:
+  - Não fez o check-in até 23:59 do dia de treino:
+    - Perde Streak.
+    - Perde uma quantia de XP ou HP (Vida do personagem).
+
+### 📜 C. Quests & Hábitos Personalizados
+- **Categorias de Hábitos**:
+  - 📚 **Estudo/Leitura** $\rightarrow$ Recompensa: `Intelligence`.
+  - 🧘 **Meditação/Foco** $\rightarrow$ Recompensa: `Focus`.
+  - 🏃 **Cardio/Saúde** $\rightarrow$ Recompensa: `Vitality`.
+
+---
+
+## 🛣️ 4. Roadmap por Fases (Passo a Passo)
+
+### 🔹 Fase 1: Estabilização do Core Avatar (Atual)
+- [x] Autenticação e Registro Atômico (`User` + `Character`).
+- [x] Lógica de `LevelUp` dinâmica (multiplicador `nextLevelXp`).
+- [ ] Ajustar `CharacterSchema` e métodos auxiliares para atualizar estatísticas dinâmicas (`Stats`).
+
+### 🔹 Fase 2: Módulo de Hidratação & Hábitos Diários (`HabitsModule`)
+- [ ] Schema `Habit` (meta diária, progresso, frequência, tipo de recompensa).
+- [ ] Cálculo automático de meta de água baseado no perfil do usuário.
+- [ ] Endpoint `POST /habits/:id/progress` (atualizar progresso diário).
+- [ ] Integração com `CharacterService.addXpAndCoin`.
+
+### 🔹 Fase 3: Módulo de Treinos & Sistema de Streaks (`WorkoutModule`)
+- [ ] Schema `WorkoutPlan` (dias ativos, tipo de treino).
+- [ ] Endpoint `POST /workouts/checkin`.
+- [ ] Cron Job (NestJS `@nestjs/schedule`) diário para verificar treinos perdidos e aplicar penalidades.
+
+### ### 🔹 Fase 4: Economia & Inventário (`ShopModule`)
+- [ ] Schemas `Item` e `Inventory`.
+- [ ] Compra de itens consumíveis (ex: Poção para recuperar Streak perdida).
+- [ ] Skins de Avatar equipáveis.
+
+---
+
+## ⚡ 5. Próximos Passos Recomendados
+
+1. **Finalizar a modelagem de `Character`** (ajustar campos como `waterGoal`, `currentWater` e o incremento correto de `stats`).
+2. **Criar o `HabitsModule`** para cobrir a funcionalidade de água e hábitos simples primeiro.

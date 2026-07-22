@@ -4,7 +4,6 @@ import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UserModule } from './modules/user/user.module';
-import { ZodValidationPipe } from 'nestjs-zod';
 
 @Module({
   imports: [ConfigModule.forRoot({
