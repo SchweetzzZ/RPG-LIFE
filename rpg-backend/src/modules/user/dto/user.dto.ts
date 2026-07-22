@@ -1,6 +1,6 @@
 import { createZodDto } from "nestjs-zod";
 import { z } from "zod"
-import { UserRole } from "../schema/user.schema";
+import { UserRole } from "../schema/user-schema";
 
 const RegisterUserSchema = z.object({
     email: z.email(),
