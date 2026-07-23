@@ -1,13 +1,13 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose"
-import { Document, Types } from "mongoose"
+import { Document } from "mongoose"
 
 export type TacoDocument = Taco & Document
 
 @Schema({ timestamps: true, collection: "taco" })
 export class Taco {
 
-    @Prop({ requiresd: true, index: true })
-    descripction: string
+    @Prop({ required: true, index: true })
+    description: string
 
     @Prop({ required: true })
     category: string

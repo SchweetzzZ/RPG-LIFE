@@ -2,17 +2,13 @@ import { Injectable } from "@nestjs/common"
 import { InjectModel } from "@nestjs/mongoose";
 import { Taco, TacoDocument } from "../habit/schema/taco-schema";
 import { Model } from "mongoose";
-import { HttpService } from "@nestjs/axios";
-import { FoodResult } from "./dto/FoodResult-dto";
 import { FoodResultDto } from "../habit/dto/food-dto";
-import { firstValueFrom } from "rxjs";
 
 @Injectable()
 export class NutritionService {
     constructor(
         @InjectModel(Taco.name)
         private readonly tacoModel: Model<TacoDocument>,
-        private readonly httpService: HttpService
     ) { }
 
     async searchFoods(query: string): Promise<FoodResultDto[]> {
@@ -23,7 +19,7 @@ export class NutritionService {
         const formatedTaco: FoodResultDto[] = tacoItems.map((item) => ({
             id: item._id.toString(),
             name: item.description,
-            source: 'TACO',
+            source: 'TACO' as const,
             servingSizeGrams: 100,
             nutrientsPer100g: {
                 calories: item.energyKcal,
@@ -41,11 +37,11 @@ export class NutritionService {
                 query,
             )}&search_simple=1&action=process&json=1&page_size=10`;
 
-            const { data } = await firstValueFrom(
-                this.httpService.get(url, {
-                    headers: { 'User-Agent': 'LifeRPGApp - Web/Backend - Version 1.0' }, // Boas práticas exigidas pela OFF
-                }),
-            );
+            const response = await fetch(url, {
+                headers: { 'User-Agent': 'LifeRPGApp - Web/Backend - Version 1.0' },
+            });
+
+            const data: any = await response.json();
 
             if (data && data.products) {
                 const offItems: FoodResultDto[] = data.products
@@ -68,12 +64,10 @@ export class NutritionService {
 
                 results.push(...offItems);
             }
-        } catch (error) {
-            // Se a API externa oscilar ou estiver fora, o app não quebra e entrega os resultados da TACO!
+        } catch (error: any) {
             console.error('Erro ao consultar Open Food Facts:', error.message);
         }
 
         return results;
     }
-
 }

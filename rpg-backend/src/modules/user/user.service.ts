@@ -6,12 +6,14 @@ import { User, UserDocument } from './schema/user-schema';
 import bcrypt from "bcrypt"
 import { JwtService } from '@nestjs/jwt';
 import { Character, characterDocument } from '../character/schema/character-schema';
+import { UserProfile, UserProfileDocument } from '../profile/schema/profile.schema';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Character.name) private characterModel: Model<characterDocument>,
+    @InjectModel(UserProfile.name) private userProfileModel: Model<UserProfileDocument>,
     private jwtService: JwtService) { }
 
   async validate(data: LoginUserDto) {
@@ -37,10 +39,16 @@ export class UserService {
       ...data,
       password: hash,
     })
+
     await this.characterModel.create({
       user: createUser._id,
       nickname: data.username,
     })
+
+    await this.userProfileModel.create({
+      user: createUser._id,
+    })
+
     return createUser
   }
 
@@ -56,5 +64,4 @@ export class UserService {
       access_Token: this.jwtService.sign(payload)
     }
   }
-
 }

@@ -1,10 +1,12 @@
-import { Controller, Get } from "@nestjs/common";
+import { Controller, Get, Query } from "@nestjs/common";
 import { NutritionService } from "./nutricion.service";
 
-@Controller()
+@Controller('nutrition')
 export class NutritionController {
     constructor(private readonly nutritionService: NutritionService) { }
 
     @Get("search")
-    async get
+    async searchFoods(@Query('query') query: string) {
+        return this.nutritionService.searchFoods(query);
+    }
 }

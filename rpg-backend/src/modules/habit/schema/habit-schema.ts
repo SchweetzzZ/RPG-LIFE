@@ -1,12 +1,11 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose"
-import { Collection, Document, Types } from "mongoose"
-import { timestamp } from "rxjs"
+import { Document, Types } from "mongoose"
 import { User } from "src/modules/user/schema/user-schema"
 
 export type habitDocument = Habit & Document
 
 export enum HabbitCategory {
-    WATTER = 'watter',
+    WATER = 'water',
     NUTRITION = 'nutrition',
     STUDY = 'study',
     CUSTOM = 'custom'
@@ -49,7 +48,6 @@ export class Habit {
     @Prop({ default: true })
     isDaily: boolean
 
-
     @Prop({ type: [Number], default: [0, 1, 2, 3, 4, 5, 6] })
     frequencyDays: number[]
 
@@ -75,4 +73,6 @@ export class DailyHabitStatus {
     @Prop({ default: false })
     isCompleted: boolean
 }
+
 export const HabbitSchema = SchemaFactory.createForClass(Habit)
+export const DailyHabitStatusSchema = SchemaFactory.createForClass(DailyHabitStatus)
