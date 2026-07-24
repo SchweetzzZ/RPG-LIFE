@@ -8,6 +8,7 @@ import { CharacterModule } from './modules/character/character.module';
 import { ProfileModule } from './modules/profile/profile.module';
 import { HabitModule } from './modules/habit/habit.module';
 import { NutritionModule } from './modules/nutricion/nutricion.module';
+import { WorkoutModule } from './modules/workout/workout.module';
 
 @Module({
   imports: [
@@ -27,6 +28,8 @@ import { NutritionModule } from './modules/nutricion/nutricion.module';
     ProfileModule,
     HabitModule,
     NutritionModule,
+    WorkoutModule,
+
   ],
   controllers: [AppController],
   providers: [AppService],

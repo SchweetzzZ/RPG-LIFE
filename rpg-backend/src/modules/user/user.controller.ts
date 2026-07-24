@@ -8,6 +8,11 @@ import express from 'express';
 export class UserController {
   constructor(private readonly userService: UserService) { }
 
+  @Get('test')
+  async test() {
+    return "testando ai"
+  }
+
   @Post('register')
   async register(@Body() body: RegisterUserDto) {
     return this.userService.register(body)

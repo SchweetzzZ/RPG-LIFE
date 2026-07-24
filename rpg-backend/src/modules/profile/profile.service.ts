@@ -118,7 +118,7 @@ export class ProfileService {
         const profile = await this.getProfile(userId);
         const recommendations: HabitRecommendation[] = [];
 
-        // 1. Água 💧
+        // 1. Água 
         let waterMl = profile.weightKg * 35;
         if (profile.trainsRegularly) waterMl += 500;
         if (profile.livesInHotClimate) waterMl += 300;
@@ -133,7 +133,7 @@ export class ProfileService {
             targetStat: 'vitality',
         });
 
-        // 2. Sono 🌙
+        // 2. Sono 
         let sleepMin = 450;
         let sleepMsg = 'Adultos de 26 a 64 anos têm meta recomendada de 7h30 por noite.';
         if (profile.age < 26) {
@@ -153,7 +153,7 @@ export class ProfileService {
             targetStat: 'vitality',
         });
 
-        // 3. Meditação 🧘
+        // 3. Meditação 
         let medMin = 10;
         if (profile.stressLevel >= 7) medMin = 20;
         else if (profile.stressLevel >= 4) medMin = 15;
@@ -167,7 +167,7 @@ export class ProfileService {
             targetStat: 'focus',
         });
 
-        // 4. Nutrição / Proteína 🥗
+        // 4. Nutrição / Proteína 
         const nutritionTargets = await this.calculateNutritionTargets({
             weightKg: profile.weightKg,
             heightCm: profile.heightCm,
