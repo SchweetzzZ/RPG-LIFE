@@ -1,26 +1,50 @@
-import { z } from "zod"
-import { createZodDto } from "nestjs-zod"
-import { targetMuscularGroup } from "../schemas/exercise-schema"
+import { z } from "zod";
+import { createZodDto } from "nestjs-zod";
 
-export const workoutExerciseSchema = z.object({
-    exerciseId: z.string().min(1, "Exercise ID is required"),
-    exerciseName: z.string().min(1, "Exercise name is required"),
-    targetSets: z.number().int().min(1, "Target sets must be at least 1"),
-    targetReps: z.number().int().min(1, "Target reps must be at least 1"),
+// ── Sub-schemas (mirror frontend types.ts) ──────────────────────────────────
+
+export const exerciseSetSchema = z.object({
+    id: z.string().optional(),
+    setNumber: z.number().int().min(1).default(1),
+    weightKg: z.number().min(0).default(0),
+    reps: z.number().int().min(0).default(0),
+    completed: z.boolean().default(false),
+    rpe: z.number().min(1).max(10).optional(),
 });
 
-export const workoutSchema = z.object({
-    name: z.string(),
-    description: z.string().optional(),
-    muscleGroup: z.nativeEnum(targetMuscularGroup, { error: "Invalid muscle group" }),
-    exercises: z.array(workoutExerciseSchema)
-})
+export const exerciseSchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(1, "Exercise name is required"),
+    category: z.enum(['Peito', 'Costas', 'Pernas', 'Ombros', 'Braços', 'Abdômen', 'Cardio']).default('Peito'),
+    primaryAttribute: z.enum(['strength', 'intelligence', 'vitality', 'focus']).default('strength'),
+    sets: z.array(exerciseSetSchema).default([]),
+    notes: z.string().optional(),
+});
 
-export const workoutUpdateSchema = workoutSchema.partial()
+// ── Create DTO ───────────────────────────────────────────────────────────────
 
-export type WorkoutExerciseDto = z.infer<typeof workoutExerciseSchema>;
-export type WorkoutDto = z.infer<typeof workoutSchema>;
-export type WorkoutUpdateDto = z.infer<typeof workoutUpdateSchema>;
+export const createWorkoutSchema = z.object({
+    title: z.string().min(1, "Title is required"),
+    description: z.string().default(""),
+    estimatedMinutes: z.number().int().min(1).default(45),
+    targetMuscleGroups: z.array(z.string()).default([]),
+    exercises: z.array(exerciseSchema).default([]),
+    completionCount: z.number().int().min(0).default(0),
+    lastCompletedDate: z.string().nullable().optional(),
+});
 
-export class CreateWorkoutDto extends createZodDto(workoutSchema) { }
-export class UpdateWorkoutDto extends createZodDto(workoutUpdateSchema) { }
+// ── Update DTO (all fields optional) ────────────────────────────────────────
+
+export const updateWorkoutSchema = createWorkoutSchema.partial();
+
+// ── Inferred types ───────────────────────────────────────────────────────────
+
+export type ExerciseSetDto = z.infer<typeof exerciseSetSchema>;
+export type ExerciseDto = z.infer<typeof exerciseSchema>;
+export type CreateWorkoutDto = z.infer<typeof createWorkoutSchema>;
+export type UpdateWorkoutDto = z.infer<typeof updateWorkoutSchema>;
+
+// ── NestJS DTO classes (for validation pipe) ─────────────────────────────────
+
+export class CreateWorkoutDtoClass extends createZodDto(createWorkoutSchema) {}
+export class UpdateWorkoutDtoClass extends createZodDto(updateWorkoutSchema) {}

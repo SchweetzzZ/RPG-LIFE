@@ -1,50 +1,53 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose"
 import { Document, Types } from "mongoose"
 
-export type workoutDocument = WorkoutLog & Document
+export type WorkoutLogDocument = WorkoutLog & Document
 
 export interface PerformedSet {
     setNumber: number
-    weigh: number
+    weightKg: number
     reps: number
 }
 
 export interface PerformedExercise {
-    exerciseId: Types.ObjectId
     exerciseName: string
-    sets: PerformedSet[]
+    maxWeightKg?: number
+    completedSetsCount?: number
+    sets?: PerformedSet[]
 }
 
 @Schema({ timestamps: true, collection: "workout_logs" })
 export class WorkoutLog {
 
-    @Prop({ type: Types.ObjectId, required: true, ref: 'User' })
+    @Prop({ type: Types.ObjectId, required: true, ref: 'User', index: true })
     user: Types.ObjectId
 
-    @Prop({ type: Types.ObjectId, ref: 'Workout', required: true })
-    routineId: Types.ObjectId
+    @Prop({ type: String, required: false })
+    routineId: string
 
     @Prop({ required: true })
-    routineName: string; // "Treino A - Peito & Tríceps"
+    routineName: string;
 
-    @Prop({ required: true })
-    durationMinutes: number; // Ex: 48 min
+    @Prop({ required: true, default: 0 })
+    durationMinutes: number;
 
-    @Prop({ required: true })
-    totalVolumeKg: number; // Soma de todas as séries (Carga x Repetições) -> Ex: 3420 kg
+    @Prop({ required: true, default: 0 })
+    totalVolumeKg: number;
 
-    @Prop({ required: true })
-    totalSets: number; // Ex: 10 séries
+    @Prop({ required: true, default: 0 })
+    totalSets: number;
 
-    @Prop({ required: true })
-    xpGained: number; // +240 XP (Conectado ao módulo Character)
+    @Prop({ required: true, default: 0 })
+    xpGained: number;
 
-    @Prop({ required: true })
-    coinsGained: number; // +80 Coins
+    @Prop({ required: true, default: 0 })
+    coinsGained: number;
 
     @Prop({ type: Array, default: [] })
-    exercises: PerformedExercise[]; // Registros detalhados de cada exercício e suas cargas
+    exercises: PerformedExercise[];
 
     @Prop({ default: Date.now, index: true })
     completedAt: Date;
 }
+
+export const WorkoutLogSchema = SchemaFactory.createForClass(WorkoutLog);

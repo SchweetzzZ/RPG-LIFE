@@ -17,14 +17,31 @@ services:
       - redis_data:/data
     restart: always
 
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rpg-rabbitmq
+  rpg-backend:
+    build:
+      context: ./rpg-backend
+      dockerfile: Dockerfile
+    container_name: rpg-backend
     ports:
-      - "5672:5672"
-      - "15672:15672" # Painel de gerenciamento do RabbitMQ (http://localhost:15672)
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - MONGO_URI=mongodb://mongodb:27017/rpg-life
+      - JWT_SECRET=rpg_life_super_secret_jwt_key_2026
+      - JWT_EXPIRES_IN=7d
+    depends_on:
+      - mongodb
+    restart: always
+
+  rpg-frontend:
+    build:
+      context: ./rpg-frontend
+      dockerfile: Dockerfile
+    container_name: rpg-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - rpg-backend
     restart: always
 
 volumes:

@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose"
-import { Document } from "mongoose"
+import { Document, Types } from "mongoose"
 
 export type TacoDocument = Taco & Document
 
@@ -28,3 +28,4 @@ export class Taco {
     fiber: number
 }
 export const TacoFoodSchema = SchemaFactory.createForClass(Taco)
+TacoFoodSchema.index({ description: 'text' })

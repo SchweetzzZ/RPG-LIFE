@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { RegisterUserDto, LoginUserDto } from './dto/user.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -19,11 +19,11 @@ export class UserService {
   async validate(data: LoginUserDto) {
     const validate = await this.userModel.findOne({ email: data.email })
     if (!validate) {
-      throw new Error('User not found');
+      throw new NotFoundException('User not found');
     }
     const isValidat = await bcrypt.compare(data.password, validate.password)
     if (!isValidat) {
-      throw new Error('Invalid password');
+      throw new NotFoundException('Invalid password');
     }
     return validate;
   }

@@ -1,0 +1,6 @@
+{
+  "name": "Solo Leveling: Life RPG",
+  "description": "Aplicativo de produtividade, hábitos e treinos de musculação gamificado estilo Solo Leveling com status, missões e loja de cosméticos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from "@nestjs/common";
 import { WorkoutService } from "./workout.service";
-import { CreateWorkoutDto, UpdateWorkoutDto } from "./dto/workout-dto";
+import { CreateWorkoutDtoClass, UpdateWorkoutDtoClass } from "./dto/workout-dto";
 import { JwtAuthGuard } from "../common/guards/jwt-guard";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 
@@ -9,10 +9,12 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 export class WorkoutController {
     constructor(private readonly workoutService: WorkoutService) { }
 
+    // ── Routine CRUD ─────────────────────────────────────────────────────────
+
     @Post()
     async createWorkout(
         @CurrentUser('sub') userId: string,
-        @Body() dto: CreateWorkoutDto,
+        @Body() dto: CreateWorkoutDtoClass,
     ) {
         return this.workoutService.createWorkout(userId, dto);
     }
@@ -21,7 +23,7 @@ export class WorkoutController {
     async updateWorkout(
         @CurrentUser('sub') userId: string,
         @Param('id') workoutId: string,
-        @Body() dto: UpdateWorkoutDto,
+        @Body() dto: UpdateWorkoutDtoClass,
     ) {
         return this.workoutService.updateWorkout(userId, workoutId, dto);
     }
@@ -42,6 +44,20 @@ export class WorkoutController {
     @Get('all')
     async getAllWorkouts() {
         return this.workoutService.getAllWorkouts();
+    }
+
+    // NOTE: 'logs' routes MUST be declared before ':id' to avoid route conflicts
+    @Post('logs')
+    async createWorkoutLog(
+        @CurrentUser('sub') userId: string,
+        @Body() body: any,
+    ) {
+        return this.workoutService.createWorkoutLog(userId, body);
+    }
+
+    @Get('logs/user')
+    async getUserWorkoutLogs(@CurrentUser('sub') userId: string) {
+        return this.workoutService.getUserWorkoutLogs(userId);
     }
 
     @Get(':id')

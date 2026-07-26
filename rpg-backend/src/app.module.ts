@@ -29,7 +29,6 @@ import { WorkoutModule } from './modules/workout/workout.module';
     HabitModule,
     NutritionModule,
     WorkoutModule,
-
   ],
   controllers: [AppController],
   providers: [AppService],

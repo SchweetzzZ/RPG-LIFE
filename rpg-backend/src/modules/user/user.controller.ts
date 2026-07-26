@@ -24,8 +24,8 @@ export class UserController {
 
     res.cookie('jwt', result.access_Token, {
       httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000
     })
     return result
