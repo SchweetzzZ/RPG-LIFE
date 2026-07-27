@@ -16,3 +16,18 @@ const LoginUserSchema = z.object({
 
 export class RegisterUserDto extends createZodDto(RegisterUserSchema) { }
 export class LoginUserDto extends createZodDto(LoginUserSchema) { }
+
+//response
+const LoginResponseSchema = z.object({
+    access_Token: z.string()
+});
+
+const RegisterResponseSchema = z.object({
+    id: z.string(),
+    email: z.string().email(),
+    username: z.string(),
+    role: z.nativeEnum(UserRole)
+});
+
+export class LoginResponseDto extends createZodDto(LoginResponseSchema) { }
+export class RegisterResponseDto extends createZodDto(RegisterResponseSchema) { }
