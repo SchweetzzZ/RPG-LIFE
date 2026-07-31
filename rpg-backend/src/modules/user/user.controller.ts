@@ -3,6 +3,7 @@ import { UserService } from './user.service';
 import { RegisterUserDto, LoginUserDto, RegisterResponseDto, LoginResponseDto } from './dto/user.dto';
 import express from 'express';
 import { ApiTags, ApiResponse, ApiCreatedResponse, ApiOkResponse, ApiBadRequestResponse, ApiConflictResponse } from '@nestjs/swagger';
+import { ApiStandardErrors } from './api-standard-errors.decorator';
 
 @ApiTags('User')
 @Controller('user')
@@ -16,12 +17,7 @@ export class UserController {
 
   @Post('register')
   @ApiCreatedResponse({ type: RegisterResponseDto })
-  @ApiBadRequestResponse({
-    description: 'Dados inválidos',
-  })
-  @ApiConflictResponse({
-    description: 'E-mail ou usuário já cadastrado',
-  })
+  @ApiStandardErrors()
   async register(@Body() body: RegisterUserDto) {
     return this.userService.register(body)
   }
@@ -31,6 +27,7 @@ export class UserController {
     status: 200,
     type: LoginResponseDto
   })
+  @ApiStandardErrors()
   async login(@Body() body: LoginUserDto, @Res({ passthrough: true }) res: express.Response) {
     const result = await this.userService.login(body)
 

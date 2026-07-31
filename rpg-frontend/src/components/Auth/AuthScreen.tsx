@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserProfile, AuthAccount } from '../../types';
-import { client } from '../../services/api'; // 👈 Importa o novo cliente OpenAPI
+import { client } from '../../services/api'; // Importa o novo cliente OpenAPI
 import {
   Sword,
   Flame,
@@ -161,7 +161,15 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       });
 
       if (regError) {
-        setErrorMessage(regError.message || 'Falha ao criar conta. O e-mail/nickname já pode estar em uso.');
+        // Se message for um Array, junta os erros com uma vírgula ou pega o primeiro erro.
+        // Se for string, usa ela diretamente.
+        const rawMessage = regError.message;
+
+        const formattedMessage = Array.isArray(rawMessage)
+          ? rawMessage.join(', ') // ou rawMessage[0] se preferir mostrar só o primeiro
+          : rawMessage;
+
+        setErrorMessage(formattedMessage || 'Falha ao criar conta. O e-mail/nickname já pode estar em uso.');
         setLoading(false);
         return;
       }

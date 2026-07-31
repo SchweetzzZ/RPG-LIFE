@@ -280,6 +280,13 @@ export interface components {
             /** @enum {string} */
             role: "player" | "admin";
         };
+        ErrorResponseDto: {
+            /** @example 400 */
+            statusCode: number;
+            message: string | string[];
+            /** @example Bad Request */
+            error: string;
+        };
         LoginUserDto: {
             /** Format: email */
             email: string;
@@ -461,19 +468,41 @@ export interface operations {
                     "application/json": components["schemas"]["RegisterResponseDto"];
                 };
             };
-            /** @description Dados inválidos */
+            /** @description Dados de entrada inválidos / Erro de Validação */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
             };
-            /** @description E-mail ou usuário já cadastrado */
+            /** @description Não autorizado / Credenciais inválidas */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Conflito (Ex: Registro duplicado) */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Erro interno do servidor */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
             };
         };
     };
@@ -496,6 +525,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LoginResponseDto"];
+                };
+            };
+            /** @description Dados de entrada inválidos / Erro de Validação */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Não autorizado / Credenciais inválidas */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Conflito (Ex: Registro duplicado) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Erro interno do servidor */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
                 };
             };
         };
