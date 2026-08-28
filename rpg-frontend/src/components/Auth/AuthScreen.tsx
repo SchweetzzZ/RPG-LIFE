@@ -1,11 +1,6 @@
 import React, { useState } from 'react';
-import { UserProfile, AuthAccount } from '../../types';
-import { client } from '../../services/api'; // Importa o novo cliente OpenAPI
+import { client } from '../../services/api';
 import {
-  Sword,
-  Flame,
-  Brain,
-  Heart,
   Eye,
   EyeOff,
   ArrowRight,
@@ -13,19 +8,16 @@ import {
   LogIn,
   CheckCircle2,
   AlertCircle,
-  Sparkles,
   Zap,
 } from 'lucide-react';
 import { soundFx } from '../../utils/audio';
 
 interface AuthScreenProps {
-  onLoginSuccess: (account: AuthAccount) => void;
-  defaultProfile: UserProfile;
+  onLoginSuccess: () => void;
 }
 
 export const AuthScreen: React.FC<AuthScreenProps> = ({
   onLoginSuccess,
-  defaultProfile,
 }) => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -40,35 +32,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
-  const [selectedClass, setSelectedClass] = useState<'shadow' | 'warrior' | 'mage' | 'scout'>('shadow');
 
   // Status States
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  const hunterClasses = [
-    { id: 'shadow', name: 'Sombras', icon: Sword, attrs: { strength: 12, intelligence: 10, vitality: 12, focus: 15 } },
-    { id: 'warrior', name: 'Guerreiro', icon: Flame, attrs: { strength: 16, intelligence: 8, vitality: 14, focus: 10 } },
-    { id: 'mage', name: 'Arcano', icon: Brain, attrs: { strength: 8, intelligence: 18, vitality: 10, focus: 12 } },
-    { id: 'scout', name: 'Estrategista', icon: Heart, attrs: { strength: 10, intelligence: 12, vitality: 16, focus: 14 } },
-  ];
-
-  // Quick Demo Login (Caso você ainda queira um atalho local para testes)
-  const handleQuickDemoLogin = () => {
-    soundFx.playQuestComplete();
-    localStorage.setItem('access_token', 'demo_token_jinwoo');
-    const demoAccount: AuthAccount = {
-      id: 'acc_demo_jinwoo',
-      email: 'sung.jinwoo@hunter.sys',
-      passwordHash: 'demo123',
-      createdAt: new Date().toISOString(),
-      profile: {
-        ...defaultProfile,
-        email: 'sung.jinwoo@hunter.sys',
-      },
-    };
-    onLoginSuccess(demoAccount);
-  };
 
   // Submit Handler for Login via OpenAPI Fetch
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -92,6 +59,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 
       if (error) {
         console.error("Erro no login:", error);
+        setErrorMessage('Credenciais inválidas. Verifique seu e-mail e senha.');
         return;
       }
 
@@ -99,23 +67,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
         console.log("Token recebido:", data.access_Token);
         localStorage.setItem('access_token', data.access_Token);
 
-        const account: AuthAccount = {
-          id: `acc_${Date.now()}`,
-          email: loginEmail.trim(),
-          passwordHash: loginPassword,
-          createdAt: new Date().toISOString(),
-          profile: {
-            ...defaultProfile,
-            email: loginEmail.trim(),
-            nickname: loginEmail.split('@')[0],
-          },
-        };
-
         setTimeout(() => {
-          onLoginSuccess(account);
+          onLoginSuccess();
         }, 500);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setErrorMessage('Erro ao conectar ao servidor. Tente novamente em instantes.');
     } finally {
       setLoading(false);
@@ -161,12 +117,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       });
 
       if (regError) {
-        // Se message for um Array, junta os erros com uma vírgula ou pega o primeiro erro.
-        // Se for string, usa ela diretamente.
         const rawMessage = regError.message;
-
         const formattedMessage = Array.isArray(rawMessage)
-          ? rawMessage.join(', ') // ou rawMessage[0] se preferir mostrar só o primeiro
+          ? rawMessage.join(', ')
           : rawMessage;
 
         setErrorMessage(formattedMessage || 'Falha ao criar conta. O e-mail/nickname já pode estar em uso.');
@@ -186,28 +139,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
         localStorage.setItem('access_token', loginData.access_Token);
       }
 
-      const classData = hunterClasses.find((c) => c.id === selectedClass) || hunterClasses[0];
-      const newAccount: AuthAccount = {
-        id: `acc_${Date.now()}`,
-        email: regEmail.trim(),
-        passwordHash: regPassword,
-        createdAt: new Date().toISOString(),
-        profile: {
-          ...defaultProfile,
-          id: `usr_${Date.now()}`,
-          name: regName.trim(),
-          nickname: regName.trim(),
-          email: regEmail.trim(),
-          title: `${classData.name} Despertado`,
-          attributes: classData.attrs,
-        },
-      };
-
       soundFx.playQuestComplete();
       setSuccessMessage(`Despertar concluído! Bem-vindo, ${regName.trim()}.`);
 
       setTimeout(() => {
-        onLoginSuccess(newAccount);
+        onLoginSuccess();
       }, 600);
     } catch (err) {
       setErrorMessage('Ocorreu um erro ao comunicar com o servidor.');
@@ -337,17 +273,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               <span>{loading ? 'Sincronizando...' : 'Entrar no Sistema'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
-
-            <div className="pt-3 border-t border-slate-800/80 text-center">
-              <button
-                type="button"
-                onClick={handleQuickDemoLogin}
-                className="w-full py-2 bg-slate-950 hover:bg-slate-800/80 text-slate-300 border border-slate-800 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-2"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>Entrar como Convidado (Modo Demo)</span>
-              </button>
-            </div>
           </form>
         )}
 
@@ -405,35 +330,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   placeholder="••••••••"
                   className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-3 py-2 text-xs font-medium text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500/80 transition"
                 />
-              </div>
-            </div>
-
-            {/* Hunter Class Selection */}
-            <div>
-              <label className="text-xs font-bold text-slate-300 block mb-1.5">Classe Inicial</label>
-              <div className="grid grid-cols-2 gap-2">
-                {hunterClasses.map((cls) => {
-                  const Icon = cls.icon;
-                  const isSelected = selectedClass === cls.id;
-                  return (
-                    <button
-                      key={cls.id}
-                      type="button"
-                      disabled={loading}
-                      onClick={() => {
-                        setSelectedClass(cls.id as typeof selectedClass);
-                        soundFx.playCoin();
-                      }}
-                      className={`p-2 rounded-xl border text-left transition flex items-center gap-2 ${isSelected
-                        ? 'bg-slate-800 border-cyan-500/80 text-cyan-300'
-                        : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
-                        }`}
-                    >
-                      <Icon className="w-4 h-4 text-cyan-400 shrink-0" />
-                      <span className="text-xs font-bold text-slate-200 truncate">{cls.name}</span>
-                    </button>
-                  );
-                })}
               </div>
             </div>
 

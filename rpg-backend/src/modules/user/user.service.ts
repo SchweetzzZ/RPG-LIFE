@@ -64,4 +64,22 @@ export class UserService {
       access_Token: this.jwtService.sign(payload)
     }
   }
+
+  async getMe(userId: string) {
+    const getUser = await this.userModel.findById(userId).select('-password')
+    if (!getUser) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+    const profile = await this.userProfileModel.findOne({ user: userId })
+    const character = await this.characterModel.findOne({ user: userId })
+
+    return {
+      id: getUser.id,
+      email: getUser.email,
+      username: getUser.username,
+      role: getUser.role,
+      profile: profile,
+      character: character,
+    }
+  }
 }

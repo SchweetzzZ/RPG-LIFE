@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Res, Req } from '@nestjs/common';
 import { UserService } from './user.service';
 import { RegisterUserDto, LoginUserDto, RegisterResponseDto, LoginResponseDto } from './dto/user.dto';
 import express from 'express';
@@ -39,4 +39,14 @@ export class UserController {
     })
     return result
   }
+
+  @Get('me')
+  @ApiOkResponse({ description: 'Retorna o perfil completo do usuário autenticado' })
+  @ApiStandardErrors()
+  async getMe(@Req() req: Request & { user: { sub: string } }) {
+    const userId = req.user.sub
+    return this.userService.getMe(userId);
+  }
+
+
 }

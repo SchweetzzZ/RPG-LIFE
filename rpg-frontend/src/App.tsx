@@ -14,22 +14,9 @@ import {
   LoggedFoodItem,
   DailyNutritionGoals,
 } from './types';
-import {
-  DEFAULT_PROFILE,
-  DEFAULT_ROUTINES,
-  DEFAULT_QUESTS,
-  DEFAULT_SHOP_ITEMS,
-  DEFAULT_HISTORICAL_EXERCISES,
-  DEFAULT_WORKOUT_LOGS,
-  DEFAULT_LOGGED_FOODS,
-  DEFAULT_NUTRITION_GOALS,
-  loadFromStorage,
-  saveToStorage,
-  calculateRank,
-} from './utils/storage';
 import { soundFx } from './utils/audio';
 import { useNavigate } from '@tanstack/react-router';
-import { workoutLogApi, workoutApi, characterApi, profileApi } from './services/api';
+import { client } from './services/api';
 
 import { Header } from './components/Header';
 import { Navigation, TabType } from './components/Navigation';
@@ -42,45 +29,123 @@ import { ShopModule } from './components/Shop/ShopModule';
 import { SettingsModule } from './components/Settings/SettingsModule';
 import { LevelUpModal } from './components/Modals/LevelUpModal';
 
+export function calculateRank(level: number): 'E' | 'D' | 'C' | 'B' | 'A' | 'S' | 'Nível Monarca' {
+  if (level >= 100) return 'Nível Monarca';
+  if (level >= 80) return 'S';
+  if (level >= 60) return 'A';
+  if (level >= 40) return 'B';
+  if (level >= 25) return 'C';
+  if (level >= 10) return 'D';
+  return 'E';
+}
+
+const INITIAL_PROFILE: UserProfile = {
+  id: '',
+  name: 'Caçador',
+  nickname: 'Caçador',
+  title: 'Caçador Novato',
+  rank: 'E',
+  level: 1,
+  currentXp: 0,
+  nextLevelXp: 100,
+  coins: 0,
+  gems: 0,
+  attributes: { strength: 10, intelligence: 10, vitality: 10, focus: 10 },
+  equippedSkinId: 'skin_default',
+  equippedThemeId: 'theme_obsidian',
+  equippedBorderId: 'border_default',
+  equippedTitle: 'Caçador Novato',
+  streakDays: 0,
+  lastActiveDate: new Date().toISOString(),
+  waterIntakeMl: 0,
+  dailyWaterGoalMl: 2000,
+};
+
+const DEFAULT_NUTRITION_GOALS: DailyNutritionGoals = {
+  targetCalories: 2200,
+  targetProteinGrams: 150,
+  targetCarbsGrams: 250,
+  targetFatGrams: 65,
+};
+
+interface UserMeResponse {
+  id?: string;
+  email?: string;
+  username?: string;
+  role?: string;
+  profile?: {
+    weightKg?: number;
+    heightCm?: number;
+    age?: number;
+    biologicalSex?: string;
+    activityLevel?: 'sedentary' | 'light' | 'moderate' | 'intense' | 'very_intense';
+    primaryGoal?: 'lose_weight' | 'maintain' | 'gain_muscle' | 'extreme_definition';
+    stressLevel?: number;
+    trainsRegularly?: boolean;
+    livesInHotClimate?: boolean;
+  };
+  character?: {
+    level?: number;
+    currentXp?: number;
+    nextLevelXp?: number;
+    coins?: number;
+    gems?: number;
+    attributes?: HunterAttributes;
+  };
+}
+
+interface BackendWorkoutRoutine {
+  _id?: string;
+  id?: string;
+  title: string;
+  description?: string;
+  estimatedMinutes?: number;
+  targetMuscleGroups?: string[];
+  exercises?: Exercise[];
+  completionCount?: number;
+  lastCompletedDate?: string;
+}
+
+interface BackendExerciseLog {
+  exerciseName: string;
+  maxWeightKg?: number;
+  completedSetsCount?: number;
+}
+
+interface BackendWorkoutLog {
+  _id?: string;
+  id?: string;
+  routineId?: string;
+  routineTitle?: string;
+  routineName?: string;
+  completedAt?: string;
+  durationMinutes?: number;
+  totalVolumeKg?: number;
+  totalSetsCompleted?: number;
+  totalSets?: number;
+  xpEarned?: number;
+  xpGained?: number;
+  coinsEarned?: number;
+  coinsGained?: number;
+  exerciseLogs?: BackendExerciseLog[];
+  exercises?: BackendExerciseLog[];
+}
+
 export default function App() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [isMuted, setIsMuted] = useState<boolean>(false);
 
-  // Core State with localStorage persistence
-  const [profile, setProfile] = useState<UserProfile>(() =>
-    loadFromStorage('life_rpg_profile_v1', DEFAULT_PROFILE)
-  );
-  const [routines, setRoutines] = useState<WorkoutRoutine[]>(() =>
-    loadFromStorage('life_rpg_routines_v1', DEFAULT_ROUTINES)
-  );
-  const [quests, setQuests] = useState<Quest[]>(() =>
-    loadFromStorage('life_rpg_quests_v1', DEFAULT_QUESTS)
-  );
-  const [shopItems] = useState<ShopItem[]>(() =>
-    loadFromStorage('life_rpg_shop_items_v1', DEFAULT_SHOP_ITEMS)
-  );
-  const [ownedItemIds, setOwnedItemIds] = useState<string[]>(() =>
-    loadFromStorage('life_rpg_owned_items_v1', [
-      'skin_default',
-      'theme_obsidian',
-      'border_default',
-    ])
-  );
-  const [workoutLogs, setWorkoutLogs] = useState<WorkoutLogEntry[]>(() =>
-    loadFromStorage('life_rpg_workout_logs_v1', DEFAULT_WORKOUT_LOGS)
-  );
-  const [historicalData, setHistoricalData] = useState<
-    Record<string, HistoricalExerciseData[]>
-  >(() =>
-    loadFromStorage('life_rpg_historical_v1', DEFAULT_HISTORICAL_EXERCISES)
-  );
-  const [loggedFoods, setLoggedFoods] = useState<LoggedFoodItem[]>(() =>
-    loadFromStorage('life_rpg_logged_foods_v1', DEFAULT_LOGGED_FOODS)
-  );
-  const [dailyNutritionGoals, setDailyNutritionGoals] = useState<DailyNutritionGoals>(() =>
-    loadFromStorage('life_rpg_nutrition_goals_v1', DEFAULT_NUTRITION_GOALS)
-  );
+  // Core State
+  const [profile, setProfile] = useState<UserProfile>(INITIAL_PROFILE);
+  const [routines, setRoutines] = useState<WorkoutRoutine[]>([]);
+  const [quests, setQuests] = useState<Quest[]>([]);
+  const [shopItems] = useState<ShopItem[]>([]);
+  const [ownedItemIds, setOwnedItemIds] = useState<string[]>(['skin_default', 'theme_obsidian', 'border_default']);
+  const [workoutLogs, setWorkoutLogs] = useState<WorkoutLogEntry[]>([]);
+  const [historicalData, setHistoricalData] = useState<Record<string, HistoricalExerciseData[]>>({});
+  const [loggedFoods, setLoggedFoods] = useState<LoggedFoodItem[]>([]);
+  const [dailyNutritionGoals, setDailyNutritionGoals] = useState<DailyNutritionGoals>(DEFAULT_NUTRITION_GOALS);
 
   // Level Up Modal State
   const [levelUpModalData, setLevelUpModalData] = useState<{
@@ -88,105 +153,99 @@ export default function App() {
     newLevel: number;
   } | null>(null);
 
-  // Save to LocalStorage on state changes
-  useEffect(() => {
-    saveToStorage('life_rpg_profile_v1', profile);
-  }, [profile]);
-
-  useEffect(() => {
-    saveToStorage('life_rpg_routines_v1', routines);
-  }, [routines]);
-
-  useEffect(() => {
-    saveToStorage('life_rpg_quests_v1', quests);
-  }, [quests]);
-
-  useEffect(() => {
-    saveToStorage('life_rpg_owned_items_v1', ownedItemIds);
-  }, [ownedItemIds]);
-
-  useEffect(() => {
-    saveToStorage('life_rpg_workout_logs_v1', workoutLogs);
-  }, [workoutLogs]);
-
-  useEffect(() => {
-    saveToStorage('life_rpg_historical_v1', historicalData);
-  }, [historicalData]);
-
-  useEffect(() => {
-    saveToStorage('life_rpg_logged_foods_v1', loggedFoods);
-  }, [loggedFoods]);
-
-  useEffect(() => {
-    saveToStorage('life_rpg_nutrition_goals_v1', dailyNutritionGoals);
-  }, [dailyNutritionGoals]);
-
   // Fetch initial data from NestJS backend if logged in
   useEffect(() => {
     async function loadBackendData() {
       try {
-        // Load profile biometrics
-        const backendProfile = await profileApi.getProfile().catch(() => null);
-        if (backendProfile) {
-          setProfile((prev) => ({
-            ...prev,
-            biometrics: {
-              weightKg: backendProfile.weightKg || prev.biometrics?.weightKg || 75,
-              heightCm: backendProfile.heightCm || prev.biometrics?.heightCm || 178,
-              age: backendProfile.age || prev.biometrics?.age || 28,
-              gender: backendProfile.biologicalSex === 'female' ? 'female' : 'male',
-              activityLevel: backendProfile.activityLevel || prev.biometrics?.activityLevel || 'moderate',
-              primaryGoal: backendProfile.primaryGoal || prev.biometrics?.primaryGoal || 'gain_muscle',
-              stressLevel: backendProfile.stressLevel ?? prev.biometrics?.stressLevel ?? 5,
-            },
-          }));
+        // Load user me (profile & character)
+        const token = localStorage.getItem('access_token');
+        if (token) {
+          const res = await fetch('/api/user/me', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.ok) {
+            const userMe = (await res.json()) as UserMeResponse;
+            if (userMe) {
+              const char = userMe.character;
+              const prof = userMe.profile;
+              setProfile((prev) => ({
+                ...prev,
+                id: userMe.id ?? prev.id,
+                nickname: userMe.username ?? prev.nickname,
+                email: userMe.email ?? prev.email,
+                level: char?.level ?? prev.level,
+                currentXp: char?.currentXp ?? prev.currentXp,
+                nextLevelXp: char?.nextLevelXp ?? prev.nextLevelXp,
+                coins: char?.coins ?? prev.coins,
+                gems: char?.gems ?? prev.gems,
+                attributes: char?.attributes ?? prev.attributes,
+                biometrics: prof ? {
+                  weightKg: prof.weightKg ?? prev.biometrics?.weightKg ?? 70,
+                  heightCm: prof.heightCm ?? prev.biometrics?.heightCm ?? 170,
+                  age: prof.age ?? prev.biometrics?.age ?? 25,
+                  gender: prof.biologicalSex === 'female' ? 'female' : prof.biologicalSex === 'other' ? 'other' : 'male',
+                  activityLevel: prof.activityLevel ?? prev.biometrics?.activityLevel ?? 'moderate',
+                  primaryGoal: prof.primaryGoal ?? prev.biometrics?.primaryGoal ?? 'gain_muscle',
+                  stressLevel: prof.stressLevel ?? prev.biometrics?.stressLevel ?? 5,
+                  trainsRegularly: prof.trainsRegularly ?? prev.biometrics?.trainsRegularly ?? false,
+                  livesInHotClimate: prof.livesInHotClimate ?? prev.biometrics?.livesInHotClimate ?? false,
+                } : prev.biometrics,
+              }));
+            }
+          }
         }
 
-        // Load workout routines from backend (source of truth)
-        const backendRoutines = await workoutApi.list().catch(() => null);
-        if (backendRoutines && backendRoutines.length > 0) {
-          const mapped: WorkoutRoutine[] = backendRoutines.map((r) => ({
-            id: r._id ?? r.id,
-            title: r.title,
-            description: r.description ?? '',
-            estimatedMinutes: r.estimatedMinutes ?? 45,
-            targetMuscleGroups: r.targetMuscleGroups ?? [],
-            exercises: r.exercises ?? [],
-            completionCount: r.completionCount ?? 0,
-            lastCompletedDate: r.lastCompletedDate ?? undefined,
-          }));
-          setRoutines(mapped);
+        // Load workout routines from backend
+        const workoutRes = await client.GET('/workout', {});
+        if (workoutRes.response.ok) {
+          const backendRoutines = (await workoutRes.response.json()) as BackendWorkoutRoutine[];
+          if (Array.isArray(backendRoutines) && backendRoutines.length > 0) {
+            const mapped: WorkoutRoutine[] = backendRoutines.map((r) => ({
+              id: r._id ?? r.id ?? `routine_${Math.random()}`,
+              title: r.title,
+              description: r.description ?? '',
+              estimatedMinutes: r.estimatedMinutes ?? 45,
+              targetMuscleGroups: r.targetMuscleGroups ?? [],
+              exercises: r.exercises ?? [],
+              completionCount: r.completionCount ?? 0,
+              lastCompletedDate: r.lastCompletedDate ?? undefined,
+            }));
+            setRoutines(mapped);
+          }
         }
 
         // Load workout logs
-        const logs = await workoutLogApi.getLogs().catch(() => null);
-        if (logs && logs.length > 0) {
-          const mappedLogs: WorkoutLogEntry[] = logs.map((l: any) => ({
-            id: l._id || l.id,
-            routineId: l.routineId || '',
-            routineTitle: l.routineTitle || l.routineName || 'Treino',
-            date: l.completedAt
-              ? new Date(l.completedAt).toLocaleString('pt-BR')
-              : new Date().toLocaleString('pt-BR'),
-            durationMinutes: l.durationMinutes || 0,
-            totalVolumeKg: l.totalVolumeKg || 0,
-            totalSetsCompleted: l.totalSetsCompleted || l.totalSets || 0,
-            xpEarned: l.xpEarned || l.xpGained || 0,
-            coinsEarned: l.coinsEarned || l.coinsGained || 0,
-            exerciseLogs: (l.exerciseLogs || l.exercises || []).map((e: any) => ({
-              exerciseName: e.exerciseName,
-              maxWeightKg: e.maxWeightKg || 0,
-              completedSetsCount: e.completedSetsCount || 0,
-            })),
-          }));
-          setWorkoutLogs((prev) => {
-            const existingIds = new Set(prev.map((item) => item.id));
-            const newBackendLogs = mappedLogs.filter((item) => !existingIds.has(item.id));
-            return [...newBackendLogs, ...prev];
-          });
+        const logsRes = await client.GET('/workout/logs/user', {});
+        if (logsRes.response.ok) {
+          const logs = (await logsRes.response.json()) as BackendWorkoutLog[];
+          if (Array.isArray(logs) && logs.length > 0) {
+            const mappedLogs: WorkoutLogEntry[] = logs.map((l) => ({
+              id: l._id ?? l.id ?? `log_${Math.random()}`,
+              routineId: l.routineId ?? '',
+              routineTitle: l.routineTitle ?? l.routineName ?? 'Treino',
+              date: l.completedAt
+                ? new Date(l.completedAt).toLocaleString('pt-BR')
+                : new Date().toLocaleString('pt-BR'),
+              durationMinutes: l.durationMinutes ?? 0,
+              totalVolumeKg: l.totalVolumeKg ?? 0,
+              totalSetsCompleted: l.totalSetsCompleted ?? l.totalSets ?? 0,
+              xpEarned: l.xpEarned ?? l.xpGained ?? 0,
+              coinsEarned: l.coinsEarned ?? l.coinsGained ?? 0,
+              exerciseLogs: (l.exerciseLogs ?? l.exercises ?? []).map((e) => ({
+                exerciseName: e.exerciseName,
+                maxWeightKg: e.maxWeightKg ?? 0,
+                completedSetsCount: e.completedSetsCount ?? 0,
+              })),
+            }));
+            setWorkoutLogs((prev) => {
+              const existingIds = new Set(prev.map((item) => item.id));
+              const newBackendLogs = mappedLogs.filter((item) => !existingIds.has(item.id));
+              return [...newBackendLogs, ...prev];
+            });
+          }
         }
-      } catch (err: any) {
-        console.warn('Backend initial fetch info:', err.message);
+      } catch (err: unknown) {
+        console.warn('Backend initial fetch info:', err instanceof Error ? err.message : err);
       }
     }
     loadBackendData();
@@ -297,40 +356,39 @@ export default function App() {
     const isNew = routineToSave.id.startsWith('routine_') || routineToSave.id.startsWith('temp_');
 
     if (isNew) {
-      // Optimistic: add immediately with temp id
       setRoutines((prev) => [routineToSave, ...prev]);
       try {
         const { id: _id, ...payload } = routineToSave;
-        const saved = await workoutApi.create(payload);
-        // Replace temp id with real backend _id
-        setRoutines((prev) =>
-          prev.map((r) => (r.id === routineToSave.id ? { ...saved, id: saved._id } : r))
-        );
-      } catch (err: any) {
-        console.warn('Failed to save routine to backend:', err.message);
+        const { data: saved } = await client.POST('/workout', { body: payload as any });
+        if (saved) {
+          const savedId = (saved as any)._id ?? (saved as any).id;
+          setRoutines((prev) =>
+            prev.map((r) => (r.id === routineToSave.id ? { ...routineToSave, id: savedId } : r))
+          );
+        }
+      } catch (err: unknown) {
+        console.warn('Failed to save routine to backend:', err instanceof Error ? err.message : err);
       }
     } else {
-      // Optimistic update
       setRoutines((prev) =>
         prev.map((r) => (r.id === routineToSave.id ? routineToSave : r))
       );
       try {
         const { id: _id, ...payload } = routineToSave;
-        await workoutApi.update(routineToSave.id, payload);
-      } catch (err: any) {
-        console.warn('Failed to update routine on backend:', err.message);
+        await client.PUT('/workout/{id}', { params: { path: { id: routineToSave.id } }, body: payload as any });
+      } catch (err: unknown) {
+        console.warn('Failed to update routine on backend:', err instanceof Error ? err.message : err);
       }
     }
   };
 
   // Gym Logic: Delete Routine (synced to backend)
   const handleDeleteRoutine = async (routineId: string) => {
-    // Optimistic remove
     setRoutines((prev) => prev.filter((r) => r.id !== routineId));
     try {
-      await workoutApi.delete(routineId);
-    } catch (err: any) {
-      console.warn('Failed to delete routine on backend:', err.message);
+      await client.DELETE('/workout/{id}', { params: { path: { id: routineId } } });
+    } catch (err: unknown) {
+      console.warn('Failed to delete routine on backend:', err instanceof Error ? err.message : err);
     }
   };
 
@@ -381,12 +439,12 @@ export default function App() {
     setWorkoutLogs((prev) => [newLog, ...prev]);
 
     // Send workout log to NestJS backend
-    workoutLogApi.createLog(newLog).catch((err: any) => {
-      console.warn('Backend workout log sync warning:', err.message);
+    client.POST('/workout/logs', { body: newLog as any }).catch((err: unknown) => {
+      console.warn('Backend workout log sync warning:', err instanceof Error ? err.message : err);
     });
 
-    characterApi.addXp({ xpGained: xpEarned, coinsGained: coinsEarned }).catch((err: any) => {
-      console.warn('Backend character XP sync warning:', err.message);
+    client.POST('/character/xp', { body: { userId: profile.id, xpGained: xpEarned, coinsGained: coinsEarned } }).catch((err: unknown) => {
+      console.warn('Backend character XP sync warning:', err instanceof Error ? err.message : err);
     });
 
     // Update Historical Progression Data for Recharts
@@ -454,27 +512,6 @@ export default function App() {
     } else if (item.type === 'title') {
       handleUpdateProfile({ equippedTitle: item.name });
     }
-  };
-
-  // Developer Reset Demo Data
-  const handleResetData = () => {
-    setProfile(DEFAULT_PROFILE);
-    setRoutines(DEFAULT_ROUTINES);
-    setQuests(DEFAULT_QUESTS);
-    setOwnedItemIds(['skin_default', 'theme_obsidian', 'border_default']);
-    setWorkoutLogs(DEFAULT_WORKOUT_LOGS);
-    setHistoricalData(DEFAULT_HISTORICAL_EXERCISES);
-    soundFx.playCoin();
-  };
-
-  // Add Test Resources
-  const handleAddDevResources = () => {
-    handleUpdateProfile({
-      currentXp: profile.currentXp + 500,
-      coins: profile.coins + 500,
-      gems: profile.gems + 50,
-    });
-    soundFx.playLevelUp();
   };
 
   const pendingQuestsCount = quests.filter((q) => !q.completed).length;
@@ -566,8 +603,6 @@ export default function App() {
             <SettingsModule
               profile={profile}
               onUpdateProfile={handleUpdateProfile}
-              onResetData={handleResetData}
-              onAddDevResources={handleAddDevResources}
               onLogout={handleLogout}
             />
           )}

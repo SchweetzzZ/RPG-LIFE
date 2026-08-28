@@ -68,6 +68,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/user/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["UserController_getMe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/character/xp": {
         parameters: {
             query?: never;
@@ -312,7 +328,7 @@ export interface components {
             /** @enum {string} */
             biologicalSex?: "male" | "female" | "other";
             /** @enum {string} */
-            activityLevel?: "sedentary" | "light" | "moderate" | "active" | "very_active";
+            activityLevel?: "sedentary" | "light" | "moderate" | "intense" | "very_intense";
             /** @enum {string} */
             primaryGoal?: "lose_weight" | "maintain" | "gain_muscle";
             /** @default 5 */
@@ -526,6 +542,60 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["LoginResponseDto"];
                 };
+            };
+            /** @description Dados de entrada inválidos / Erro de Validação */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Não autorizado / Credenciais inválidas */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Conflito (Ex: Registro duplicado) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Erro interno do servidor */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    UserController_getMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Retorna o perfil completo do usuário autenticado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Dados de entrada inválidos / Erro de Validação */
             400: {

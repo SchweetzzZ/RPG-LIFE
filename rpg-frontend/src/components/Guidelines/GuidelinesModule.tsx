@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserProfile, BiometricProfile, Quest, AttributeType } from '../../types';
-import { profileApi } from '../../services/api';
+import { client } from '../../services/api';
 import { BiometricModal } from './BiometricModal';
 import {
   User,
@@ -47,6 +47,8 @@ export const GuidelinesModule: React.FC<GuidelinesModuleProps> = ({
     activityLevel: 'moderate',
     primaryGoal: 'gain_muscle',
     stressLevel: 5,
+    trainsRegularly: false,
+    livesInHotClimate: false,
   };
 
   // Mifflin-St Jeor BMR Calculation
@@ -64,8 +66,8 @@ export const GuidelinesModule: React.FC<GuidelinesModuleProps> = ({
     sedentary: 1.2,
     light: 1.375,
     moderate: 1.55,
-    heavy: 1.725,
-    athlete: 1.9,
+    intense: 1.725,
+    very_intense: 1.9,
   };
 
   // Goal Adjustment
@@ -89,8 +91,8 @@ export const GuidelinesModule: React.FC<GuidelinesModuleProps> = ({
     sedentary: 'Sedentário (Pouco ou nenhum exercício)',
     light: 'Levemente Ativo (1-3d/sem)',
     moderate: 'Moderadamente Ativo (3-5d/sem)',
-    heavy: 'Muito Ativo (6-7d/sem)',
-    athlete: 'Atleta de Elite (Treinos Duplos)',
+    intense: 'Muito Ativo (6-7d/sem)',
+    very_intense: 'Atleta de Elite (Treinos Duplos)',
   };
 
   // Goal Label Translation
@@ -114,14 +116,18 @@ export const GuidelinesModule: React.FC<GuidelinesModuleProps> = ({
     showToast('⚡ SISTEMA: Atributos corporais e metabólicos reanalisados com sucesso!');
 
     try {
-      await profileApi.updateProfile({
-        weightKg: updatedBio.weightKg,
-        heightCm: updatedBio.heightCm,
-        age: updatedBio.age,
-        biologicalSex: updatedBio.gender === 'male' || updatedBio.gender === 'female' ? updatedBio.gender : 'other',
-        activityLevel: updatedBio.activityLevel,
-        primaryGoal: updatedBio.primaryGoal === 'extreme_definition' ? 'lose_weight' : updatedBio.primaryGoal,
-        stressLevel: updatedBio.stressLevel,
+      const { error } = await client.PATCH('/profile', {
+        body: {
+          weightKg: updatedBio.weightKg,
+          heightCm: updatedBio.heightCm,
+          age: updatedBio.age,
+          biologicalSex: updatedBio.gender === 'male' || updatedBio.gender === 'female' ? updatedBio.gender : 'other',
+          activityLevel: updatedBio.activityLevel,
+          primaryGoal: updatedBio.primaryGoal === 'extreme_definition' ? 'lose_weight' : updatedBio.primaryGoal,
+          stressLevel: updatedBio.stressLevel,
+          trainsRegularly: updatedBio.trainsRegularly,
+          livesInHotClimate: updatedBio.livesInHotClimate,
+        },
       });
     } catch (err: any) {
       console.warn('Backend profile update warning:', err.message);
@@ -462,11 +468,10 @@ export const GuidelinesModule: React.FC<GuidelinesModuleProps> = ({
                   <button
                     onClick={() => handleAcceptRecommendation(rec)}
                     disabled={isAlreadyActive}
-                    className={`px-4 py-2 text-xs font-black rounded-xl transition flex items-center gap-1.5 shadow-md ${
-                      isAlreadyActive
-                        ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-cyan-500 via-blue-600 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 uppercase tracking-wider shadow-cyan-500/20'
-                    }`}
+                    className={`px-4 py-2 text-xs font-black rounded-xl transition flex items-center gap-1.5 shadow-md ${isAlreadyActive
+                      ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-cyan-500 via-blue-600 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 uppercase tracking-wider shadow-cyan-500/20'
+                      }`}
                   >
                     {isAlreadyActive ? (
                       <>
