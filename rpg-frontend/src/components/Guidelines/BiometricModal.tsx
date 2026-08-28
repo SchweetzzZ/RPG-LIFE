@@ -17,7 +17,7 @@ export const BiometricModal: React.FC<BiometricModalProps> = ({
   const [weightKg, setWeightKg] = useState<number>(initialBiometrics.weightKg);
   const [heightCm, setHeightCm] = useState<number>(initialBiometrics.heightCm);
   const [age, setAge] = useState<number>(initialBiometrics.age);
-  const [gender, setGender] = useState<'male' | 'female'>(initialBiometrics.gender);
+  const [gender, setGender] = useState<'male' | 'female' | 'other'>(initialBiometrics.gender);
   const [activityLevel, setActivityLevel] = useState<BiometricProfile['activityLevel']>(
     initialBiometrics.activityLevel
   );
@@ -25,6 +25,8 @@ export const BiometricModal: React.FC<BiometricModalProps> = ({
     initialBiometrics.primaryGoal
   );
   const [stressLevel, setStressLevel] = useState<number>(initialBiometrics.stressLevel);
+  const [trainsRegularly, setTrainsRegularly] = useState<boolean>(initialBiometrics.trainsRegularly);
+  const [livesInHotClimate, setLivesInHotClimate] = useState<boolean>(initialBiometrics.livesInHotClimate);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +38,8 @@ export const BiometricModal: React.FC<BiometricModalProps> = ({
       activityLevel,
       primaryGoal,
       stressLevel: Math.min(10, Math.max(0, Number(stressLevel) || 5)),
+      trainsRegularly,
+      livesInHotClimate,
     };
     soundFx.playCoin();
     onSave(updated);
@@ -119,11 +123,12 @@ export const BiometricModal: React.FC<BiometricModalProps> = ({
               <label className="text-xs font-bold text-slate-300 block mb-1">Gênero</label>
               <select
                 value={gender}
-                onChange={(e) => setGender(e.target.value as 'male' | 'female')}
+                onChange={(e) => setGender(e.target.value as 'male' | 'female' | 'other')}
                 className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-200 focus:outline-none focus:border-cyan-500"
               >
                 <option value="male">Masculino</option>
                 <option value="female">Feminino</option>
+                <option value="other">Outro</option>
               </select>
             </div>
           </div>
@@ -143,8 +148,8 @@ export const BiometricModal: React.FC<BiometricModalProps> = ({
               <option value="sedentary">Sedentário (Pouco ou nenhum exercício)</option>
               <option value="light">Levemente Ativo (Exercícios 1-3 dias/semana)</option>
               <option value="moderate">Moderadamente Ativo (Treinos 3-5 dias/semana)</option>
-              <option value="heavy">Muito Ativo (Treinos intensos 6-7 dias/semana)</option>
-              <option value="athlete">Extremamente Ativo (Atleta de Elite / Treinos Duplos)</option>
+              <option value="intense">Muito Ativo (Treinos intensos 6-7 dias/semana)</option>
+              <option value="very_intense">Extremamente Ativo (Atleta de Elite / Treinos Duplos)</option>
             </select>
           </div>
 
@@ -189,6 +194,43 @@ export const BiometricModal: React.FC<BiometricModalProps> = ({
               <span>0 (Zen)</span>
               <span>5 (Moderado)</span>
               <span>10 (Crítico)</span>
+            </div>
+          </div>
+
+          {/* Boolean toggles */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between gap-3">
+              <label className="text-xs font-bold text-slate-200">Treina regularmente?</label>
+              <button
+                type="button"
+                onClick={() => setTrainsRegularly((v) => !v)}
+                className={`relative w-10 h-5 rounded-full transition-colors ${
+                  trainsRegularly ? 'bg-cyan-500' : 'bg-slate-700'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                    trainsRegularly ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between gap-3">
+              <label className="text-xs font-bold text-slate-200">Vive em clima quente?</label>
+              <button
+                type="button"
+                onClick={() => setLivesInHotClimate((v) => !v)}
+                className={`relative w-10 h-5 rounded-full transition-colors ${
+                  livesInHotClimate ? 'bg-amber-500' : 'bg-slate-700'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                    livesInHotClimate ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
             </div>
           </div>
 

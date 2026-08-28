@@ -1,6 +1,19 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { nutritionApi } from '../../services/api';
+import { client } from '../../services/api';
+
+/** Shape returned by the backend NutritionController GET /search */
+interface ApiFoodItem {
+  id?: string;
+  name: string;
+  source: string;
+  nutrientsPer100g?: {
+    calories?: number;
+    protein?: number;
+    carbs?: number;
+    fat?: number;
+  };
+}
 import {
   Apple,
   Search,
@@ -106,20 +119,22 @@ export const NutritionModule: React.FC<NutritionModuleProps> = ({
     }
     const timer = setTimeout(async () => {
       try {
-        const results = await nutritionApi.searchFoods(searchQuery);
-        const mapped: FoodItem[] = results.map((item: any) => ({
-          id: item.id || `api_${Math.random()}`,
+        const { response } = await client.GET('/search', { params: { query: { q: searchQuery } } });
+        if (!response.ok) return;
+        const items = (await response.json()) as ApiFoodItem[];
+        const mapped: FoodItem[] = items.map((item) => ({
+          id: item.id ?? `api_${Math.random()}`,
           name: item.name,
           source: item.source === 'OPEN_FOOD_FACTS' ? 'Open Food Facts' : 'Tabela TACO',
-          caloriesPer100g: item.nutrientsPer100g?.calories || 0,
-          proteinPer100g: item.nutrientsPer100g?.protein || 0,
-          carbsPer100g: item.nutrientsPer100g?.carbs || 0,
-          fatPer100g: item.nutrientsPer100g?.fat || 0,
+          caloriesPer100g: item.nutrientsPer100g?.calories ?? 0,
+          proteinPer100g: item.nutrientsPer100g?.protein ?? 0,
+          carbsPer100g: item.nutrientsPer100g?.carbs ?? 0,
+          fatPer100g: item.nutrientsPer100g?.fat ?? 0,
           category: 'Geral',
         }));
         setApiFoods(mapped);
-      } catch (err: any) {
-        console.warn('Backend food search warning:', err.message);
+      } catch (err: unknown) {
+        console.warn('Backend food search warning:', err instanceof Error ? err.message : err);
       }
     }, 300);
     return () => clearTimeout(timer);
@@ -553,11 +568,10 @@ export const NutritionModule: React.FC<NutritionModuleProps> = ({
               <button
                 key={cat}
                 onClick={() => setSelectedCategoryFilter(cat)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition ${
-                  selectedCategoryFilter === cat
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition ${selectedCategoryFilter === cat
                     ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50'
                     : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-slate-200'
-                }`}
+                  }`}
               >
                 {cat}
               </button>
@@ -605,13 +619,12 @@ export const NutritionModule: React.FC<NutritionModuleProps> = ({
                         {food.name}
                       </span>
                       <span
-                        className={`text-[9px] font-black px-1.5 py-0.5 rounded ${
-                          food.source === 'Tabela TACO'
+                        className={`text-[9px] font-black px-1.5 py-0.5 rounded ${food.source === 'Tabela TACO'
                             ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
                             : food.source === 'Open Food Facts'
-                            ? 'bg-purple-950 text-purple-400 border border-purple-800'
-                            : 'bg-cyan-950 text-cyan-400 border border-cyan-800'
-                        }`}
+                              ? 'bg-purple-950 text-purple-400 border border-purple-800'
+                              : 'bg-cyan-950 text-cyan-400 border border-cyan-800'
+                          }`}
                       >
                         {food.source}
                       </span>
@@ -847,11 +860,10 @@ export const NutritionModule: React.FC<NutritionModuleProps> = ({
                       key={m}
                       type="button"
                       onClick={() => setTargetMeal(m)}
-                      className={`p-2 rounded-xl text-xs font-extrabold transition border ${
-                        targetMeal === m
+                      className={`p-2 rounded-xl text-xs font-extrabold transition border ${targetMeal === m
                           ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/60 shadow-md'
                           : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200'
-                      }`}
+                        }`}
                     >
                       {mealInfoMap[m].label}
                     </button>
@@ -892,11 +904,10 @@ export const NutritionModule: React.FC<NutritionModuleProps> = ({
                     <button
                       key={preset}
                       onClick={() => setPortionGrams(preset)}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition border ${
-                        portionGrams === preset
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition border ${portionGrams === preset
                           ? 'bg-cyan-500 text-slate-950 border-cyan-400'
                           : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200'
-                      }`}
+                        }`}
                     >
                       {preset}g
                     </button>

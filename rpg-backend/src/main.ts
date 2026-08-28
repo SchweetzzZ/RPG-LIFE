@@ -2,7 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
-import { ZodValidationPipe } from 'nestjs-zod';
+import { ZodValidationPipe, cleanupOpenApiDoc } from 'nestjs-zod';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 dotenv.config();
 
@@ -14,11 +15,32 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.useGlobalPipes(new ZodValidationPipe());
   app.use(cookieParser());
+  app.useGlobalPipes(new ZodValidationPipe());
 
-  const port = process.env.PORT ?? 4000;
+  const config = new DocumentBuilder()
+    .setTitle('Life RPG API')
+    .setDescription('Documentação da API de Caçadores')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+
+  // Corrige o documento OpenAPI para funcionar corretamente com nestjs-zod
+  const openApiDocument = cleanupOpenApiDoc(document);
+
+  SwaggerModule.setup('api', app, openApiDocument, {
+    jsonDocumentUrl: 'api/json',
+  });
+
+  const port = Number(process.env.PORT) || 4000;
+
   await app.listen(port);
-  console.log(`Backend running on http://localhost:${port}`);
+
+  console.log(`🚀 Backend running on http://localhost:${port}`);
+  console.log(`📖 Swagger: http://localhost:${port}/api`);
+  console.log(`📄 OpenAPI JSON: http://localhost:${port}/api/json`);
 }
+
 bootstrap();

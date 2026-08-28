@@ -6,16 +6,12 @@ import { soundFx } from '../../utils/audio';
 interface SettingsModuleProps {
   profile: UserProfile;
   onUpdateProfile: (updated: Partial<UserProfile>) => void;
-  onResetData: () => void;
-  onAddDevResources: () => void;
   onLogout?: () => void;
 }
 
 export const SettingsModule: React.FC<SettingsModuleProps> = ({
   profile,
   onUpdateProfile,
-  onResetData,
-  onAddDevResources,
   onLogout,
 }) => {
   const [nickname, setNickname] = useState(profile.nickname);
@@ -65,36 +61,6 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
             )}
           </div>
         </form>
-      </div>
-
-      {/* Developer / Testing Utilities */}
-      <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-4">
-        <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
-          <Sparkles className="w-5 h-5 text-amber-400" />
-          <h3 className="text-sm font-extrabold text-slate-100">Recursos de Demonstração & Testes</h3>
-        </div>
-
-        <p className="text-xs text-slate-400 leading-relaxed">
-          Para testar a subida de nível e a compra de cosméticos na loja, utilize as ações rápidas abaixo:
-        </p>
-
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            onClick={onAddDevResources}
-            className="flex-1 py-2.5 px-4 bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 border border-amber-800/60 rounded-xl font-extrabold text-xs transition flex items-center justify-center gap-2"
-          >
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            +500 XP, +500 Coins, +50 Gems
-          </button>
-
-          <button
-            onClick={onResetData}
-            className="flex-1 py-2.5 px-4 bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border border-rose-800/60 rounded-xl font-extrabold text-xs transition flex items-center justify-center gap-2"
-          >
-            <RotateCcw className="w-4 h-4 text-rose-400" />
-            Resetar Dados Padrão
-          </button>
-        </div>
 
         {onLogout && (
           <div className="pt-3 border-t border-slate-800">

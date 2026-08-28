@@ -1,27 +1,31 @@
 import { createFileRoute, useNavigate, redirect } from '@tanstack/react-router';
 import { AuthScreen } from '../components/Auth/AuthScreen';
-import { DEFAULT_PROFILE } from '../utils/storage';
+import { client } from '../services/api';
 
 export const Route = createFileRoute('/login')({
-    beforeLoad: () => {
-        const token = localStorage.getItem('access_token');
-        // Só redireciona para a home se REALMENTE existir um token ativo
-        if (token) {
-            throw redirect({ to: '/' });
+    beforeLoad: async () => {
+        try {
+            const { data, response } = await client.GET('/user/me')
+
+            if (response.ok && data) {
+                throw redirect({ to: '/' })
+            }
+        } catch (err) {
+            if (err && typeof err === 'object' && 'to' in err) {
+                throw err;
+            }
         }
     },
-    component: LoginRouteComponent,
-});
+    component: LoginRouteComponent
+})
 
 function LoginRouteComponent() {
     const navigate = useNavigate();
 
     return (
         <AuthScreen
-            defaultProfile={DEFAULT_PROFILE}
             onLoginSuccess={() => {
-                // Quando o login no NestJS der certo e salvar o token:
-                navigate({ to: '/' });
+                navigate({ to: '/' })
             }}
         />
     );

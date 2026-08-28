@@ -1,20 +1,22 @@
 export type AttributeType = 'strength' | 'intelligence' | 'vitality' | 'focus';
 
 export interface HunterAttributes {
-  strength: number; // Força: Treinos e Exercícios
-  intelligence: number; // Inteligência: Leitura e Estudos
-  vitality: number; // Vitalidade: Água, Sono e Dieta
-  focus: number; // Foco: Trabalho e Hábitos
+  strength: number;
+  intelligence: number;
+  vitality: number;
+  focus: number;
 }
 
 export interface BiometricProfile {
   weightKg: number;
   heightCm: number;
   age: number;
-  gender: 'male' | 'female';
-  activityLevel: 'sedentary' | 'light' | 'moderate' | 'heavy' | 'athlete';
+  gender: 'male' | 'female' | 'other';
+  activityLevel: 'sedentary' | 'light' | 'moderate' | 'intense' | 'very_intense';
   primaryGoal: 'lose_weight' | 'maintain' | 'gain_muscle' | 'extreme_definition';
   stressLevel: number; // 0 - 10
+  trainsRegularly: boolean;
+  livesInHotClimate: boolean;
 }
 
 export interface UserProfile {
@@ -41,27 +43,19 @@ export interface UserProfile {
   biometrics?: BiometricProfile;
 }
 
-export interface AuthAccount {
-  id: string;
-  email: string;
-  passwordHash: string;
-  createdAt: string;
-  profile: UserProfile;
-}
-
 export interface ExerciseSet {
   id: string;
   setNumber: number;
   weightKg: number;
   reps: number;
   completed: boolean;
-  rpe?: number; // Rate of Perceived Exertion (1-10)
+  rpe?: number;
 }
 
 export interface Exercise {
   id: string;
   name: string;
-  category: 'Peito' | 'Costas' | 'Pernas' | 'Ombros' | 'Braços' | 'Abdômen' | 'Cardio';
+  category: 'Peito' | 'Costas' | 'Pernas' | 'Ombros' | 'Braços' | 'Abdômen' | 'Cardio' | 'Geral';
   primaryAttribute: AttributeType;
   sets: ExerciseSet[];
   notes?: string;
@@ -84,7 +78,7 @@ export interface WorkoutLogEntry {
   routineTitle: string;
   date: string;
   durationMinutes: number;
-  totalVolumeKg: number; // Sum of weight * reps for completed sets
+  totalVolumeKg: number;
   totalSetsCompleted: number;
   xpEarned: number;
   coinsEarned: number;
@@ -114,53 +108,33 @@ export interface Quest {
   difficulty: 'Fácil' | 'Média' | 'Difícil' | 'Épica';
   dueDate?: string;
   completed: boolean;
-  streak: number; // Para hábitos diários
-  lastCompletedDate?: string;
-  frequency?: 'daily' | 'weekdays' | 'custom';
+  streak: number;
+  frequency?: 'daily' | 'weekly';
 }
 
 export interface ShopItem {
   id: string;
   name: string;
-  description: string;
   type: 'skin' | 'theme' | 'border' | 'title';
+  rarity: 'Comum' | 'Raro' | 'Épico' | 'Lendário';
   priceCoins?: number;
   priceGems?: number;
-  rarity: 'Comum' | 'Raro' | 'Épico' | 'Lendário';
-  previewImage?: string;
+  description: string;
   previewColor?: string;
-  effectDescription?: string;
 }
-
-export interface ActiveTheme {
-  id: string;
-  name: string;
-  bgGradient: string;
-  accentColor: string;
-  cardBg: string;
-  borderGlow: string;
-}
-
-export interface FloatingText {
-  id: string;
-  text: string;
-  color: string;
-  x: number;
-  y: number;
-}
-
-export type MealCategory = 'breakfast' | 'lunch' | 'snack' | 'dinner';
 
 export interface FoodItem {
   id: string;
   name: string;
-  source: 'Tabela TACO' | 'Open Food Facts' | 'Base Caçador';
+  source: string;
   caloriesPer100g: number;
   proteinPer100g: number;
   carbsPer100g: number;
   fatPer100g: number;
-  category: 'Proteínas' | 'Carboidratos' | 'Gorduras' | 'Frutas' | 'Vegetais' | 'Suplementos' | 'Geral';
+  category: string;
 }
+
+export type MealCategory = 'breakfast' | 'lunch' | 'snack' | 'dinner';
 
 export interface LoggedFoodItem {
   id: string;
@@ -182,4 +156,3 @@ export interface DailyNutritionGoals {
   targetCarbsGrams: number;
   targetFatGrams: number;
 }
-

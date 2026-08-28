@@ -162,18 +162,18 @@ export const RoutineForm: React.FC<RoutineFormProps> = ({
         exercises.length > 0
           ? exercises
           : [
-              {
-                id: `ex_fallback_${Date.now()}`,
-                name: 'Exercício Livre',
-                category: 'Geral' as Exercise['category'],
-                primaryAttribute: 'strength',
-                sets: [
-                  { id: 's1', setNumber: 1, weightKg: 10, reps: 10, completed: false },
-                  { id: 's2', setNumber: 2, weightKg: 10, reps: 10, completed: false },
-                  { id: 's3', setNumber: 3, weightKg: 10, reps: 10, completed: false },
-                ],
-              },
-            ],
+            {
+              id: `ex_fallback_${Date.now()}`,
+              name: 'Exercício Livre',
+              category: 'Geral' as Exercise['category'],
+              primaryAttribute: 'strength',
+              sets: [
+                { id: 's1', setNumber: 1, weightKg: 10, reps: 10, completed: false },
+                { id: 's2', setNumber: 2, weightKg: 10, reps: 10, completed: false },
+                { id: 's3', setNumber: 3, weightKg: 10, reps: 10, completed: false },
+              ],
+            },
+          ],
     };
 
     soundFx.playQuestComplete();
@@ -255,10 +255,6 @@ export const RoutineForm: React.FC<RoutineFormProps> = ({
       {/* Added Exercises List Section */}
       <div className="space-y-3">
         <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-          <h4 className="text-xs font-extrabold text-slate-200 flex items-center gap-2">
-            <Layers className="w-4 h-4 text-rose-400" />
-            Exercícios da Ficha ({exercises.length})
-          </h4>
           <span className="text-[10px] text-slate-400 font-mono">
             Configure cargas e séries para cada movimento
           </span>

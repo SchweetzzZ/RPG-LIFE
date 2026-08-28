@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Res, Req } from '@nestjs/common';
 import { UserService } from './user.service';
-import { RegisterUserDto, LoginUserDto } from './dto/user.dto';
+import { RegisterUserDto, LoginUserDto, RegisterResponseDto, LoginResponseDto } from './dto/user.dto';
 import express from 'express';
+import { ApiTags, ApiResponse, ApiCreatedResponse, ApiOkResponse, ApiBadRequestResponse, ApiConflictResponse } from '@nestjs/swagger';
+import { ApiStandardErrors } from './api-standard-errors.decorator';
 
-
+@ApiTags('User')
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) { }
@@ -14,11 +16,18 @@ export class UserController {
   }
 
   @Post('register')
+  @ApiCreatedResponse({ type: RegisterResponseDto })
+  @ApiStandardErrors()
   async register(@Body() body: RegisterUserDto) {
     return this.userService.register(body)
   }
 
   @Post('login')
+  @ApiResponse({
+    status: 200,
+    type: LoginResponseDto
+  })
+  @ApiStandardErrors()
   async login(@Body() body: LoginUserDto, @Res({ passthrough: true }) res: express.Response) {
     const result = await this.userService.login(body)
 
@@ -30,4 +39,14 @@ export class UserController {
     })
     return result
   }
+
+  @Get('me')
+  @ApiOkResponse({ description: 'Retorna o perfil completo do usuário autenticado' })
+  @ApiStandardErrors()
+  async getMe(@Req() req: Request & { user: { sub: string } }) {
+    const userId = req.user.sub
+    return this.userService.getMe(userId);
+  }
+
+
 }

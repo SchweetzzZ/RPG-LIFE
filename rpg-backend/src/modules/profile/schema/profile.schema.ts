@@ -8,8 +8,8 @@ export enum ActivityLevel {
     SEDENTARY = 'sedentary',
     LIGHT = 'light',
     MODERATE = 'moderate',
-    ACTIVE = 'active',
-    VERY_ACTIVE = 'very_active',
+    INTENSE = 'intense',
+    VERY_INTENSE = 'very_intense',
 }
 
 export enum PrimaryGoal {
