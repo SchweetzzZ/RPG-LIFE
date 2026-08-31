@@ -30,7 +30,7 @@ export class ProfileController {
     @Patch('nutrition')
     async updateNutrition(
         @CurrentUser('sub') userId: string,
-        @Body() dto: any,
+        @Body() dto: UpdateProfileDto,
     ) {
         return this.profileService.calculateNutritionByUser(userId, dto);
     }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Delete, UseGuards } from '@nestjs/common';
 import { HabitService } from './habit.service';
 import { JwtAuthGuard } from '../common/guards/jwt-guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -26,11 +26,29 @@ export class HabitController {
 
     // POST /habits/:id/checkin → Registra progresso no hábito
     @Post(':id/checkin')
-    async checkin(
+    async logProgress(
         @CurrentUser('sub') userId: string,
         @Param('id') habitId: string,
-        @Body('value') value: number,
+        @Body('progressAmount') progressAmount = 1,
     ) {
-        return this.habitService.logProgress(userId, habitId, value);
+        return this.habitService.logProgress(userId, habitId, progressAmount);
+    }
+
+    // 🟢 Novas rotas necessárias para a gestão do Front:
+    @Patch(':id')
+    async updateHabit(
+        @CurrentUser('sub') userId: string,
+        @Param('id') habitId: string,
+        @Body() body: any,
+    ) {
+        return this.habitService.updateHabit(userId, habitId, body);
+    }
+
+    @Delete(':id')
+    async deleteHabit(
+        @CurrentUser('sub') userId: string,
+        @Param('id') habitId: string,
+    ) {
+        return this.habitService.deleteHabit(userId, habitId);
     }
 }

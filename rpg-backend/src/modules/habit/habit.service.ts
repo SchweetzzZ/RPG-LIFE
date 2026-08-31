@@ -26,6 +26,30 @@ export class HabitService {
         return this.habitModel.find({ user: userId }).exec();
     }
 
+    async updateHabit(userId: string, habitId: string, data: Partial<Habit>): Promise<Habit> {
+        const updated = await this.habitModel.findOneAndUpdate(
+            { _id: habitId, user: new Types.ObjectId(userId) },
+            { $set: data },
+            { new: true }
+        );
+        if (!updated) {
+            throw new NotFoundException("Quest/Hábito não encontrado");
+        }
+        return updated;
+    }
+
+    // Excluir Hábito/Quest
+    async deleteHabit(userId: string, habitId: string): Promise<{ message: string }> {
+        const result = await this.habitModel.deleteOne({
+            _id: habitId,
+            user: new Types.ObjectId(userId),
+        });
+        if (result.deletedCount === 0) {
+            throw new NotFoundException("Quest/Hábito não encontrado");
+        }
+        return { message: "Quest removida com sucesso" };
+    }
+
     async logProgress(userId: string, habitId: string, progressAmount: number) {
         const habit = await this.habitModel.findOne({ _id: habitId, user: userId });
         if (!habit) {
@@ -53,21 +77,32 @@ export class HabitService {
         statusLog.currentProgress += progressAmount;
         const target = habit.goal?.targetValue || 1;
 
+        let rewardResult: Awaited<ReturnType<typeof this.characterService.addXpAndCoin>> | null = null;
+
         if (statusLog.currentProgress >= target && !statusLog.isCompleted) {
             statusLog.isCompleted = true;
             habit.currentStreak += 1;
             await habit.save();
 
             // Atribui recompensas ao personagem!
-            await this.characterService.addXpAndCoin(userId, {
-                userId,
+            rewardResult = await this.characterService.addXpAndCoin(userId, {
                 xpGained: habit.xpReward,
                 coinsGained: habit.coinsReward,
+                category: 'habit',
                 statBonus: habit.targetStat ? { stat: habit.targetStat as any, amount: 1 } : undefined,
             });
         }
 
         await statusLog.save();
-        return { habit, statusLog };
+        return {
+            habit,
+            statusLog,
+            rpgReward: rewardResult ? {
+                xpGained: rewardResult.xpGained,
+                coinsGained: habit.coinsReward,
+                multiplierApplied: rewardResult.multiplierApplied,
+                leveledUp: rewardResult.leveledUp
+            } : null
+        };
     }
 }

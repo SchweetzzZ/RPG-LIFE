@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose"
 import { Document, Types } from "mongoose"
+import { CharacterClassSchema } from "src/modules/character-classes/schema/character-class-schema"
 import { User } from "src/modules/user/schema/user-schema"
 
 export type characterDocument = Character & Document
@@ -29,6 +30,10 @@ export class Character {
 
     @Prop({ required: true, trim: true })
     nickname: string
+
+    //Referência (FK) para a classe do catálogo global
+    @Prop({ type: Types.ObjectId, ref: CharacterClassSchema.name, required: true })
+    class: Types.ObjectId
 
     @Prop({ default: 1 })
     level: number

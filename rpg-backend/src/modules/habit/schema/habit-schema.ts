@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose"
 import { Document, Types } from "mongoose"
 import { User } from "src/modules/user/schema/user-schema"
+import { stringFormat } from "zod"
 
 export type habitDocument = Habit & Document
 
@@ -18,6 +19,12 @@ export enum HabbitStatType {
     FOCUS = 'focus'
 }
 
+export enum HabitType {
+    DAILY = 'daily',
+    TODO = 'todo',
+    PENALTY = 'penalty'
+}
+
 @Schema({ timestamps: true, collection: 'habit' })
 export class Habit {
 
@@ -25,10 +32,16 @@ export class Habit {
     user: Types.ObjectId
 
     @Prop({ required: true, trim: true })
-    tittle: string
+    title: string
 
     @Prop({ type: String, enum: HabbitCategory, default: HabbitCategory.CUSTOM })
     category: HabbitCategory
+
+    @Prop({ type: String, enum: HabitType, default: HabitType.DAILY })
+    type: HabitType
+
+    @Prop({ default: 0 })
+    gemsReward: number
 
     @Prop({ type: String, enum: HabbitStatType, required: false })
     targetStat?: HabbitStatType
@@ -38,6 +51,9 @@ export class Habit {
 
     @Prop({ default: 10 })
     coinsReward: number
+
+    @Prop({ type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' })
+    difficult?: string
 
     @Prop({ type: Object })
     goal: {

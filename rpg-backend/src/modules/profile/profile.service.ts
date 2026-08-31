@@ -108,8 +108,21 @@ export class ProfileService {
             primaryGoal: updatedProfile.primaryGoal,
         })
 
+        const finalProfile = await this.profileModel.findOneAndUpdate({
+            user: userId
+        }, {
+            $set: {
+                targetCalories: targets.targetCalories,
+                targetProteinGrams: targets.proteinGrams,
+                targetCarbGrams: targets.carbGrams,
+                targetFatGrams: targets.fatGrams,
+            }
+        }, {
+            new: true,
+        })
+
         return {
-            profile: updatedProfile,
+            profile: finalProfile,
             targets,
         }
     }

@@ -1,18 +1,14 @@
 import { z } from 'zod'
 import { createZodDto } from 'nestjs-zod'
 
-export const StatTypeEnum = z.enum([
-    'strength',
-    'intelligence',
-    'vitality',
-    'focus',
-])
-
-const addXpAndCoinSchema = z.object({
-    userId: z.string(),
+export const addXpAndCoinSchema = z.object({
     xpGained: z.number().min(0),
     coinsGained: z.number().min(0),
-    statBonus: z.object({ stat: StatTypeEnum, amount: z.number().min(0) }).optional()
-})
+    category: z.enum(['workout', 'study', 'health', 'habit']).optional(),
+    statBonus: z.object({
+        stat: z.enum(['strength', 'intelligence', 'vitality', 'focus']),
+        amount: z.number().min(1).default(1),
+    }).optional(),
+});
 
 export class AddXpAndCoinDto extends createZodDto(addXpAndCoinSchema) { }

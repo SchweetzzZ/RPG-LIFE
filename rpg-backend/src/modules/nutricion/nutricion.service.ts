@@ -1,15 +1,76 @@
 import { Injectable } from "@nestjs/common"
 import { InjectModel } from "@nestjs/mongoose";
 import { Taco, TacoDocument } from "../habit/schema/taco-schema";
-import { Model } from "mongoose";
+import { Model, Types } from "mongoose";
 import { FoodResultDto } from "../habit/dto/food-dto";
+import { FoodLog, FoodLogDocument } from "./schema/foodLog-schema";
+import { CreateFoodLogDto } from "./dto/foodLog-dto";
+import { CharacterService } from "../character/character.service";
+import { NotFoundException } from "@nestjs/common";
 
 @Injectable()
 export class NutritionService {
     constructor(
         @InjectModel(Taco.name)
         private readonly tacoModel: Model<TacoDocument>,
+        @InjectModel(FoodLog.name)
+        private readonly foodLogModel: Model<FoodLogDocument>,
+        private readonly characterService: CharacterService,
     ) { }
+
+    async logFood(userId: string, data: CreateFoodLogDto) {
+        const todayStr = data.date || new Date().toISOString().split('T')[0];
+
+        const foodLog = await this.foodLogModel.create({
+            user: new Types.ObjectId(userId),
+            ...data,
+            date: todayStr,
+        });
+
+        return foodLog;
+    }
+
+    // 2. Busca o resumo de macros consumidos na data especificada (ou hoje)
+    async getDailySummary(userId: string, date?: string) {
+        const targetDate = date || new Date().toISOString().split('T')[0];
+
+        const logs = await this.foodLogModel.find({
+            user: new Types.ObjectId(userId),
+            date: targetDate,
+        }).lean().exec();
+
+        // Soma dos nutrientes no dia
+        const totals = logs.reduce(
+            (acc, item) => {
+                acc.calories += item.calories;
+                acc.proteinGrams += item.proteinGrams;
+                acc.carbGrams += item.carbGrams;
+                acc.fatGrams += item.fatGrams;
+                return acc;
+            },
+            { calories: 0, proteinGrams: 0, carbGrams: 0, fatGrams: 0 }
+        );
+
+        return {
+            date: targetDate,
+            totals,
+            logs, // Lista detalhada de cada refeição do dia
+        };
+    }
+
+    // 3. Remove um alimento do histórico
+    async deleteFoodLog(userId: string, logId: string) {
+        const deleted = await this.foodLogModel.findOneAndDelete({
+            _id: logId,
+            user: new Types.ObjectId(userId),
+        });
+
+        if (!deleted) {
+            throw new NotFoundException('Registro de alimento não encontrado');
+        }
+
+        return { message: 'Item removido do diário alimentar com sucesso' };
+    }
 
     async searchFoods(query: string): Promise<FoodResultDto[]> {
         const results: FoodResultDto[] = []

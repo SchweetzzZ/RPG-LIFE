@@ -7,6 +7,7 @@ import bcrypt from "bcrypt"
 import { JwtService } from '@nestjs/jwt';
 import { Character, characterDocument } from '../character/schema/character-schema';
 import { UserProfile, UserProfileDocument } from '../profile/schema/profile.schema';
+import { CharacterClassSchema } from '../character-classes/schema/character-class-schema';
 
 @Injectable()
 export class UserService {
@@ -65,21 +66,50 @@ export class UserService {
     }
   }
 
-  async getMe(userId: string) {
-    const getUser = await this.userModel.findById(userId).select('-password')
+  async getMe(userId: string): Promise<Record<string, any>> { //Anotação explícita no retorno
+    const getUser = await this.userModel.findById(userId).select('-password').exec();
     if (!getUser) {
       throw new NotFoundException('Usuário não encontrado');
     }
-    const profile = await this.userProfileModel.findOne({ user: userId })
-    const character = await this.characterModel.findOne({ user: userId })
 
-    return {
-      id: getUser.id,
-      email: getUser.email,
-      username: getUser.username,
-      role: getUser.role,
-      profile: profile,
-      character: character,
+    const profile = await this.userProfileModel.findOne({ user: userId }).exec();
+
+    //1. Tipado com CharacterClass (Classe do Documento)
+    const character = await this.characterModel
+      .findOne({ user: userId })
+      .populate<{ characterClass: CharacterClassSchema }>('characterClass')
+      .exec();
+
+    if (!character) {
+      throw new NotFoundException('Personagem não encontrado');
     }
+
+    //2. Converte o documento para objeto JS puro antes de manipular
+    const charObj = character.toObject();
+
+    let totalStats = { ...charObj.stats };
+
+    //3. Leitura segura do bonus
+    const populatedClass = charObj.characterClass as unknown as CharacterClassSchema | undefined;
+
+    if (populatedClass?.statsBonus) {
+      const bonus = populatedClass.statsBonus;
+      totalStats = {
+        strength: charObj.stats.strength + (bonus.strength || 0),
+        intelligence: charObj.stats.intelligence + (bonus.intelligence || 0),
+        vitality: charObj.stats.vitality + (bonus.vitality || 0),
+        focus: charObj.stats.focus + (bonus.focus || 0),
+      };
+    }
+
+    //4. Retorno limpo e corrigido sem erros de sintaxe ternária
+    return {
+      user: getUser,
+      profile,
+      character: {
+        ...charObj,
+        totalStats,
+      },
+    };
   }
 }
