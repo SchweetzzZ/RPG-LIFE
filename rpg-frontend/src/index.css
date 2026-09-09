@@ -1,1 +1,19 @@
 @import "tailwindcss";
+
+/* 1. Informa ao navegador que a página é Dark Mode nativo */
+:root {
+    color-scheme: dark;
+}
+
+/* 2. Padrão de mercado: anula o fundo claro e o vazamento de borda do autofill */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-text-fill-color: #f5f5f5 !important;
+    -webkit-box-shadow: 0 0 0px 1000px #0a0a0a inset !important;
+    caret-color: #f5f5f5 !important;
+    border-color: #262626 !important;
+    /* Mantém a borda neutral-800 perfeitamente selada */
+    transition: background-color 5000s ease-in-out 0s;
+}

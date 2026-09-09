@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose"
 import { Document, Types } from "mongoose"
-import { Stats, StatsSchema } from "src/modules/character/schema/character-schema"
+import { Stats, StatsSchema } from "src/modules/character/schema/stats-schema"
 
 export type CharacterClassDocument = CharacterClassSchema & Document
 

@@ -50,6 +50,24 @@ export class UserProfile {
 
     @Prop({ default: false })
     livesInHotClimate: boolean
+
+    @Prop({ default: 0 })
+    coins: number
+
+    @Prop({ default: 0 })
+    vaultBalance: number
+
+    @Prop({ default: null })
+    targetCalories: number
+
+    @Prop({ default: null })
+    targetProteinGrams: number
+
+    @Prop({ default: null })
+    targetCarbGrams: number
+
+    @Prop({ default: null })
+    targetFatGrams: number
 }
 
 export const UserProfileSchema = SchemaFactory.createForClass(UserProfile)

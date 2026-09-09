@@ -84,6 +84,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/user/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["UserController_logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/character/xp": {
         parameters: {
             query?: never;
@@ -173,14 +189,126 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["HabitController_checkin"];
+        post: operations["HabitController_logProgress"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/search": {
+    "/habits/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["HabitController_deleteHabit"];
+        options?: never;
+        head?: never;
+        patch: operations["HabitController_updateHabit"];
+        trace?: never;
+    };
+    "/habits/steps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["HabitController_logSteps"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/habits/steps/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["HabitController_getTodaySteps"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/habits/steps/recommendation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["HabitController_getStepsRecommendation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nutrition/log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["NutritionController_createLog"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nutrition/getDailySummary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["NutritionController_getDailySumaty"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nutrition/log/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["NutritionController_deleteLog"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nutrition/search": {
         parameters: {
             query?: never;
             header?: never;
@@ -188,6 +316,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["NutritionController_getAllFoods"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nutrition/barcode/{barcode}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["NutritionController_getByBarcode"];
         put?: never;
         post?: never;
         delete?: never;
@@ -276,6 +420,136 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workout/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["WorkoutController_logWorkoutSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workout/progression/{exerciseName}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["WorkoutController_getProgression"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workout/check-missed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["WorkoutController_checkMissedWorkouts"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/quests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["QuestController_getUserQuests"];
+        put?: never;
+        post: operations["QuestController_createUserQuest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/quests/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["QuestController_deleteQuest"];
+        options?: never;
+        head?: never;
+        patch: operations["QuestController_updateQuest"];
+        trace?: never;
+    };
+    "/quests/{id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["QuestController_completeQuest"];
+        trace?: never;
+    };
+    "/energy/daily-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Obtém o resumo calórico diário (TMB, GET, Treinos, Passos, Refeições e Saldo) */
+        get: operations["EnergyController_getDailySummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/energy/weekly-budget": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Obtém o orçamento calórico semanal e o buffer acumulado para o fim de semana (Cofre) */
+        get: operations["EnergyController_getWeeklyBudget"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -311,13 +585,67 @@ export interface components {
         LoginResponseDto: {
             access_Token: string;
         };
+        GetMeResponseDto: {
+            user: {
+                _id: string;
+                /** Format: email */
+                email: string;
+                username: string;
+                /** @enum {string} */
+                role: "player" | "admin";
+            };
+            profile?: {
+                _id?: string;
+                weightKg?: number | null;
+                heightCm?: number | null;
+                age?: number | null;
+                biologicalSex?: string | null;
+                activityLevel?: string | null;
+                primaryGoal?: string | null;
+                /** @default 0 */
+                coins: number;
+                /** @default 0 */
+                vaultBalance: number;
+                targetCalories?: number | null;
+                targetProteinGrams?: number | null;
+                targetCarbGrams?: number | null;
+                targetFatGrams?: number | null;
+                stressLevel?: number;
+                trainsRegularly?: boolean;
+                livesInHotClimate?: boolean;
+            } | null;
+            character?: {
+                _id: string;
+                nickname: string;
+                level: number;
+                currentXp: number;
+                nextLevelXp: number;
+                coins: number;
+                gems: number;
+                hp: number;
+                maxHp: number;
+                vaultBalance: number;
+                stats?: {
+                    [key: string]: number;
+                };
+                totalStats?: {
+                    [key: string]: number;
+                };
+                equippedSkin?: string;
+            } | null;
+        };
+        LogoutResponseDto: {
+            message: string;
+        };
         AddXpAndCoinDto: {
-            userId: string;
             xpGained: number;
             coinsGained: number;
+            /** @enum {string} */
+            category?: "workout" | "study" | "health" | "habit";
             statBonus?: {
                 /** @enum {string} */
                 stat: "strength" | "intelligence" | "vitality" | "focus";
+                /** @default 1 */
                 amount: number;
             };
         };
@@ -338,6 +666,21 @@ export interface components {
             /** @default false */
             livesInHotClimate: boolean;
         };
+        LogStepsDto: {
+            steps: number;
+            date?: string;
+        };
+        CreateFoodLogDto: {
+            foodName: string;
+            /** @enum {string} */
+            mealType: "breakfast" | "lunch" | "dinner" | "snack";
+            amountGrams: number;
+            calories: number;
+            proteinGrams: number;
+            carbGrams: number;
+            fatGrams: number;
+            date?: string;
+        };
         CreateWorkoutDtoClass: {
             title: string;
             /** @default  */
@@ -346,6 +689,13 @@ export interface components {
             estimatedMinutes: number;
             /** @default [] */
             targetMuscleGroups: string[];
+            /** @default [] */
+            scheduledDays: number[];
+            /**
+             * @default moderate
+             * @enum {string}
+             */
+            intensity: "moderate" | "intense" | "cycling_running";
             /** @default [] */
             exercises: {
                 id?: string;
@@ -372,6 +722,13 @@ export interface components {
                     /** @default false */
                     completed: boolean;
                     rpe?: number;
+                    /**
+                     * @default normal
+                     * @enum {string}
+                     */
+                    technique: "normal" | "back_off_set" | "cluster_set" | "drop_set";
+                    /** @default 60 */
+                    restSeconds: number;
                 }[];
                 notes?: string;
             }[];
@@ -388,6 +745,13 @@ export interface components {
             /** @default [] */
             targetMuscleGroups: string[];
             /** @default [] */
+            scheduledDays: number[];
+            /**
+             * @default moderate
+             * @enum {string}
+             */
+            intensity: "moderate" | "intense" | "cycling_running";
+            /** @default [] */
             exercises: {
                 id?: string;
                 name: string;
@@ -413,12 +777,124 @@ export interface components {
                     /** @default false */
                     completed: boolean;
                     rpe?: number;
+                    /**
+                     * @default normal
+                     * @enum {string}
+                     */
+                    technique: "normal" | "back_off_set" | "cluster_set" | "drop_set";
+                    /** @default 60 */
+                    restSeconds: number;
                 }[];
                 notes?: string;
             }[];
             /** @default 0 */
             completionCount: number;
             lastCompletedDate?: string | null;
+        };
+        CreateQuestDto: {
+            title: string;
+            description?: string;
+            /**
+             * @default user_created
+             * @enum {string}
+             */
+            type: "user_created" | "system_recommended";
+            /** Format: date-time */
+            dueDate?: string;
+            /** @default 100 */
+            xpReward: number;
+            /** @default 20 */
+            coinsReward: number;
+            /** @enum {string} */
+            targetStat?: "strength" | "intelligence" | "vitality" | "focus";
+            goal?: {
+                targetValue: number;
+                /** @default 0 */
+                currentValue: number;
+                unit: string;
+            };
+        };
+        UpdateQuestDto: {
+            title?: string;
+            description?: string;
+            /**
+             * @default user_created
+             * @enum {string}
+             */
+            type: "user_created" | "system_recommended";
+            /** Format: date-time */
+            dueDate?: string;
+            /** @default 100 */
+            xpReward: number;
+            /** @default 20 */
+            coinsReward: number;
+            /** @enum {string} */
+            targetStat?: "strength" | "intelligence" | "vitality" | "focus";
+            goal?: {
+                targetValue: number;
+                /** @default 0 */
+                currentValue: number;
+                unit: string;
+            };
+            /** @enum {string} */
+            status?: "pending" | "in_progress" | "completed" | "failed";
+            isAccepted?: boolean;
+        };
+        EnergyDailySummaryResponseDto: {
+            date: string;
+            summary: {
+                bmr: number;
+                tdee: number;
+                activityCaloriesBurned: number;
+                totalBurnedCalories: number;
+                totalCaloriesConsumed: number;
+                remainingCalorieBudget: number;
+                netCalorieBalance: number;
+                totalCoinsEarned: number;
+                characterHp: number;
+                maxHp: number;
+                vaultBalance: number;
+            };
+            breakdown: {
+                workouts: {
+                    totalCalories: number;
+                    coinsEarned: number;
+                    count: number;
+                    items?: {
+                        routineName?: string;
+                        durationMinutes?: number;
+                        intensity?: string;
+                        caloriesBurned?: number;
+                        coinsGained?: number;
+                    }[];
+                };
+                steps: {
+                    count: number;
+                    caloriesBurned: number;
+                    coinsEarned: number;
+                };
+            };
+        };
+        WeeklyBudgetResponseDto: {
+            weekRange: {
+                start: string;
+                end: string;
+            };
+            tdee: number;
+            accumulatedWeekDeficit: number;
+            weekendBufferTotal: number;
+            weekendBufferPerDay: number;
+            vaultBalance: number;
+            dailyRecords?: {
+                date: string;
+                dayOfWeek: number;
+                isWeekday: boolean;
+                tdee: number;
+                caloriesBurned: number;
+                totalBudget: number;
+                consumed: number;
+                savedCalories: number;
+            }[];
         };
     };
     responses: never;
@@ -595,7 +1071,65 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetMeResponseDto"];
+                };
+            };
+            /** @description Dados de entrada inválidos / Erro de Validação */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Não autorizado / Credenciais inválidas */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Conflito (Ex: Registro duplicado) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Erro interno do servidor */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    UserController_logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Realiza logout limpando o cookie HttpOnly */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogoutResponseDto"];
+                };
             };
             /** @description Dados de entrada inválidos / Erro de Validação */
             400: {
@@ -718,7 +1252,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateProfileDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -762,7 +1300,7 @@ export interface operations {
             };
         };
     };
-    HabitController_checkin: {
+    HabitController_logProgress: {
         parameters: {
             query?: never;
             header?: never;
@@ -781,6 +1319,160 @@ export interface operations {
             };
         };
     };
+    HabitController_deleteHabit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    HabitController_updateHabit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    HabitController_logSteps: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LogStepsDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    HabitController_getTodaySteps: {
+        parameters: {
+            query: {
+                date: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    HabitController_getStepsRecommendation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    NutritionController_createLog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFoodLogDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    NutritionController_getDailySumaty: {
+        parameters: {
+            query?: {
+                date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    NutritionController_deleteLog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     NutritionController_getAllFoods: {
         parameters: {
             query: {
@@ -788,6 +1480,25 @@ export interface operations {
             };
             header?: never;
             path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    NutritionController_getByBarcode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                barcode: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -947,6 +1658,200 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    WorkoutController_logWorkoutSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    WorkoutController_getProgression: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exerciseName: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    WorkoutController_checkMissedWorkouts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    QuestController_getUserQuests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    QuestController_createUserQuest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateQuestDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    QuestController_deleteQuest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    QuestController_updateQuest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateQuestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    QuestController_completeQuest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EnergyController_getDailySummary: {
+        parameters: {
+            query?: {
+                date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Resumo calórico e detalhamento por atividade retornado com sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnergyDailySummaryResponseDto"];
+                };
+            };
+        };
+    };
+    EnergyController_getWeeklyBudget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Orçamento semanal retornado com sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklyBudgetResponseDto"];
+                };
             };
         };
     };

@@ -19,6 +19,12 @@ export class ExerciseSet {
 
     @Prop({ required: false })
     rpe?: number;
+
+    @Prop({ type: String, enum: ['normal', 'back_off_set', 'cluster_set', 'drop_set'], default: 'normal' })
+    technique: string;
+
+    @Prop({ default: 60 })
+    restSeconds: number;
 }
 export const ExerciseSetSchema = SchemaFactory.createForClass(ExerciseSet);
 
@@ -60,6 +66,12 @@ export class Workout {
 
     @Prop({ type: [String], default: [] })
     targetMuscleGroups: string[];
+
+    @Prop({ type: [Number], default: [] }) // 0: Dom, 1: Seg, 2: Ter, 3: Qua, 4: Qui, 5: Sex, 6: Sab
+    scheduledDays: number[];
+
+    @Prop({ type: String, enum: ['moderate', 'intense', 'cycling_running'], default: 'moderate' })
+    intensity: string;
 
     @Prop({ type: [WorkoutExerciseSchema], default: [] })
     exercises: WorkoutExercise[];

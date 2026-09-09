@@ -1,21 +1,20 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Delete, UseGuards, Query } from '@nestjs/common';
 import { HabitService } from './habit.service';
 import { JwtAuthGuard } from '../common/guards/jwt-guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Habit } from './schema/habit-schema';
+import { LogStepsDto } from './dto/step-dto';
 
 @Controller('habits')
 @UseGuards(JwtAuthGuard)
 export class HabitController {
     constructor(private readonly habitService: HabitService) { }
 
-    // GET /habits → Lista todos os hábitos do usuário
     @Get()
     async getUserHabits(@CurrentUser('sub') userId: string) {
         return this.habitService.getUserHabits(userId);
     }
 
-    // POST /habits → Cria um novo hábito
     @Post()
     async createHabit(
         @CurrentUser('sub') userId: string,
@@ -24,7 +23,6 @@ export class HabitController {
         return this.habitService.createHabit(userId, dto);
     }
 
-    // POST /habits/:id/checkin → Registra progresso no hábito
     @Post(':id/checkin')
     async logProgress(
         @CurrentUser('sub') userId: string,
@@ -34,7 +32,6 @@ export class HabitController {
         return this.habitService.logProgress(userId, habitId, progressAmount);
     }
 
-    // 🟢 Novas rotas necessárias para a gestão do Front:
     @Patch(':id')
     async updateHabit(
         @CurrentUser('sub') userId: string,
@@ -50,5 +47,28 @@ export class HabitController {
         @Param('id') habitId: string,
     ) {
         return this.habitService.deleteHabit(userId, habitId);
+    }
+
+    @Post('steps')
+    async logSteps(
+        @CurrentUser('sub') userId: string,
+        @Body() dto: LogStepsDto,
+    ) {
+        return this.habitService.logSteps(userId, dto.steps, dto.date);
+    }
+
+    @Get('steps/today')
+    async getTodaySteps(
+        @CurrentUser('sub') userId: string,
+        @Query('date') date?: string,
+    ) {
+        return this.habitService.getSteps(userId, date);
+    }
+
+    @Get('steps/recommendation')
+    async getStepsRecommendation(
+        @CurrentUser('sub') userId: string,
+    ) {
+        return this.habitService.getRecommendedSteps(userId);
     }
 }

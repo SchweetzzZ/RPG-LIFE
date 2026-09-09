@@ -29,4 +29,6 @@ export const CreateCharacterClassSchema = z.object({
     price: z.number().min(0).optional().default(0),
     isActive: z.boolean().optional().default(true),
 })
+export const updateCharacterClassSchema = CreateCharacterClassSchema.partial();
 export class CreateCharacterClassDto extends createZodDto(CreateCharacterClassSchema) { }
+export class UpdateCharacterClassDto extends createZodDto(updateCharacterClassSchema) { }

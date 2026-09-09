@@ -9,6 +9,8 @@ import { ProfileModule } from './modules/profile/profile.module';
 import { HabitModule } from './modules/habit/habit.module';
 import { NutritionModule } from './modules/nutricion/nutricion.module';
 import { WorkoutModule } from './modules/workout/workout.module';
+import { QuestModule } from './modules/quest/quest.module';
+import { EnergyModule } from './modules/energy/energy.module';
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { WorkoutModule } from './modules/workout/workout.module';
     HabitModule,
     NutritionModule,
     WorkoutModule,
+    QuestModule,
+    EnergyModule,
   ],
   controllers: [AppController],
   providers: [AppService],

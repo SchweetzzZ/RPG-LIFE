@@ -1,10 +1,10 @@
 import { Injectable } from "@nestjs/common"
 import { InjectModel } from "@nestjs/mongoose";
-import { Taco, TacoDocument } from "../habit/schema/taco-schema";
+import { Taco, TacoDocument } from "./schema/tacoLod-dto";
 import { Model, Types } from "mongoose";
-import { FoodResultDto } from "../habit/dto/food-dto";
-import { FoodLog, FoodLogDocument } from "./schema/foodLog-schema";
-import { CreateFoodLogDto } from "./dto/foodLog-dto";
+import { FoodResultDto } from "./dto/food-dto";
+import { FoodLog, FoodLogDocument } from "./schema/food-Log-schema";
+import { CreateFoodLogDto } from "./dto/nutrition-dto"
 import { CharacterService } from "../character/character.service";
 import { NotFoundException } from "@nestjs/common";
 
@@ -15,7 +15,6 @@ export class NutritionService {
         private readonly tacoModel: Model<TacoDocument>,
         @InjectModel(FoodLog.name)
         private readonly foodLogModel: Model<FoodLogDocument>,
-        private readonly characterService: CharacterService,
     ) { }
 
     async logFood(userId: string, data: CreateFoodLogDto) {
@@ -58,7 +57,6 @@ export class NutritionService {
         };
     }
 
-    // 3. Remove um alimento do histórico
     async deleteFoodLog(userId: string, logId: string) {
         const deleted = await this.foodLogModel.findOneAndDelete({
             _id: logId,
@@ -130,5 +128,39 @@ export class NutritionService {
         }
 
         return results;
+    }
+
+    async searchByBarcode(barcode: string): Promise<FoodResultDto | null> {
+        try {
+            const url = `https://br.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json`;
+            const response = await fetch(url, {
+                headers: { 'User-Agent': 'LifeRPGApp - Web/Backend - Version 1.0' },
+            });
+
+            const data: any = await response.json();
+
+            if (data && data.product && data.status === 1) {
+                const p = data.product;
+                return {
+                    id: p.code || barcode,
+                    name: p.product_name || 'Produto sem nome',
+                    brand: p.brands,
+                    source: 'OPEN_FOOD_FACTS' as const,
+                    barcode: p.code || barcode,
+                    servingSizeGrams: 100,
+                    nutrientsPer100g: {
+                        calories: p.nutriments?.['energy-kcal_100g'] || p.nutriments?.['energy-kcal'] || 0,
+                        protein: p.nutriments?.proteins_100g || 0,
+                        carbs: p.nutriments?.carbohydrates_100g || 0,
+                        fat: p.nutriments?.fat_100g || 0,
+                        fiber: p.nutriments?.fiber_100g || 0,
+                    },
+                };
+            }
+        } catch (error: any) {
+            console.error('Erro ao consultar Open Food Facts por código de barras:', error.message);
+        }
+
+        return null;
     }
 }

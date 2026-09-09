@@ -201,4 +201,35 @@ export class ProfileService {
 
         return recommendations;
     }
+
+    async addCoins(userId: string, amount: number): Promise<UserProfileDocument> {
+        const updated = await this.profileModel.findOneAndUpdate(
+            { user: userId },
+            { $inc: { coins: amount } },
+            { new: true, upsert: true }
+        );
+        return updated;
+    }
+
+    async deductCoins(userId: string, amount: number): Promise<UserProfileDocument> {
+        const profile = await this.getProfile(userId);
+        if ((profile.coins || 0) < amount) {
+            throw new BadRequestException('Saldo insuficiente de moedas para esta recompensa');
+        }
+        const updated = await this.profileModel.findOneAndUpdate(
+            { user: userId },
+            { $inc: { coins: -amount } },
+            { new: true }
+        );
+        return updated!;
+    }
+
+    async updateVaultBalance(userId: string, amount: number): Promise<UserProfileDocument> {
+        const updated = await this.profileModel.findOneAndUpdate(
+            { user: userId },
+            { $inc: { vaultBalance: amount } },
+            { new: true, upsert: true }
+        );
+        return updated;
+    }
 }

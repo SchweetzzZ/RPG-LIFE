@@ -46,7 +46,7 @@ export class WorkoutController {
         return this.workoutService.getAllWorkouts();
     }
 
-    // NOTE: 'logs' routes MUST be declared before ':id' to avoid route conflicts
+    // NOTE: 'logs', 'session', 'progression', 'check-missed' routes MUST be declared before ':id' to avoid route conflicts
     @Post('logs')
     async createWorkoutLog(
         @CurrentUser('sub') userId: string,
@@ -58,6 +58,27 @@ export class WorkoutController {
     @Get('logs/user')
     async getUserWorkoutLogs(@CurrentUser('sub') userId: string) {
         return this.workoutService.getUserWorkoutLogs(userId);
+    }
+
+    @Post('session')
+    async logWorkoutSession(
+        @CurrentUser('sub') userId: string,
+        @Body() dto: any,
+    ) {
+        return this.workoutService.logWorkoutSession(userId, dto);
+    }
+
+    @Get('progression/:exerciseName')
+    async getProgression(
+        @CurrentUser('sub') userId: string,
+        @Param('exerciseName') exerciseName: string,
+    ) {
+        return this.workoutService.getProgression(userId, exerciseName);
+    }
+
+    @Post('check-missed')
+    async checkMissedWorkouts(@CurrentUser('sub') userId: string) {
+        return this.workoutService.checkMissedWorkouts(userId);
     }
 
     @Get(':id')

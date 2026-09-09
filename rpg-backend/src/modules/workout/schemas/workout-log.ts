@@ -7,6 +7,8 @@ export interface PerformedSet {
     setNumber: number
     weightKg: number
     reps: number
+    technique?: string
+    restSeconds?: number
 }
 
 export interface PerformedExercise {
@@ -31,6 +33,12 @@ export class WorkoutLog {
     @Prop({ required: true, default: 0 })
     durationMinutes: number;
 
+    @Prop({ type: String, enum: ['moderate', 'intense', 'cycling_running'], default: 'moderate' })
+    intensity: string;
+
+    @Prop({ required: true, default: 0 })
+    caloriesBurned: number;
+
     @Prop({ required: true, default: 0 })
     totalVolumeKg: number;
 
@@ -42,6 +50,9 @@ export class WorkoutLog {
 
     @Prop({ required: true, default: 0 })
     coinsGained: number;
+
+    @Prop({ required: true, index: true, default: () => new Date().toISOString().split('T')[0] })
+    date: string;
 
     @Prop({ type: Array, default: [] })
     exercises: PerformedExercise[];

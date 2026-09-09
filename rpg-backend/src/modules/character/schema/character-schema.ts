@@ -1,26 +1,10 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose"
 import { Document, Types } from "mongoose"
-import { CharacterClassSchema } from "src/modules/character-classes/schema/character-class-schema"
+import { Stats, StatsSchema } from "./stats-schema"
 import { User } from "src/modules/user/schema/user-schema"
 
+export * from "./stats-schema"
 export type characterDocument = Character & Document
-
-@Schema({ _id: false })
-export class Stats {
-    @Prop({ default: 1 })
-    strength: number
-
-    @Prop({ default: 1 })
-    intelligence: number
-
-    @Prop({ default: 1 })
-    vitality: number
-
-    @Prop({ default: 1 })
-    focus: number
-}
-
-export const StatsSchema = SchemaFactory.createForClass(Stats)
 
 @Schema({ timestamps: true, collection: 'character' })
 export class Character {
@@ -31,9 +15,9 @@ export class Character {
     @Prop({ required: true, trim: true })
     nickname: string
 
-    //Referência (FK) para a classe do catálogo global
-    @Prop({ type: Types.ObjectId, ref: CharacterClassSchema.name, required: true })
-    class: Types.ObjectId
+    // Referência (FK) para a classe do catálogo global
+    @Prop({ type: Types.ObjectId, ref: 'CharacterClassSchema', required: false })
+    characterClass: Types.ObjectId
 
     @Prop({ default: 1 })
     level: number
@@ -52,6 +36,15 @@ export class Character {
 
     @Prop({ default: 0 })
     waterQuantity: number
+
+    @Prop({ default: 100 })
+    hp: number
+
+    @Prop({ default: 100 })
+    maxHp: number
+
+    @Prop({ default: 0 })
+    vaultBalance: number
 
     @Prop({ type: StatsSchema, default: () => ({}) })
     stats: Stats

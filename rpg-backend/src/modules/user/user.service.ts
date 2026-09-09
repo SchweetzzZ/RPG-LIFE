@@ -2,7 +2,7 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { RegisterUserDto, LoginUserDto } from './dto/user.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User, UserDocument } from './schema/user-schema';
+import { User, UserDocument, UserRole } from './schema/user-schema';
 import bcrypt from "bcrypt"
 import { JwtService } from '@nestjs/jwt';
 import { Character, characterDocument } from '../character/schema/character-schema';
@@ -37,8 +37,10 @@ export class UserService {
 
     const hash = await bcrypt.hash(data.password, 10)
     const createUser = await this.userModel.create({
-      ...data,
+      email: data.email,
+      username: data.username,
       password: hash,
+      role: UserRole.PLAYER,
     })
 
     await this.characterModel.create({
@@ -50,7 +52,12 @@ export class UserService {
       user: createUser._id,
     })
 
-    return createUser
+    return {
+      id: createUser._id.toString(),
+      email: createUser.email,
+      username: createUser.username,
+      role: createUser.role,
+    }
   }
 
   async login(data: LoginUserDto) {
@@ -72,44 +79,31 @@ export class UserService {
       throw new NotFoundException('Usuário não encontrado');
     }
 
-    const profile = await this.userProfileModel.findOne({ user: userId }).exec();
+    let profile = await this.userProfileModel.findOne({ user: userId }).exec();
+    if (!profile) {
+      profile = await this.userProfileModel.create({ user: userId });
+    }
 
-    //1. Tipado com CharacterClass (Classe do Documento)
     const character = await this.characterModel
       .findOne({ user: userId })
-      .populate<{ characterClass: CharacterClassSchema }>('characterClass')
       .exec();
 
-    if (!character) {
-      throw new NotFoundException('Personagem não encontrado');
+    // Migração/Sincronia transparente de moedas caso ainda estivessem no character
+    if (character && ((character.coins || 0) > (profile.coins || 0) || (character.vaultBalance || 0) > (profile.vaultBalance || 0))) {
+      profile.coins = Math.max(profile.coins || 0, character.coins || 0);
+      profile.vaultBalance = Math.max(profile.vaultBalance || 0, character.vaultBalance || 0);
+      await profile.save();
     }
 
-    //2. Converte o documento para objeto JS puro antes de manipular
-    const charObj = character.toObject();
+    const charObj = character ? character.toObject() : null;
 
-    let totalStats = { ...charObj.stats };
-
-    //3. Leitura segura do bonus
-    const populatedClass = charObj.characterClass as unknown as CharacterClassSchema | undefined;
-
-    if (populatedClass?.statsBonus) {
-      const bonus = populatedClass.statsBonus;
-      totalStats = {
-        strength: charObj.stats.strength + (bonus.strength || 0),
-        intelligence: charObj.stats.intelligence + (bonus.intelligence || 0),
-        vitality: charObj.stats.vitality + (bonus.vitality || 0),
-        focus: charObj.stats.focus + (bonus.focus || 0),
-      };
-    }
-
-    //4. Retorno limpo e corrigido sem erros de sintaxe ternária
     return {
       user: getUser,
-      profile,
-      character: {
+      profile: profile.toObject(),
+      character: charObj ? {
         ...charObj,
-        totalStats,
-      },
+        totalStats: charObj.stats || {},
+      } : null,
     };
   }
 }

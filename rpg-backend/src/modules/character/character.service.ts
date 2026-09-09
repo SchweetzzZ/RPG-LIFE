@@ -61,4 +61,48 @@ export class CharacterService {
         }
     }
 
+    async takeDamage(userId: string, amount: number) {
+        const character = await this.characterModel.findOne({ user: userId });
+        if (!character) {
+            throw new BadRequestException('Personagem não encontrado');
+        }
+
+        character.hp = Math.max(0, (character.hp ?? 100) - amount);
+        return character.save();
+    }
+
+    async heal(userId: string, amount: number) {
+        const character = await this.characterModel.findOne({ user: userId });
+        if (!character) {
+            throw new BadRequestException('Personagem não encontrado');
+        }
+
+        const maxHp = character.maxHp ?? 100;
+        character.hp = Math.min(maxHp, (character.hp ?? 100) + amount);
+        return character.save();
+    }
+
+    async addToVault(userId: string, amount: number) {
+        const character = await this.characterModel.findOne({ user: userId });
+        if (!character) {
+            throw new BadRequestException('Personagem não encontrado');
+        }
+
+        character.vaultBalance = (character.vaultBalance || 0) + amount;
+        return character.save();
+    }
+
+    async addCoins(userId: string, amount: number) {
+        const character = await this.characterModel.findOne({ user: userId });
+        if (!character) {
+            throw new BadRequestException('Personagem não encontrado');
+        }
+
+        character.coins = (character.coins || 0) + amount;
+        return character.save();
+    }
+
+    async getCharacter(userId: string) {
+        return this.characterModel.findOne({ user: userId }).exec();
+    }
 }
