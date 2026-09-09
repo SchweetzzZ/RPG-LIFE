@@ -153,8 +153,8 @@ export function UserHUD({
   const coins = profile?.coins ?? 0;
   const cheatProgress = Math.min(100, Math.round((coins / targetMeal.targetCoins) * 100));
 
-  // Meta corporal formatada
-  const getGoalInfo = (goal?: string | null) => {
+  // Meta corporal formatada (aceita string, null ou undefined vindo de profile?.primaryGoal)
+  const getGoalInfo = (goal?: string | null | undefined) => {
     switch (goal) {
       case 'lose_weight':
         return { label: 'Perda de Gordura', color: 'text-amber-400 border-amber-500/30 bg-amber-500/10' };
