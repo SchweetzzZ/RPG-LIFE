@@ -1,62 +1,35 @@
-# 🛡️ Guia de Implementação: Dashboard Tático do RPG-LIFE
+# 🛡️ DASHBOARD DO RPG-LIFE: EVOLUÇÃO TÁTICA & GUIA COMPLETO
 
-> **Diretriz de Design:** Zero "AI Slop" (sem gradientes roxos amadores, sem caixas aninhadas sem sentido, sem emojis como ícones). Padrão visual **Tactical Kinetic HUD** (inspirado no minimalismo de precisão do *Linear* e em interfaces táticas de alta performance).
-> **O Motor do Produto:** O usuário treina pesado (**Treinos**), mantém a disciplina alimentar (**Nutrição & Cofre**) e ganha **Moedas**. O objetivo central é gastar essas moedas na **LOJA DE RECOMPENSAS (The Vault Market)** para desbloquear refeições livres (cheat meals), itens e upgrades reais sem culpa.
-
----
-
-## 1. O Loop de Valor: Treino ➔ Nutrição ➔ Moedas ➔ Loja
-
-```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  USER HUD TÁTICO                                                            │
-│  Avatar • Nome • Meta Corporal • Nível • [🪙 1.450 MOEDAS]                  │
-└──────────────────────────────────────┬──────────────────────────────────────┘
-                                       │
-         ┌─────────────────────────────┴─────────────────────────────┐
-         ▼                                                           ▼
-┌──────────────────────────────────┐        ┌──────────────────────────────────┐
-│  METABOLISMO & NUTRIÇÃO          │        │  ESFORÇO & TREINOS               │
-│  • Balanço Calórico (Restante)   │        │  • Calorias Ativas Queimadas     │
-│  • TMB + TDEE Meta               │        │  • Treinos Concluídos no Dia     │
-│  • Cofre Semanal (Buffer FDS)    │        │  • Passos Realizados             │
-│  • Meta de Proteína / Macros     │        │  • +Moedas Geradas no Dia        │
-└────────────────┬─────────────────┘        └────────────────┬─────────────────┘
-                 │                                           │
-                 └─────────────────────┬─────────────────────┘
-                                       ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  ⭐ O NÚCLEO MOTIVACIONAL: LOJA & RECOMPENSAS (THE VAULT MARKET)            │
-│  • Próximo Desbloqueio: "Refeição Livre de Sábado" (Hambúrguer Artesanal)   │
-│  • Progresso: 1.450 / 2.000 Moedas (72.5%) — Faltam 550 moedas              │
-│  • Ações: [Explorar Loja] [Resgatar Recompensa]                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+> **DOCUMENTO DEFINITIVO DE DESIGN E IMPLEMENTAÇÃO**  
+> Este documento reúne 100% do código limpo, moderno, profissional (sem "AI Slop") e as instruções de integração real com o backend NestJS via Postman.
 
 ---
 
-## 2. Padrões Visuais Anti-AI Slop (Eliminação de Vícios)
-
-1. **Superfícies em Camadas e Bordas Sutis**:
-   - Fundo base da aplicação: `#08090a` (Obsidian escuro profundo).
-   - Painéis primários: `#0c0e12` com borda de precisão `border border-white/[0.08]`.
-   - Divisões internas: Linhas finas `divide-white/[0.05]` em vez de encaixotar cada número em um novo card cinza (`div soup`).
-2. **Ícones Vetoriais Especializados (`lucide-react`)**:
-   - Nada de emojis soltos (`🍔`, `🪙`, `🎯`). Usamos `Coins`, `Flame`, `Target`, `ShieldCheck`, `ShoppingBag` com `strokeWidth={1.75}`.
-3. **Tipografia de Alta Precisão**:
-   - Números de métricas sempre com `tabular-nums font-mono font-semibold tracking-tight`.
-   - Rótulos técnicos em micro-mono: `text-[10px] font-mono uppercase tracking-widest text-zinc-500`.
-4. **Cores Semânticas Funcionais**:
-   - **Moedas & Loja**: Âmbar Dourado (`text-amber-400`, `bg-amber-400/10`, `border-amber-400/20`).
-   - **Treinos & Queima**: Rose / Carmesim (`text-rose-400`, `bg-rose-400/10`, `border-rose-400/20`).
-   - **Nutrição & Regeneração**: Esmeralda (`text-emerald-400`, `bg-emerald-400/10`, `border-emerald-400/20`).
-   - **Cofre & Buffer**: Ciano Tático (`text-cyan-400`, `bg-cyan-400/10`, `border-cyan-400/20`).
+## 📑 Índice
+1. [Visão Geral & Eliminação de Vícios de IA](#1-visão-geral--eliminação-de-vícios-de-ia)
+2. [Componente 1: UserHUD.tsx (Identidade & Moedas)](#2-componente-1-userhudtsx)
+3. [Componente 2: ShopRewardBanner.tsx (O Motor da Loja de Moedas)](#3-componente-2-shoprewardbannertsx)
+4. [Componente 3: EnergyBalance.tsx (Balanço Energético de Precisão)](#4-componente-3-energybalancetsx)
+5. [Componente 4: CaloricVault.tsx (Cofre Semanal de Calorias)](#5-componente-4-caloricvaulttsx)
+6. [Integração Real: src/routes/index.tsx (Zero Mocks)](#6-integração-real-srcroutesindextsx)
+7. [Cliente HTTP: src/services/api.ts (Cookie HttpOnly)](#7-cliente-http-srcservicesapits-segurança-com-cookie-httponly)
+8. [Guia Passo a Passo do Postman & Fluxo de Autenticação](#8-guia-passo-a-passo-do-postman--fluxo-de-autenticação)
 
 ---
 
-## 3. Código dos Componentes
+## 1. Visão Geral & Eliminação de Vícios de IA
 
-### 1. `UserHUD.tsx` (`src/components/dashboard/UserHUD.tsx`)
+* ❌ **Eliminado:** Emojis soltos (`🍔`, `🪙`, `🎯`) substituídos por ícones vetoriais SVG de precisão (`lucide-react` com `strokeWidth={1.75}`).
+* ❌ **Eliminado:** Gradientes clichês roxo/índigo e botões arco-íris. Usamos superfícies sólidas profundas (`#08090a`, `#0c0e12`) com micro-bordas `border-white/[0.08]`.
+* ❌ **Eliminado:** "Caixas dentro de caixas" (Nested cards redundantes). Hierarquia criada por tipografia, ritmo de linhas finas e contraste.
+* ❌ **Eliminado:** Números desalinhados. Todas as métricas utilizam `tabular-nums font-mono tracking-tight`.
+* ⭐ **A Loja como Ponto Central:** As moedas ganhas em treinos e passos são conectadas diretamente ao banner de recompensas desbloqueáveis.
+
+---
+
+## 2. Componente 1: `UserHUD.tsx`
+**Caminho:** `rpg-frontend/src/components/dashboard/UserHUD.tsx`
+
 ```tsx
 import React from 'react';
 import { Coins, Target, ShieldCheck, ArrowUpRight } from 'lucide-react';
@@ -87,8 +60,9 @@ export function UserHUD({ data, onOpenShop }: UserHUDProps) {
   const initial = user?.username ? user.username.charAt(0).toUpperCase() : 'U';
 
   return (
-    <header className="relative w-full overflow-hidden rounded-xl border border-white/[0.08] bg-[#0c0e12] p-4 sm:p-5 shadow-2xl backdrop-blur-md">
+    <header className="relative w-full overflow-hidden rounded-xl border border-white/8 bg-[#0c0e12] p-4 sm:p-5 shadow-2xl backdrop-blur-md">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        {/* Perfil & Identidade */}
         <div className="flex items-center gap-3.5">
           <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-white/[0.12] bg-gradient-to-b from-zinc-800 to-zinc-900 font-mono text-base font-bold text-zinc-100 shadow-inner">
             {initial}
@@ -123,6 +97,7 @@ export function UserHUD({ data, onOpenShop }: UserHUDProps) {
           </div>
         </div>
 
+        {/* Saldo de Moedas em Destaque (Link com a Loja) */}
         <div className="flex items-center justify-between gap-4 border-t border-white/[0.06] pt-3 sm:border-t-0 sm:pt-0">
           <div className="text-left sm:text-right">
             <span className="font-mono text-[10px] uppercase tracking-widest text-amber-500/80">
@@ -153,7 +128,9 @@ export function UserHUD({ data, onOpenShop }: UserHUDProps) {
 
 ---
 
-### 2. `ShopRewardBanner.tsx` (`src/components/dashboard/ShopRewardBanner.tsx`)
+## 3. Componente 2: `ShopRewardBanner.tsx`
+**Caminho:** `rpg-frontend/src/components/dashboard/ShopRewardBanner.tsx`
+
 ```tsx
 import React from 'react';
 import { ShoppingBag, Sparkles, Utensils, CheckCircle2 } from 'lucide-react';
@@ -272,7 +249,9 @@ export function ShopRewardBanner({
 
 ---
 
-### 3. `EnergyBalance.tsx` (`src/components/dashboard/energyBalance.tsx`)
+## 4. Componente 3: `EnergyBalance.tsx`
+**Caminho:** `rpg-frontend/src/components/dashboard/energyBalance.tsx`
+
 ```tsx
 import React from 'react';
 import { Flame, Activity, Footprints } from 'lucide-react';
@@ -352,7 +331,9 @@ export function EnergyBalance({ data }: EnergyBalanceProps) {
 
 ---
 
-### 4. `CaloricVault.tsx` (`src/components/dashboard/CaloricVault.tsx`)
+## 5. Componente 4: `CaloricVault.tsx`
+**Caminho:** `rpg-frontend/src/components/dashboard/CaloricVault.tsx`
+
 ```tsx
 import React from 'react';
 import { Lock, ShieldCheck } from 'lucide-react';
@@ -407,22 +388,176 @@ export function CaloricVault({ data }: CaloricVaultProps) {
 
 ---
 
-## 4. Guia Postman: Rotas e Payloads JSON para Testar sem Mocks
+## 6. Integração Real: `src/routes/index.tsx` (Zero Mocks)
+**Caminho:** `rpg-frontend/src/routes/index.tsx`
 
-### 1️⃣ Autenticação: Registrar ou Fazer Login
+```tsx
+import React, { useEffect, useState } from 'react';
+import { createFileRoute } from '@tanstack/react-router';
+import { AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+import type {
+  UserMeResponse,
+  EnergyDailySummaryResponse,
+  WeeklyBudgetResponse,
+} from '../types/dashboard';
+import { dashboardService } from '../services/dashboard.service';
+import { UserHUD } from '../components/dashboard/UserHUD';
+import { ShopRewardBanner } from '../components/dashboard/ShopRewardBanner';
+import { EnergyBalance } from '../components/dashboard/energyBalance';
+import { CaloricVault } from '../components/dashboard/CaloricVault';
+
+export const Route = createFileRoute('/')({
+  component: IndexRouteComponent,
+});
+
+function IndexRouteComponent() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [userData, setUserData] = useState<UserMeResponse | null>(null);
+  const [energyData, setEnergyData] = useState<EnergyDailySummaryResponse | null>(null);
+  const [weeklyBudgetData, setWeeklyBudgetData] = useState<WeeklyBudgetResponse | null>(null);
+
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [userRes, energyRes, budgetRes] = await Promise.all([
+        dashboardService.getHunterProfile(),
+        dashboardService.getEnergyDaily(),
+        dashboardService.getWeeklyBuget(),
+      ]);
+
+      setUserData(userRes);
+      setEnergyData(energyRes);
+      setWeeklyBudgetData(budgetRes);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar dados da API';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-[#08090a] text-zinc-100 p-6 flex flex-col items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-7 w-7 animate-spin text-amber-400 stroke-[2]" />
+          <span className="font-mono text-xs uppercase tracking-widest text-zinc-400">
+            Sincronizando com o Backend RPG-LIFE...
+          </span>
+        </div>
+      </main>
+    );
+  }
+
+  if (error || !userData || !energyData || !weeklyBudgetData) {
+    return (
+      <main className="min-h-screen bg-[#08090a] text-zinc-100 p-6 flex flex-col items-center justify-center">
+        <div className="max-w-md w-full rounded-xl border border-rose-500/20 bg-[#0f1115] p-6 text-center shadow-2xl space-y-4">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-rose-500/10 text-rose-400">
+            <AlertCircle className="h-6 w-6 stroke-[2]" />
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-base font-semibold text-zinc-100">Falha ao Carregar Dashboard</h2>
+            <p className="text-xs text-zinc-400">{error || 'Não foi possível obter a resposta completa do servidor.'}</p>
+          </div>
+          <div className="pt-2 flex justify-center gap-3">
+            <button
+              type="button"
+              onClick={fetchDashboardData}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.1] bg-white/[0.05] px-4 py-2 text-xs font-semibold text-zinc-200 hover:bg-white/[0.1]"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              Tentar Novamente
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  const coins = userData.profile?.coins ?? 0;
+
+  return (
+    <main className="min-h-screen bg-[#08090a] text-zinc-100 p-4 sm:p-6 md:p-8 flex flex-col items-center">
+      <div className="w-full max-w-5xl space-y-5">
+        <UserHUD data={userData} onOpenShop={() => alert('Navegar para a Loja')} />
+        <ShopRewardBanner currentCoins={coins} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <EnergyBalance data={energyData} />
+          <CaloricVault data={weeklyBudgetData} />
+        </div>
+      </div>
+    </main>
+  );
+}
+```
+
+---
+
+## 7. Cliente HTTP: `src/services/api.ts` (Segurança com Cookie HttpOnly)
+
+O backend NestJS do RPG-LIFE já gerencia a sessão de autenticação via **Cookies `HttpOnly`** (`res.cookie('jwt', ...)`). O token JWT fica inacessível via JavaScript no navegador, fornecendo proteção completa contra ataques XSS.
+
+Com `credentials: 'include'`, o cliente `openapi-fetch` envia o cookie automaticamente em todas as requisições para a API. **Nenhum token precisa (ou deve) ser armazenado em `localStorage`**.
+
+```typescript
+import createClient from "openapi-fetch";
+import type { paths } from "../api/schema";
+
+const BASE_URL = "/api";
+
+export const client = createClient<paths>({
+  baseUrl: BASE_URL,
+  credentials: 'include', // Envia e recebe automaticamente os cookies HttpOnly em todas as requisições
+});
+
+client.use({
+  async onRequest({ request }) {
+    if (!request.headers.has('Content-Type')) {
+      request.headers.set('Content-Type', 'application/json');
+    }
+    return request;
+  },
+
+  async onResponse({ response }) {
+    if (response.status === 401) {
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login';
+      }
+    }
+    return response;
+  },
+});
+```
+
+---
+
+## 8. Guia Passo a Passo do Postman & Fluxo de Autenticação
+
+Para popular os dados reais no banco e validar a interface:
+
+### 1️⃣ Autenticação (Login ou Registro)
 * **Método:** `POST`
 * **URL:** `http://localhost:4000/user/login` (ou `/user/register`)
 * **Headers:** `Content-Type: application/json`
-* **Body (raw JSON):**
+* **Body:**
 ```json
 {
   "email": "guerreiro@rpglife.com",
   "password": "Password123!"
 }
 ```
-* **Ação no Postman:** Copie o valor do token recebido em `access_Token`.
-* **Nas requisições seguintes:** Adicione o Header:
-  `Authorization: Bearer <SEU_TOKEN_AQUI>`
+* **Comportamento do Backend:**  
+  O NestJS responde com o cabeçalho `Set-Cookie: jwt=...; HttpOnly; Path=/; SameSite=Lax`.  
+  - No **Postman**: O cookie `jwt` é armazenado automaticamente no *Cookie Jar* e reenviado nas próximas requisições. O backend também retorna `access_Token` no corpo da resposta para ferramentas que usam header `Authorization: Bearer <TOKEN>`.
+  - No **Navegador**: O navegador armazena o cookie seguro e o anexa automaticamente em todas as requisições enviadas ao backend.
 
 ---
 
@@ -431,8 +566,8 @@ export function CaloricVault({ data }: CaloricVaultProps) {
 * **URL:** `http://localhost:4000/profile`
 * **Headers:**
   - `Content-Type: application/json`
-  - `Authorization: Bearer <TOKEN>`
-* **Body (raw JSON):**
+  - *(Opcional no Postman se os cookies estiverem ativos; ou envie `Authorization: Bearer <TOKEN>`)*
+* **Body:**
 ```json
 {
   "weightKg": 82.5,
@@ -447,14 +582,11 @@ export function CaloricVault({ data }: CaloricVaultProps) {
 
 ---
 
-### 3️⃣ Registrar Sessão de Treino (Gera Queima Calórica + Moedas)
-O backend calcula o MET com base no seu peso e duração, calcula as calorias gastas e **converte 25% em LifeCoins** automaticamente:
+### 3️⃣ Registrar Treino (Gera Queima + Moedas)
 * **Método:** `POST`
 * **URL:** `http://localhost:4000/workout/session`
-* **Headers:**
-  - `Content-Type: application/json`
-  - `Authorization: Bearer <TOKEN>`
-* **Body (raw JSON):**
+* **Headers:** `Content-Type: application/json`
+* **Body:**
 ```json
 {
   "intensity": "intense",
@@ -471,14 +603,11 @@ O backend calcula o MET com base no seu peso e duração, calcula as calorias ga
 
 ---
 
-### 4️⃣ Registrar Passos do Dia (Gera Queima + Moedas de Passos)
-10.000 passos geram 100 LifeCoins e calorias ativas:
+### 4️⃣ Registrar Passos (Gera Moedas de Passos)
 * **Método:** `POST`
 * **URL:** `http://localhost:4000/habits/steps`
-* **Headers:**
-  - `Content-Type: application/json`
-  - `Authorization: Bearer <TOKEN>`
-* **Body (raw JSON):**
+* **Headers:** `Content-Type: application/json`
+* **Body:**
 ```json
 {
   "steps": 10000
@@ -487,13 +616,11 @@ O backend calcula o MET com base no seu peso e duração, calcula as calorias ga
 
 ---
 
-### 5️⃣ Registrar Alimento Consumido (Alimenta o Balanço Calórico)
+### 5️⃣ Registrar Alimento (Debita do Saldo Diário)
 * **Método:** `POST`
 * **URL:** `http://localhost:4000/nutrition/log`
-* **Headers:**
-  - `Content-Type: application/json`
-  - `Authorization: Bearer <TOKEN>`
-* **Body (raw JSON):**
+* **Headers:** `Content-Type: application/json`
+* **Body:**
 ```json
 {
   "foodName": "Frango Grelhado com Arroz",
@@ -508,7 +635,12 @@ O backend calcula o MET com base no seu peso e duração, calcula as calorias ga
 
 ---
 
-### 6️⃣ Validar os Endpoints de Leitura do Dashboard
-1. **`GET http://localhost:4000/user/me`**: Mostra o perfil e moedas acumuladas.
-2. **`GET http://localhost:4000/energy/daily-summary`**: Mostra o saldo calórico diário restante, TMB, TDEE e discriminação de treinos/passos.
-3. **`GET http://localhost:4000/energy/weekly-budget`**: Mostra o cofre semanal acumulado e o buffer de final de semana.
+### 6️⃣ Validar no Navegador (Autenticação Automática e Segura)
+1. Acesse `http://localhost:5173/login` no navegador e faça login com as credenciais criadas.
+2. O backend define o cookie `jwt` com a flag `HttpOnly`.
+3. Abra as Ferramentas do Desenvolvedor (**F12**):
+   - Vá em **Application > Storage > Cookies > http://localhost:5173** (ou `localhost:4000`).
+   - Confirme a presença do cookie `jwt` com a coluna `HttpOnly` marcada.
+4. Acesse o Dashboard em `http://localhost:5173/`:
+   - Todas as requisições (`/api/user/me`, `/api/nutrition/daily-summary`, `/api/nutrition/weekly-budget`) carregarão com autenticação automática e 100% de segurança, sem risco de vazamento de token via scripts terceiros ou extensões de navegador!
+

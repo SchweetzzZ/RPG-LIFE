@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { Coins, AlertCircle, Loader2, Mail, Lock, User, ShieldCheck } from 'lucide-react';
 import { authService } from '../services/auth.service';
 
 export const Route = createFileRoute('/login')({
@@ -7,132 +8,203 @@ export const Route = createFileRoute('/login')({
 });
 
 function LoginPage() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
-  const [mode, setMode] = useState<'Login' | 'register'>('Login')
+  const [mode, setMode] = useState<'login' | 'register'>('login');
 
-  //Campos do formulario
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [email, setEmail] = useState('')
-  const [role, setRole] = useState<'player' | 'admin'>('player')
+  // Campos do formulário
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState<'player' | 'admin'>('player');
 
-  //Estados de feedBack
-  const [loading, setLoading] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  // Feedback
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setErrorMessage(null)
-    setLoading(true)
+    e.preventDefault();
+    setErrorMessage(null);
+    setLoading(true);
 
     try {
-      if (mode === 'Login') {
-        await authService.Login({ email, password })
-        navigate({ to: '/' })
+      if (mode === 'login') {
+        await authService.Login({ email, password });
+        navigate({ to: '/' });
       } else {
-        await authService.Register({ username, email, password, role })
-        await authService.Login({ email, password })
-        navigate({ to: "/" })
+        await authService.Register({ username, email, password, role });
+        await authService.Login({ email, password });
+        navigate({ to: '/' });
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setErrorMessage(err.message)
+        setErrorMessage(err.message);
       } else {
-        setErrorMessage("Ocorreu um erro inesperado")
+        setErrorMessage('Ocorreu um erro inesperado ao conectar com o servidor.');
       }
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   return (
-    <div className="flex flex-col items-center justify-center p-4 min-h-screen bg-neutral-950 text-neutral-100">
-      <div className="w-full max-w-sm border border-neutral-800 bg-neutral-900/90 rounded-2xl p-6 shadow-2xl
-       backdrop-blur-md">
-
-        {/* Logo / Título Minimalista */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-2xl mb-3">
-            🪙
+    <div className="flex flex-col items-center justify-center p-4 min-h-screen bg-[#08090a] text-zinc-100">
+      <div className="w-full max-w-sm border border-white/[0.08] bg-[#0c0e12] rounded-3xl p-6 sm:p-7 shadow-2xl backdrop-blur-md space-y-6">
+        {/* Logo / Título Tático */}
+        <div className="text-center space-y-2">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-amber-400/10 border border-amber-400/20 text-amber-400 shadow-inner">
+            <Coins className="h-6 w-6 stroke-[1.75]" />
           </div>
-          <h1 className="text-xl font-extrabold tracking-tight text-neutral-100">
-            RPG Life
+          <h1 className="text-xl font-black tracking-tight text-zinc-100">
+            RPG-LIFE
           </h1>
-          <p className="text-xs text-neutral-400 mt-1"> Conquiste suas Calorias. 0% culpa, 100% mérito </p>
+          <p className="font-mono text-xs text-zinc-400">
+            Conquiste suas calorias. 0% culpa, 100% mérito.
+          </p>
         </div>
+
         {/* Abas Alternadoras: Entrar vs Criar Conta */}
-        <div className="grid grid-cols-2 p-1 bg-neutral-950 border border-neutral-800/80 rounded-xl mb-5 text-xs font-semibold">
+        <div className="grid grid-cols-2 p-1 bg-[#08090a] border border-white/[0.08] rounded-xl text-xs font-semibold">
           <button
-            type='button' onClick={() => { setMode('Login'); setErrorMessage(null) }}
-            className={`py-2 rounded-lg transition-all ${mode === 'Login' ? 'bg-neutral-800 text-neutral-100 shadow' : 'text-neutral-400 hover:text-neutral-200'}`}>
+            type="button"
+            onClick={() => {
+              setMode('login');
+              setErrorMessage(null);
+            }}
+            className={`py-2.5 rounded-lg transition-all min-h-[38px] ${
+              mode === 'login'
+                ? 'bg-[#14171d] text-zinc-100 shadow-sm border border-white/[0.08]'
+                : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
             Entrar
           </button>
           <button
-            type="button" onClick={() => { setMode('register'); setErrorMessage(null) }}
-            className={`py-2 rounded-lg transition-all ${mode === 'register' ? 'bg-neutral-800 text-neutral-100 shadow' : 'text-neutral-400 hover:text-neutral-200'}`}>
-            Criar conta
+            type="button"
+            onClick={() => {
+              setMode('register');
+              setErrorMessage(null);
+            }}
+            className={`py-2.5 rounded-lg transition-all min-h-[38px] ${
+              mode === 'register'
+                ? 'bg-[#14171d] text-zinc-100 shadow-sm border border-white/[0.08]'
+                : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            Criar Conta
           </button>
         </div>
+
         {/* Mensagem de Erro (se houver) */}
         {errorMessage && (
-          <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
-            <span>⚠️</span>
+          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2.5 animate-in fade-in duration-200">
+            <AlertCircle className="h-4 w-4 shrink-0 stroke-[2]" />
             <span>{errorMessage}</span>
           </div>
         )}
 
         {/* Formulário */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
-          {mode === "register" && (
-            <div>
-              <label className="block text-xs font-medium text-neutral-400 mb-1.5">Nome de Usúario</label>
-              <input type="text" required value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Nome de Usuario"
-                className="w-full px-3.5 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-sm text-neutral-100 
-                   placeholder-neutral-600 focus:outline-none focus:border-amber-500/50 transition-colors"></input>
+        <form onSubmit={handleSubmit} className="space-y-3.5">
+          {mode === 'register' && (
+            <div className="space-y-1">
+              <label className="block font-mono text-[11px] uppercase tracking-wider text-zinc-400">
+                Nome de Usuário
+              </label>
+              <div className="relative">
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                <input
+                  type="text"
+                  required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Seu nickname no RPG"
+                  className="w-full h-12 pl-10 pr-3.5 bg-[#08090a] border border-white/[0.1] rounded-xl text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-amber-400/60 transition-colors"
+                />
+              </div>
             </div>
           )}
-          <div>
-            <label className="block text-xs font-medium text-neutral-400 mb-1.5">E-mail</label>
-            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder='email'
-              className="w-full px-3.5 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-sm text-neutral-100
-              placeholder-neutral-600 focus:outline-none focus:border-amber-500/50 transition-colors"></input>
+
+          <div className="space-y-1">
+            <label className="block font-mono text-[11px] uppercase tracking-wider text-zinc-400">
+              E-mail
+            </label>
+            <div className="relative">
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="seu@email.com"
+                className="w-full h-12 pl-10 pr-3.5 bg-[#08090a] border border-white/[0.1] rounded-xl text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-amber-400/60 transition-colors"
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-neutral-400 mb-1.5">Senha</label>
-            <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="password"
-              className="w-full px-3.5 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-sm text-neutral-100
-              placeholder-neutral-600 focus:outline-none focus:border-amber-500/50 transition-colors"></input>
+
+          <div className="space-y-1">
+            <label className="block font-mono text-[11px] uppercase tracking-wider text-zinc-400">
+              Senha
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full h-12 pl-10 pr-3.5 bg-[#08090a] border border-white/[0.1] rounded-xl text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-amber-400/60 transition-colors"
+              />
+            </div>
           </div>
-          <button type="submit" disabled={loading} className="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 
-          hover:from-amber-400 hover:to-yellow-400 text-neutral-950 font-bold text-sm shadow-lg 
-          shadow-amber-500/10 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed 
-          flex items-center justify-center gap-2">
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full mt-2 h-12 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-mono font-bold text-xs uppercase tracking-wider shadow-lg shadow-amber-400/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[48px]"
+          >
             {loading ? (
-              <span className='inline-block animate-spin'>⏳</span>
-            ) : mode === "Login" ? (
-              'Acessar Painel'
+              <Loader2 className="h-4 w-4 animate-spin text-black stroke-[2.5]" />
+            ) : mode === 'login' ? (
+              'Acessar Painel do Caçador'
             ) : (
-              'Começar agora'
+              'Criar Personagem'
             )}
           </button>
         </form>
-        <div className="mt-5 text-center text-xs text-neutral-500">
-          {mode === "Login" ? (
-            <p>Não tem uma conta? {' '}
-              <button type="button" onClick={() => { setMode('register'); setErrorMessage(null) }}
-                className="text-amber-400 hover:underline font-medium cursor-pointer">
+
+        <div className="text-center font-mono text-xs text-zinc-500 pt-1">
+          {mode === 'login' ? (
+            <p>
+              Não tem uma conta?{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('register');
+                  setErrorMessage(null);
+                }}
+                className="text-amber-400 hover:underline font-semibold"
+              >
                 Crie sua conta
-              </button></p>
+              </button>
+            </p>
           ) : (
-            <p>Já tem uma conta? {' '}
-              <button type="button" onClick={() => { setMode('Login'); setErrorMessage(null) }}
-                className="text-amber-400 hover:underline font-medium cursor-pointer">
+            <p>
+              Já tem uma conta?{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('login');
+                  setErrorMessage(null);
+                }}
+                className="text-amber-400 hover:underline font-semibold"
+              >
                 Faça login
-              </button></p>
+              </button>
+            </p>
           )}
         </div>
       </div>
-    </div >
+    </div>
   );
 }

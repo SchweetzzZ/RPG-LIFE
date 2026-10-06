@@ -7,7 +7,6 @@ import bcrypt from "bcrypt"
 import { JwtService } from '@nestjs/jwt';
 import { Character, characterDocument } from '../character/schema/character-schema';
 import { UserProfile, UserProfileDocument } from '../profile/schema/profile.schema';
-import { CharacterClassSchema } from '../character-classes/schema/character-class-schema';
 
 @Injectable()
 export class UserService {
