@@ -2,10 +2,10 @@ import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import { WorkoutLog, WorkoutLogDocument } from "../workout/schemas/workout-log";
-import { StepLog, StepLogDocument } from "../habit/schema/step-log-schema";
+import { StepLog, StepLogDocument } from "../activity/schema/step-log-schema";
 import { FoodLog, FoodLogDocument, MealType } from "../nutricion/schema/food-Log-schema";
 import { ProfileService } from "../profile/profile.service";
-import { CharacterService } from "../character/character.service";
+import { addDays, dayOfWeek, toUserDate } from "../common/utils/user-date";
 import { ActivityLevel, PrimaryGoal } from "../profile/schema/profile.schema";
 
 const activityMultipliers: Record<ActivityLevel, number> = {
@@ -23,7 +23,6 @@ export class EnergyService {
         @InjectModel(StepLog.name) private readonly stepLogModel: Model<StepLogDocument>,
         @InjectModel(FoodLog.name) private readonly foodLogModel: Model<FoodLogDocument>,
         private readonly profileService: ProfileService,
-        private readonly characterService: CharacterService,
     ) { }
 
     private calculateBMR(weightKg: number, heightCm: number, age: number, biologicalSex: string): number {
@@ -35,7 +34,7 @@ export class EnergyService {
     }
 
     async getDailySummary(userId: string, date?: string) {
-        const targetDate = date || new Date().toISOString().split("T")[0];
+        const targetDate = date || toUserDate(await this.profileService.getTimezone(userId));
 
         // 1. Dados do Perfil e Taxas Metabólicas
         let weightKg = 70;
@@ -124,14 +123,6 @@ export class EnergyService {
         const netCalorieBalance = totalCaloriesConsumed - totalBurnedCalories;
         const totalCoinsEarned = workoutCoins + stepsCoins;
 
-        // Dados do Personagem e Perfil
-        const character = await this.characterService.getCharacter(userId).catch(() => null);
-        let profileVault = 0;
-        try {
-            const p = await this.profileService.getProfile(userId);
-            profileVault = p.vaultBalance || 0;
-        } catch { }
-
         return {
             date: targetDate,
             summary: {
@@ -143,9 +134,6 @@ export class EnergyService {
                 remainingCalorieBudget,
                 netCalorieBalance,
                 totalCoinsEarned,
-                characterHp: character?.hp ?? 100,
-                maxHp: character?.maxHp ?? 100,
-                vaultBalance: profileVault || character?.vaultBalance || 0,
             },
             breakdown: {
                 workouts: {
@@ -179,15 +167,15 @@ export class EnergyService {
         };
     }
 
+    // TODO(lote 2): esta formula de orcamento semanal/cofre sera substituida.
     async getWeeklyBudget(userId: string) {
-        const today = new Date();
+        // "Hoje" no fuso do usuario; depois, aritmetica de calendario puro
+        const today = toUserDate(await this.profileService.getTimezone(userId));
         const days: string[] = [];
 
         // Obtém os últimos 7 dias (incluindo hoje)
         for (let i = 6; i >= 0; i--) {
-            const d = new Date();
-            d.setDate(today.getDate() - i);
-            days.push(d.toISOString().split("T")[0]);
+            days.push(addDays(today, -i));
         }
 
         const userObjectId = new Types.ObjectId(userId);
@@ -237,9 +225,8 @@ export class EnergyService {
             const dayBalance = totalDayBudget - dayFoodKcal; // positivo = sobrou
 
             // Se for dia de semana (segunda a sexta), acumula no cofre
-            const d = new Date(dateStr + 'T12:00:00Z');
-            const dayOfWeek = d.getUTCDay(); // 0 = Dom, 6 = Sab
-            const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
+            const weekDay = dayOfWeek(dateStr); // 0 = Dom, 6 = Sab
+            const isWeekday = weekDay >= 1 && weekDay <= 5;
 
             if (isWeekday && dayBalance > 0) {
                 accumulatedWeekDeficit += dayBalance;
@@ -247,7 +234,7 @@ export class EnergyService {
 
             return {
                 date: dateStr,
-                dayOfWeek,
+                dayOfWeek: weekDay,
                 isWeekday,
                 tdee,
                 caloriesBurned: dayWorkoutKcal + dayStepKcal,
@@ -261,19 +248,11 @@ export class EnergyService {
         const weekendBufferTotal = accumulatedWeekDeficit;
         const weekendBufferPerDay = Math.round(weekendBufferTotal / 2);
 
-        const character = await this.characterService.getCharacter(userId).catch(() => null);
-        let profileVault = 0;
-        try {
-            const p = await this.profileService.getProfile(userId);
-            profileVault = p.vaultBalance || 0;
-        } catch { }
-
         return {
             weeklyTdeeTarget: tdee * 7,
             accumulatedWeekDeficit,
             weekendBufferTotal,
             weekendBufferPerDay,
-            vaultBalance: profileVault || character?.vaultBalance || 0,
             dailyRecords,
             scientificBasis: 'Baseado no princípio de balanço energético cumulativo semanal (Calorie Cycling / Flexible Dieting). A sobra calórica dos dias úteis é transferida para o fim de semana mantendo o mesmo déficit semanal.',
         };

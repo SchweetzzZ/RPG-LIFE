@@ -51,7 +51,8 @@ export class WorkoutLog {
     @Prop({ required: true, default: 0 })
     coinsGained: number;
 
-    @Prop({ required: true, index: true, default: () => new Date().toISOString().split('T')[0] })
+    // YYYY-MM-DD no fuso do usuario; o servico sempre informa (sem default em UTC)
+    @Prop({ required: true, index: true })
     date: string;
 
     @Prop({ type: Array, default: [] })

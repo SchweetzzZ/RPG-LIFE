@@ -46,15 +46,11 @@ const UserProfileResponseSchema = z.object({
     biologicalSex: z.string().nullable().optional(),
     activityLevel: z.string().nullable().optional(),
     primaryGoal: z.string().nullable().optional(),
-    coins: z.number().default(0),
-    vaultBalance: z.number().default(0),
     targetCalories: z.number().nullable().optional(),
     targetProteinGrams: z.number().nullable().optional(),
     targetCarbGrams: z.number().nullable().optional(),
     targetFatGrams: z.number().nullable().optional(),
-    stressLevel: z.number().optional(),
-    trainsRegularly: z.boolean().optional(),
-    livesInHotClimate: z.boolean().optional(),
+    timezone: z.string().optional(),
 });
 
 const GetMeResponseSchema = z.object({
@@ -65,21 +61,14 @@ const GetMeResponseSchema = z.object({
         role: z.nativeEnum(UserRole),
     }),
     profile: UserProfileResponseSchema.nullable().optional(),
-    character: z.object({
-        _id: z.string(),
-        nickname: z.string(),
+    progress: z.object({
         level: z.number(),
         currentXp: z.number(),
         nextLevelXp: z.number(),
-        coins: z.number(),
-        gems: z.number(),
-        hp: z.number(),
-        maxHp: z.number(),
-        vaultBalance: z.number(),
-        stats: z.record(z.string(), z.number()).optional(),
-        totalStats: z.record(z.string(), z.number()).optional(),
-        equippedSkin: z.string().optional(),
+        currentStreak: z.number(),
+        bestStreak: z.number(),
     }).nullable().optional(),
+    coinBalance: z.number(),
 });
 
 export class GetMeResponseDto extends createZodDto(GetMeResponseSchema) { }

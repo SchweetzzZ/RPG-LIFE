@@ -4,12 +4,12 @@ import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UserModule } from './modules/user/user.module';
-import { CharacterModule } from './modules/character/character.module';
+import { ProgressModule } from './modules/progress/progress.module';
+import { EconomyModule } from './modules/economy/economy.module';
 import { ProfileModule } from './modules/profile/profile.module';
-import { HabitModule } from './modules/habit/habit.module';
+import { ActivityModule } from './modules/activity/activity.module';
 import { NutritionModule } from './modules/nutricion/nutricion.module';
 import { WorkoutModule } from './modules/workout/workout.module';
-import { QuestModule } from './modules/quest/quest.module';
 import { EnergyModule } from './modules/energy/energy.module';
 
 @Module({
@@ -26,12 +26,12 @@ import { EnergyModule } from './modules/energy/energy.module';
       inject: [ConfigService],
     }),
     UserModule,
-    CharacterModule,
+    ProgressModule,
+    EconomyModule,
     ProfileModule,
-    HabitModule,
+    ActivityModule,
     NutritionModule,
     WorkoutModule,
-    QuestModule,
     EnergyModule,
   ],
   controllers: [AppController],

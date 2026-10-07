@@ -5,14 +5,16 @@ import { Model } from 'mongoose';
 import { User, UserDocument, UserRole } from './schema/user-schema';
 import bcrypt from "bcrypt"
 import { JwtService } from '@nestjs/jwt';
-import { Character, characterDocument } from '../character/schema/character-schema';
+import { ProgressService } from '../progress/progress.service';
+import { CoinService } from '../economy/economy.service';
 import { UserProfile, UserProfileDocument } from '../profile/schema/profile.schema';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-    @InjectModel(Character.name) private characterModel: Model<characterDocument>,
+    private progressService: ProgressService,
+    private coinService: CoinService,
     @InjectModel(UserProfile.name) private userProfileModel: Model<UserProfileDocument>,
     private jwtService: JwtService) { }
 
@@ -42,10 +44,7 @@ export class UserService {
       role: UserRole.PLAYER,
     })
 
-    await this.characterModel.create({
-      user: createUser._id,
-      nickname: data.username,
-    })
+    await this.progressService.getOrCreate(createUser._id.toString())
 
     await this.userProfileModel.create({
       user: createUser._id,
@@ -72,7 +71,7 @@ export class UserService {
     }
   }
 
-  async getMe(userId: string): Promise<Record<string, any>> { //Anotação explícita no retorno
+  async getMe(userId: string) {
     const getUser = await this.userModel.findById(userId).select('-password').exec();
     if (!getUser) {
       throw new NotFoundException('Usuário não encontrado');
@@ -83,26 +82,20 @@ export class UserService {
       profile = await this.userProfileModel.create({ user: userId });
     }
 
-    const character = await this.characterModel
-      .findOne({ user: userId })
-      .exec();
-
-    // Migração/Sincronia transparente de moedas caso ainda estivessem no character
-    if (character && ((character.coins || 0) > (profile.coins || 0) || (character.vaultBalance || 0) > (profile.vaultBalance || 0))) {
-      profile.coins = Math.max(profile.coins || 0, character.coins || 0);
-      profile.vaultBalance = Math.max(profile.vaultBalance || 0, character.vaultBalance || 0);
-      await profile.save();
-    }
-
-    const charObj = character ? character.toObject() : null;
+    const progress = await this.progressService.getOrCreate(userId);
+    const coinBalance = await this.coinService.balance(userId);
 
     return {
       user: getUser,
       profile: profile.toObject(),
-      character: charObj ? {
-        ...charObj,
-        totalStats: charObj.stats || {},
-      } : null,
+      progress: {
+        level: progress.level,
+        currentXp: progress.currentXp,
+        nextLevelXp: progress.nextLevelXp,
+        currentStreak: progress.currentStreak,
+        bestStreak: progress.bestStreak,
+      },
+      coinBalance,
     };
   }
 }

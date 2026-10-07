@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { User, ShieldCheck, Flame, Zap } from 'lucide-react';
-import { CharacterSheet } from '../components/profile/CharacterSheet';
 import { PrimaryGoalSelector, type GoalType } from '../components/profile/PrimaryGoalSelector';
 import { BiometricsForm } from '../components/profile/BiometricsForm';
 
@@ -43,16 +42,13 @@ function ProfileRouteComponent() {
           </div>
         </header>
 
-        {/* 1. Ficha Técnica do Personagem RPG */}
-        <CharacterSheet />
-
-        {/* 2. Seletor Tático de Meta Corporal */}
+        {/* 1. Seletor Tático de Meta Corporal */}
         <PrimaryGoalSelector
           selectedGoal={selectedGoal}
           onChange={setSelectedGoal}
         />
 
-        {/* 3. Formulário de Biometria & Recálculo */}
+        {/* 2. Formulário de Biometria & Recálculo */}
         <BiometricsForm
           onSave={handleSaveBiometrics}
           onLogout={handleLogout}

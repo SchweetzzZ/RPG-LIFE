@@ -4,7 +4,8 @@ import { Workout, workoutSchema } from "./schemas/workout-schema";
 import { WorkoutLog, WorkoutLogSchema } from "./schemas/workout-log";
 import { WorkoutService } from "./workout.service";
 import { WorkoutController } from "./workout.controller";
-import { CharacterModule } from "../character/character.module";
+import { ProgressModule } from "../progress/progress.module";
+import { EconomyModule } from "../economy/economy.module";
 import { ProfileModule } from "../profile/profile.module";
 
 @Module({
@@ -13,7 +14,8 @@ import { ProfileModule } from "../profile/profile.module";
             { name: Workout.name, schema: workoutSchema },
             { name: WorkoutLog.name, schema: WorkoutLogSchema },
         ]),
-        CharacterModule,
+        ProgressModule,
+        EconomyModule,
         ProfileModule,
     ],
     controllers: [WorkoutController],

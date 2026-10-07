@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose"
 import { Document, Types } from "mongoose"
 import { User } from "src/modules/user/schema/user-schema"
+import { DEFAULT_TIMEZONE } from "../../common/utils/user-date"
 
 export type UserProfileDocument = UserProfile & Document
 
@@ -42,20 +43,9 @@ export class UserProfile {
     @Prop({ type: String, enum: PrimaryGoal, default: null })
     primaryGoal: PrimaryGoal
 
-    @Prop({ min: 0, max: 10, default: 5 })
-    stressLevel: number
-
-    @Prop({ default: false })
-    trainsRegularly: boolean
-
-    @Prop({ default: false })
-    livesInHotClimate: boolean
-
-    @Prop({ default: 0 })
-    coins: number
-
-    @Prop({ default: 0 })
-    vaultBalance: number
+    // Fuso IANA do usuario: define qual e o "dia" dele (treino, refeicao, passos)
+    @Prop({ type: String, default: DEFAULT_TIMEZONE })
+    timezone: string
 
     @Prop({ default: null })
     targetCalories: number

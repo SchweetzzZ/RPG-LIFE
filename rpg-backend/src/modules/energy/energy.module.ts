@@ -3,17 +3,15 @@ import { EnergyController } from "./energy.controller";
 import { EnergyService } from "./energy.service";
 import { ProfileModule } from "../profile/profile.module";
 import { WorkoutModule } from "../workout/workout.module";
-import { HabitModule } from "../habit/habit.module";
+import { ActivityModule } from "../activity/activity.module";
 import { NutritionModule } from "../nutricion/nutricion.module";
-import { CharacterModule } from "../character/character.module";
 
 @Module({
     imports: [
         ProfileModule,
         WorkoutModule,
-        HabitModule,
+        ActivityModule,
         NutritionModule,
-        CharacterModule,
     ],
     controllers: [EnergyController],
     providers: [EnergyService],

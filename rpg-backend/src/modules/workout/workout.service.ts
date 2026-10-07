@@ -4,15 +4,19 @@ import { Workout, workoutDocument } from "./schemas/workout-schema";
 import { WorkoutLog, WorkoutLogDocument } from "./schemas/workout-log";
 import { Model, Types } from "mongoose";
 import { CreateWorkoutDto, UpdateWorkoutDto, LogWorkoutDto } from "./dto/workout-dto";
-import { CharacterService } from "../character/character.service";
+import { ProgressService } from "../progress/progress.service";
+import { CoinService } from "../economy/economy.service";
+import { CoinReason } from "../economy/schema/coin-entry.schema";
 import { ProfileService } from "../profile/profile.service";
+import { toUserDate } from "../common/utils/user-date";
 
 @Injectable()
 export class WorkoutService {
     constructor(
         @InjectModel(Workout.name) private readonly workoutModel: Model<workoutDocument>,
         @InjectModel(WorkoutLog.name) private readonly workoutLogModel: Model<WorkoutLogDocument>,
-        private readonly characterService: CharacterService,
+        private readonly progressService: ProgressService,
+        private readonly coinService: CoinService,
         private readonly profileService: ProfileService,
     ) { }
 
@@ -81,8 +85,11 @@ export class WorkoutService {
         coinsEarned: number;
         exerciseLogs: { exerciseName: string; maxWeightKg: number; completedSetsCount: number }[];
     }): Promise<WorkoutLog> {
+        // A data do log e sempre o "hoje" do usuario (fuso do perfil)
+        const date = toUserDate(await this.profileService.getTimezone(userId));
         return this.workoutLogModel.create({
             user: new Types.ObjectId(userId),
+            date,
             routineId: data.routineId,
             routineName: data.routineTitle || 'Treino',
             durationMinutes: data.durationMinutes ?? 0,
@@ -143,7 +150,7 @@ export class WorkoutService {
             };
         });
 
-        const targetDate = data.date || new Date().toISOString().split('T')[0];
+        const targetDate = data.date || toUserDate(await this.profileService.getTimezone(userId));
 
         const log = await this.workoutLogModel.create({
             user: new Types.ObjectId(userId),
@@ -171,17 +178,14 @@ export class WorkoutService {
             );
         }
 
-        // Credita moedas no perfil do usuário
-        await this.profileService.addCoins(userId, coinsEarned);
+        // Credita moedas no livro-razao (formula atual mantida: round(kcal * 0.25))
+        if (coinsEarned > 0) {
+            await this.coinService.add(userId, coinsEarned, CoinReason.WORKOUT, log.id);
+        }
 
         let rpgResult = { xpGained: xpEarned, leveledUp: false };
         try {
-            rpgResult = await this.characterService.addXpAndCoin(userId, {
-                xpGained: xpEarned,
-                coinsGained: coinsEarned,
-                category: 'workout',
-                statBonus: { stat: 'strength', amount: 1 },
-            });
+            rpgResult = await this.progressService.addXp(userId, xpEarned);
         } catch { }
 
         return {
@@ -194,6 +198,7 @@ export class WorkoutService {
     }
 
     async getProgression(userId: string, exerciseName: string) {
+        const timezone = await this.profileService.getTimezone(userId);
         const logs = await this.workoutLogModel
             .find({
                 user: new Types.ObjectId(userId),
@@ -216,7 +221,7 @@ export class WorkoutService {
             }
 
             return {
-                date: log.date || (log.completedAt ? new Date(log.completedAt).toISOString().split('T')[0] : ''),
+                date: log.date || (log.completedAt ? toUserDate(timezone, new Date(log.completedAt)) : ''),
                 maxWeightKg: exercise?.maxWeightKg || 0,
                 completedSetsCount: exercise?.completedSetsCount || 0,
                 totalVolumeKg: exerciseVolume,
@@ -229,41 +234,5 @@ export class WorkoutService {
             totalSessions: history.length,
             history,
         };
-    }
-
-    async checkMissedWorkouts(userId: string) {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayDayOfWeek = yesterday.getDay(); // 0-6
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-        // Verifica se o usuário tem rotinas agendadas para o dia de ontem
-        const scheduledWorkouts = await this.workoutModel.find({
-            user: new Types.ObjectId(userId),
-            scheduledDays: yesterdayDayOfWeek,
-        });
-
-        if (scheduledWorkouts.length === 0) {
-            return { missed: false, scheduled: false, message: 'Nenhum treino agendado para o dia anterior.' };
-        }
-
-        // Verifica se houve treino concluído ontem
-        const hadLogYesterday = await this.workoutLogModel.exists({
-            user: new Types.ObjectId(userId),
-            date: yesterdayStr,
-        });
-
-        if (!hadLogYesterday) {
-            // Aplica dano de -30 HP
-            await this.characterService.takeDamage(userId, 30);
-            return {
-                missed: true,
-                scheduled: true,
-                hpPenalty: 30,
-                message: 'Você faltou ao treino agendado de ontem e perdeu 30 HP!',
-            };
-        }
-
-        return { missed: false, scheduled: true, message: 'Treino agendado cumprido com sucesso!' };
     }
 }

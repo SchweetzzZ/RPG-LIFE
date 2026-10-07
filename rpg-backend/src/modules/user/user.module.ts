@@ -6,16 +6,18 @@ import { User, UserSchema } from './schema/user-schema';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { CharacterModule } from '../character/character.module';
+import { ProgressModule } from '../progress/progress.module';
 import { ProfileModule } from '../profile/profile.module';
+import { EconomyModule } from '../economy/economy.module';
 import { JwtStrategy } from './strategy/jwt-strategy';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    CharacterModule,
+    ProgressModule,
     ProfileModule,
+    EconomyModule,
 
     JwtModule.registerAsync({
       imports: [ConfigModule],

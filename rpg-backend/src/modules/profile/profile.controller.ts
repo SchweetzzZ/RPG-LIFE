@@ -22,11 +22,6 @@ export class ProfileController {
         return this.profileService.updateProfile(userId, dto);
     }
 
-    @Get('recommendations')
-    async getRecommendations(@CurrentUser('sub') userId: string) {
-        return this.profileService.getRecommendations(userId);
-    }
-
     @Patch('nutrition')
     async updateNutrition(
         @CurrentUser('sub') userId: string,

@@ -8,8 +8,7 @@ interface UserHUDProps {
 }
 
 export function UserHUD({ data, onOpenShop }: UserHUDProps) {
-    const { user, profile, character } = data;
-    const coins = profile?.coins ?? 0;
+    const { user, profile, progress, coinBalance } = data;
 
     const getGoalMeta = (goal?: string | null) => {
         switch (goal) {
@@ -43,9 +42,9 @@ export function UserHUD({ data, onOpenShop }: UserHUDProps) {
                             <h1 className="text-base font-semibold tracking-tight text-zinc-100">
                                 {user.username}
                             </h1>
-                            {character?.level && (
+                            {progress?.level && (
                                 <span className="rounded border border-white/[0.1] bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] font-medium text-zinc-400">
-                                    NVL {character.level}
+                                    NVL {progress.level}
                                 </span>
                             )}
                         </div>
@@ -73,7 +72,7 @@ export function UserHUD({ data, onOpenShop }: UserHUDProps) {
                         <div className="flex items-center gap-1.5">
                             <Coins className="h-5 w-5 text-amber-400 stroke-[1.75]" />
                             <span className="font-mono text-2xl font-bold tracking-tight text-amber-300 tabular-nums">
-                                {coins.toLocaleString()}
+                                {coinBalance.toLocaleString()}
                             </span>
                         </div>
                     </div>

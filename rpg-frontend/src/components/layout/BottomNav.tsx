@@ -1,10 +1,10 @@
 import React from 'react';
 import { Link, useRouterState } from '@tanstack/react-router';
-import { Activity, Dumbbell, UtensilsCrossed, CheckSquare, ShoppingBag, User } from 'lucide-react';
+import { Activity, Dumbbell, UtensilsCrossed, Footprints, ShoppingBag, User } from 'lucide-react';
 
 interface NavItem {
   label: string;
-  to: '/' | '/workouts' | '/nutrition' | '/habits' | '/rewards' | '/profile';
+  to: '/' | '/workouts' | '/nutrition' | '/activity' | '/rewards' | '/profile';
   icon: React.ElementType;
   badge?: string | number;
 }
@@ -13,7 +13,7 @@ const navItems: NavItem[] = [
   { label: 'Hub', to: '/', icon: Activity },
   { label: 'Treino', to: '/workouts', icon: Dumbbell },
   { label: 'Nutrição', to: '/nutrition', icon: UtensilsCrossed },
-  { label: 'Hábitos', to: '/habits', icon: CheckSquare },
+  { label: 'Atividade', to: '/activity', icon: Footprints },
   { label: 'Loja', to: '/rewards', icon: ShoppingBag },
   { label: 'Perfil', to: '/profile', icon: User },
 ];

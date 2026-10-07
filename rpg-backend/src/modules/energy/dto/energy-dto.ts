@@ -18,9 +18,6 @@ export const EnergyDailySummaryResponseSchema = z.object({
         remainingCalorieBudget: z.number(),
         netCalorieBalance: z.number(),
         totalCoinsEarned: z.number(),
-        characterHp: z.number(),
-        maxHp: z.number(),
-        vaultBalance: z.number(),
     }),
     breakdown: z.object({
         workouts: z.object({
@@ -54,7 +51,6 @@ export const WeeklyBudgetResponseSchema = z.object({
     accumulatedWeekDeficit: z.number(),
     weekendBufferTotal: z.number(),
     weekendBufferPerDay: z.number(),
-    vaultBalance: z.number(),
     dailyRecords: z.array(z.object({
         date: z.string(),
         dayOfWeek: z.number(),

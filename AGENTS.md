@@ -4,6 +4,19 @@ Este documento define os padrões arquiteturais, de segurança e de desenvolvime
 
 ---
 
+## 0. Documento-guia do produto
+
+- A fonte de verdade de prioridades e escopo é `PLANO_REESTRUTURACAO.md` (raiz do repositório). Em caso de conflito com qualquer outro documento, ele vence.
+- `docs/arquivo/` guarda planos e especificações antigos (RPG PLAN, roadmap, monetização, specs de telas etc.). Eles ficam só como histórico: **NÃO** devem ser seguidos nem usados como requisito.
+
+### Convenções do núcleo (pós-reestruturação)
+- **Módulos:** `progress` (antes `character`: nível, XP e streak), `activity` (antes `habit`: passos) e `economy` (moedas).
+- **Moedas:** SOMENTE via `CoinService` (`economy`), que lê e grava o livro-razão `CoinEntry`. O saldo é a soma das entradas: **NUNCA** grave saldo em perfil, personagem ou qualquer outro documento.
+- **Datas de dia (`YYYY-MM-DD`):** SEMPRE via `toUserDate()` de `common/utils/user-date.ts`, usando o fuso do usuário (`ProfileService.getTimezone`). **NUNCA** use `toISOString().split('T')[0]` (calcula o dia em UTC e erra a virada do dia no Brasil).
+- **Fora do produto:** HP, atributos (stats), classes de personagem, hábitos genéricos e quests. Não recriar nem referenciar.
+
+---
+
 ## 1. Padrões do Backend (NestJS + MongoDB + Zod)
 
 ### Validação com Zod (`nestjs-zod`)
@@ -12,12 +25,12 @@ Este documento define os padrões arquiteturais, de segurança e de desenvolvime
 - Toda rota pública de criação (ex: registro) deve blindar campos sensíveis como `role` e permissões com valores padrão seguros (`UserRole.PLAYER`).
 
 ### Mongoose e Schemas
-- Modelos embutidos/subdocumentos compartilhados (ex: `Stats`, `XpModifiers`) DEVEM ficar em arquivos isolados (ex: `stats-schema.ts`) para evitar dependências circulares.
+- Modelos embutidos/subdocumentos compartilhados entre mais de um schema DEVEM ficar em arquivos isolados para evitar dependências circulares.
 - Ao registrar schemas em módulos de feature, utilize SEMPRE a factory compilada:
   ```typescript
   MongooseModule.forFeature([{ name: Entidade.name, schema: EntidadeSchemaFactory }])
   ```
-- Para relacionamentos entre coleções (`ref`), utilize o nome do modelo registrado como string (ex: `ref: 'CharacterClassSchema'`) para evitar imports circulares entre arquivos de schema.
+- Para relacionamentos entre coleções (`ref`), utilize o nome do modelo registrado como string (ex: `ref: 'User'`) para evitar imports circulares entre arquivos de schema.
 
 ### Segurança e Autenticação
 - **NUNCA** retorne senhas, hashes de senhas (`password: hash`) ou tokens internos no payload de resposta de requisições (`register`, `login`, `getMe`, etc.).

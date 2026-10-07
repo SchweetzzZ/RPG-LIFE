@@ -5,7 +5,8 @@ import { Model, Types } from "mongoose";
 import { FoodResultDto } from "./dto/food-dto";
 import { FoodLog, FoodLogDocument } from "./schema/food-Log-schema";
 import { CreateFoodLogDto } from "./dto/nutrition-dto"
-import { CharacterService } from "../character/character.service";
+import { ProfileService } from "../profile/profile.service";
+import { toUserDate } from "../common/utils/user-date";
 import { NotFoundException } from "@nestjs/common";
 
 @Injectable()
@@ -15,10 +16,11 @@ export class NutritionService {
         private readonly tacoModel: Model<TacoDocument>,
         @InjectModel(FoodLog.name)
         private readonly foodLogModel: Model<FoodLogDocument>,
+        private readonly profileService: ProfileService,
     ) { }
 
     async logFood(userId: string, data: CreateFoodLogDto) {
-        const todayStr = data.date || new Date().toISOString().split('T')[0];
+        const todayStr = data.date || toUserDate(await this.profileService.getTimezone(userId));
 
         const foodLog = await this.foodLogModel.create({
             user: new Types.ObjectId(userId),
@@ -31,7 +33,7 @@ export class NutritionService {
 
     // 2. Busca o resumo de macros consumidos na data especificada (ou hoje)
     async getDailySummary(userId: string, date?: string) {
-        const targetDate = date || new Date().toISOString().split('T')[0];
+        const targetDate = date || toUserDate(await this.profileService.getTimezone(userId));
 
         const logs = await this.foodLogModel.find({
             user: new Types.ObjectId(userId),

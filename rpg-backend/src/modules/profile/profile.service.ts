@@ -2,17 +2,8 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UserProfile, UserProfileDocument, ActivityLevel, PrimaryGoal } from './schema/profile.schema';
-import { UpdateProfileDto } from './dto/profile-dto';
-import { CalculateNutritionInput, CalculateNutritionUpdate } from '../habit/dto/habit-dto';
-
-export interface HabitRecommendation {
-    category: string;
-    suggestedTarget: number;
-    unit: string;
-    reasoning: string;
-    xpReward: number;
-    targetStat: string;
-}
+import { UpdateProfileDto, CalculateNutritionInput, CalculateNutritionUpdate } from './dto/profile-dto';
+import { resolveTimezone } from '../common/utils/user-date';
 
 const activityMultipliers: Record<ActivityLevel, number> = {
     [ActivityLevel.SEDENTARY]: 1.2,
@@ -35,6 +26,12 @@ export class ProfileService {
             throw new NotFoundException('Profile not found');
         }
         return profile;
+    }
+
+    // Fuso do usuario; se ainda nao ha perfil (ou fuso), devolve o padrao. Nunca lanca excecao por falta de perfil.
+    async getTimezone(userId: string): Promise<string> {
+        const profile = await this.profileModel.findOne({ user: userId }).select('timezone').lean().exec();
+        return resolveTimezone(profile?.timezone);
     }
 
     async updateProfile(userId: string, data: UpdateProfileDto): Promise<UserProfile> {
@@ -125,111 +122,5 @@ export class ProfileService {
             profile: finalProfile,
             targets,
         }
-    }
-
-    async getRecommendations(userId: string): Promise<HabitRecommendation[]> {
-        const profile = await this.getProfile(userId);
-        const recommendations: HabitRecommendation[] = [];
-
-        // 1. Água 
-        let waterMl = profile.weightKg * 35;
-        if (profile.trainsRegularly) waterMl += 500;
-        if (profile.livesInHotClimate) waterMl += 300;
-        waterMl = Math.round(waterMl / 50) * 50;
-
-        recommendations.push({
-            category: 'water',
-            suggestedTarget: waterMl,
-            unit: 'ml',
-            reasoning: `Baseado no seu peso de ${profile.weightKg}kg (${profile.weightKg} × 35ml = ${profile.weightKg * 35}ml)${profile.trainsRegularly ? ' + 500ml por treinar' : ''}${profile.livesInHotClimate ? ' + 300ml por clima quente' : ''}.`,
-            xpReward: 40,
-            targetStat: 'vitality',
-        });
-
-        // 2. Sono 
-        let sleepMin = 450;
-        let sleepMsg = 'Adultos de 26 a 64 anos têm meta recomendada de 7h30 por noite.';
-        if (profile.age < 26) {
-            sleepMin = 490;
-            sleepMsg = 'Jovens até 25 anos têm meta recomendada de 8h10 por noite.';
-        } else if (profile.age >= 65) {
-            sleepMin = 420;
-            sleepMsg = 'Sêniores (65+) têm meta recomendada de 7h por noite.';
-        }
-
-        recommendations.push({
-            category: 'sleep',
-            suggestedTarget: sleepMin,
-            unit: 'min',
-            reasoning: sleepMsg,
-            xpReward: 35,
-            targetStat: 'vitality',
-        });
-
-        // 3. Meditação 
-        let medMin = 10;
-        if (profile.stressLevel >= 7) medMin = 20;
-        else if (profile.stressLevel >= 4) medMin = 15;
-
-        recommendations.push({
-            category: 'meditation',
-            suggestedTarget: medMin,
-            unit: 'min',
-            reasoning: `Com nível de estresse ${profile.stressLevel}/10, recomendamos ${medMin} minutos diários de meditação.`,
-            xpReward: 30,
-            targetStat: 'focus',
-        });
-
-        // 4. Nutrição / Proteína 
-        const nutritionTargets = await this.calculateNutritionTargets({
-            weightKg: profile.weightKg,
-            heightCm: profile.heightCm,
-            age: profile.age,
-            biologicalSex: profile.biologicalSex as 'male' | 'female' | 'other',
-            activityLevel: profile.activityLevel,
-            primaryGoal: profile.primaryGoal,
-        });
-
-        recommendations.push({
-            category: 'nutrition_protein',
-            suggestedTarget: nutritionTargets.proteinGrams,
-            unit: 'g',
-            reasoning: `Meta diária de proteína recomendada de ${nutritionTargets.proteinGrams}g. Calorias diárias estimadas em ${nutritionTargets.targetCalories} kcal.`,
-            xpReward: 50,
-            targetStat: profile.primaryGoal === PrimaryGoal.GAIN_MUSCLE ? 'strength' : 'vitality',
-        });
-
-        return recommendations;
-    }
-
-    async addCoins(userId: string, amount: number): Promise<UserProfileDocument> {
-        const updated = await this.profileModel.findOneAndUpdate(
-            { user: userId },
-            { $inc: { coins: amount } },
-            { new: true, upsert: true }
-        );
-        return updated;
-    }
-
-    async deductCoins(userId: string, amount: number): Promise<UserProfileDocument> {
-        const profile = await this.getProfile(userId);
-        if ((profile.coins || 0) < amount) {
-            throw new BadRequestException('Saldo insuficiente de moedas para esta recompensa');
-        }
-        const updated = await this.profileModel.findOneAndUpdate(
-            { user: userId },
-            { $inc: { coins: -amount } },
-            { new: true }
-        );
-        return updated!;
-    }
-
-    async updateVaultBalance(userId: string, amount: number): Promise<UserProfileDocument> {
-        const updated = await this.profileModel.findOneAndUpdate(
-            { user: userId },
-            { $inc: { vaultBalance: amount } },
-            { new: true, upsert: true }
-        );
-        return updated;
     }
 }

@@ -22,33 +22,22 @@ const mockUserData: UserMeResponse = {
   },
   profile: {
     _id: 'p1',
-    coins: 150,
-    vaultBalance: 50,
     primaryGoal: 'lose_weight',
     heightCm: 175,
     weightKg: 80,
     age: 28,
     biologicalSex: 'M',
     activityLevel: 'moderate',
+    timezone: 'America/Sao_Paulo',
   },
-  character: {
-    _id: 'c1',
-    nickname: 'Guerreiro da Silva',
+  progress: {
     level: 5,
     currentXp: 350,
     nextLevelXp: 500,
-    coins: 150,
-    gems: 10,
-    hp: 100,
-    maxHp: 100,
-    vaultBalance: 50,
-    stats: {
-      strength: 14,
-      vitality: 12,
-      agility: 10,
-      discipline: 15,
-    },
+    currentStreak: 3,
+    bestStreak: 12,
   },
+  coinBalance: 150,
 };
 
 const mockEnergyData: EnergyDailySummaryResponse = {
@@ -62,9 +51,6 @@ const mockEnergyData: EnergyDailySummaryResponse = {
     remainingCalorieBudget: 650,
     netCalorieBalance: -430,
     totalCoinsEarned: 25,
-    characterHp: 100,
-    maxHp: 100,
-    vaultBalance: 50,
   },
   breakdown: {
     workouts: {
@@ -89,7 +75,6 @@ const mockWeeklyBudgetData: WeeklyBudgetResponse = {
   accumulatedWeekDeficit: 1200,
   weekendBufferTotal: 1200,
   weekendBufferPerDay: 600,
-  vaultBalance: 50,
   dailyRecords: [
     {
       date: '2026-09-08',
@@ -171,7 +156,7 @@ function IndexRouteComponent() {
     <main className="min-h-screen bg-[#08090a] text-zinc-100 p-4 sm:p-6 flex flex-col items-center">
       <div className="w-full max-w-4xl space-y-5">
         <UserHUD data={mockUserData} />
-        <ShopRewardBanner currentCoins={mockUserData.profile?.coins ?? 150} />
+        <ShopRewardBanner currentCoins={mockUserData.coinBalance} />
         <EnergyBalance data={mockEnergyData} />
         <CaloricVault data={mockWeeklyBudgetData} />
       </div>
