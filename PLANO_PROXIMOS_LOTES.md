@@ -27,10 +27,10 @@ A refeição livre exige **as duas** (regras completas na seção 4, todas confi
 
 ## 2. Estado atual (snapshot)
 
-- Repositório: `github.com/SchweetzzZ/RPG-LIFE`. Branch de trabalho: **`refactor/nucleo`**, último commit conhecido **`e821e5d` ("new future main")**, enviado ao GitHub. `main` ainda está no commit antigo `88c4177`.
+- Repositório: `github.com/SchweetzzZ/RPG-LIFE`. Os Lotes 1b, 2 e 3a já estão na **`main`** (`c54321f`, "feat(free-meal): add free meal catalog, scheduling and idempotent redeem"). Cada lote novo sai em branch própria a partir da `main`.
 - Existe uma alteração local não commitada em `docker-compose.yml` (`restart: always` → `no`), do usuário. Não é do Lote 1.
 - Lote 1b commitado na `refactor/nucleo` (`e7180d4`).
-- **Lote 2 implementado em 10/10/2026, SEM COMMIT**, na branch `lote-2-nucleo-honesto` (saiu de `e7180d4`). O usuário revisa e commita. Detalhes e decisões tomadas na implementação em 6.8.
+- Lote 2 (6.8) e Lote 3a (7.5) implementados em 10/10/2026, commitados e mergeados na `main`. **Próximo: Lote 3b (telas), plano em 7.6.**
 - Padrão adotado nas respostas da API: o controller converte o documento do Mongo com uma função `toXxxResponse` (arquivo `<modulo>.mapper.ts`): `_id` vira `id`, sem `user`, datas em ISO. Seguir o mesmo padrão nos módulos novos.
 - Stack: backend NestJS + MongoDB (Mongoose) + Zod (`nestjs-zod`); frontend React + Vite + TanStack Router + Tailwind 4 + `openapi-fetch` (tipos em `rpg-frontend/src/api/schema.ts`).
 
@@ -241,6 +241,35 @@ Branch `lote-3a-refeicao-livre` (saiu da `main` em `9c15be5`), **sem commit**. S
 - **Fim do ciclo / do dia:** refeição não resgatada de um ciclo encerrado (semana) ou de um dia que passou (dia) vira `cancelled` com `cancelReason: 'expired'`, de forma preguiçosa (sem cron).
 - **Atomicidade sem transação** (Mongo local standalone): 1) revalida `canBuy`; 2) troca o status para `redeemed` com `findOneAndUpdate` condicional (só uma chamada vence); 3) débitos idempotentes com `refId = id da refeição` (`CoinService.addOnce` e `VaultService.debitRedeem`, índices únicos já existentes). Se cair entre 2 e 3, chamar o resgate de novo completa o que faltou sem cobrar em dobro (se o ciclo já tiver fechado, não cobra no ciclo novo). O resgate revalida `canBuy` contra o saldo atual (ledger já desconta as outras resgatadas; `day`, ver acima). Limite conhecido: resgatar **duas refeições diferentes** EXATAMENTE ao mesmo tempo pode deixar o saldo de moedas negativo (e o cofre abaixo do estimado). **Atlas (produção)** tem replica set: lá dá para envolver o resgate numa transação.
 - `CoinService.spend` (não atômico) não é usado pelo resgate; o comentário foi atualizado.
+
+### 7.6 Lote 3b — plano das telas (alinhado em 10/10/2026)
+**Ponto de partida:** `main` em `c54321f` (Lotes 2 e 3a já mergeados). Branch sugerida: `lote-3b-1-telas`, saindo da `main`. O `rpg-frontend/src/api/schema.ts` foi regenerado com a API real e já tem `/day/*`, `/vault`, `/free-meals*` e `/free-meal-templates` (pode estar modificado e sem commit; conferir com `git status`). Ambiente do usuário: `docker compose up mongodb redis` (Redis é usado pelo rate limit do login), `npm run seed:free-meals` já rodado e backend em `npm run start:dev`.
+
+**O frontend está quebrado hoje:** `tsc --noEmit` falha em `services/dashboard.service.ts` (chama `/energy/daily-summary` e `/energy/weekly-budget`, que foram removidos) e em `types/dashboard.ts` (`EnergyDailySummaryResponseDto` e `WeeklyBudgetResponseDto` não existem mais). Isso é a primeira coisa do 3b-1.
+
+**Decisões confirmadas pelo usuário**
+- O 3b se divide em **3b-1** (fundação, Hub e `/rewards`, o ciclo principal) e **3b-2** (Perfil, Treino, Dieta e Passos), cada um com commit próprio. *(Proposta aceita por padrão; o usuário só respondeu explicitamente à decisão do aviso do diário. Se ele quiser outra divisão, ajustar aqui.)*
+- `WeightLog` (`POST/GET /weight`) e escolha de fuso ficam **fora do 3b**, para depois do 3b-2. *(Mesma observação.)*
+- **Aviso do diário (confirmado):** a kcal da refeição livre resgatada fica fora do diário. Se a pessoa pular uma refeição por causa dela, o fechamento do dia guarda a sobra no cofre. Mantém assim e **mostra um aviso na tela** (sugestão de texto, neutro: "Esta refeição não conta no seu diário do dia. Se você deixar de comer outra refeição por causa dela, o fechamento do dia vai guardar essa sobra no cofre.").
+- Foto da refeição: fora (bucket Cloudflare, depois).
+- Pode haver quantas refeições agendadas a pessoa quiser (limite de sanidade de 10 ativas por tipo).
+
+**3b-1 — escopo**
+1. **Fundação:** apagar `getEnergyDaily`/`getWeeklyBuget` e os tipos antigos; criar services com o `client` do `openapi-fetch` (`day`, `vault`, `coins`, `free-meal`), tipos sempre de `components['schemas'][...]`, zero `any`/`unknown`/cast. Não adicionar biblioteca de estado/fetch sem necessidade (hoje só há TanStack Router); hooks simples bastam.
+2. **Hub (`/`)**, sem mocks (hoje `mockUserData`, `mockEnergyData`, `mockWeeklyBudgetData` em `routes/index.tsx`): `UserHUD` com `GET /user/me`; a **primeira refeição de `week` (ou, se não houver, de `day`) de `GET /free-meals/next` domina a tela** ("Rodízio sábado — guarde X kcal/dia, faltam N dias"); cofre (`GET /vault`); meta do dia (`GET /day/:date`); botão **Fechar o dia** (`POST /day/close`, mostrar `notice`/`alert` neutros; é idempotente). Estado vazio (nada agendado) leva para `/rewards`.
+3. **Refeições livres (`/rewards`)**, sem mocks (hoje `initialRewards` e componentes com preço em moedas fictício): catálogo (`GET /free-meal-templates`); montador com +/−, atalhos leve/média/pesada, item avulso (kcal digitada ou vinda da busca do `nutricion`) e refeição totalmente personalizada; agendar (`POST /free-meals`); lista de agendadas com `accumulated*`, `totals` e `recommendPostpone`; prévia do impacto no cofre; **resgatar** (`POST /free-meals/:id/redeem`) com `actualItems` opcional; botão travado mostrando o que falta (o 400 traz `details.missingKcal`/`missingCoins`; tratar sem `any`); mostrar `exceededKcal` quando houver; cancelar (`DELETE`); galeria (`GET /free-meals`).
+
+**Regras de UX que vêm do backend**
+- `ready`/`canBuy` são **individuais** (contra o saldo de agora); `accumulated*`, `perDayKcal` e `recommendPostpone` usam o **acumulado** da lista. Pode aparecer "pronta" e, ao mesmo tempo, "fazer as 3 exige mais X kcal": a tela precisa deixar essa diferença clara.
+- Uma refeição `ready` pode voltar a `planned` se o saldo cair; sempre reler do servidor.
+- `perDayKcal` pode ser `null` (sem dias restantes e ainda faltando kcal); `projectedKcal` pode ser `null` (segunda-feira ou dias sem fechamento).
+- Comer mais que o estimado só **mostra** o excedente, sem culpa, sem perder moeda/XP/sequência. Nenhum texto incentiva jejum nem comer pouco (seção 11).
+
+**3b-1 pronto quando:** `npm run lint` (tsc) do frontend verde; Hub e `/rewards` sem nenhum dado mockado; fluxo no navegador (feito pelo usuário): agendar → fechar dias → ver a barra encher → resgatar → ver na galeria.
+
+**3b-2 — escopo:** Perfil (`PhysicalProfileForm` com os 3 níveis de rotina e o tipo vindo de `components['schemas']['UpdateProfileDto']`; extratos de cofre e moedas), Treino (trocar `mockRoutines` pela API, carga da última vez via `GET /workout/progression/:exerciseName`, recompensa real), Dieta (macros do dia; trocar `mockCommonFoods` do `FoodSearchModal` pela busca real) e Passos (`activity.tsx` ainda com dados fictícios). *Atenção:* "cadastrar alimento próprio" está no 7.3, mas o `CustomFood` está previsto só no Lote 4; decidir antes de implementar.
+
+**Primeira coisa a fazer na conversa nova:** `git branch --show-current`, `git log --oneline -3`, `git status` (esperado: `main` em `c54321f`, `schema.ts` modificado), rodar `tsc --noEmit` no frontend para ver os erros iniciais e confirmar com o usuário a branch de partida.
 
 ---
 
