@@ -13,6 +13,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message: string | string[] = 'Erro interno do servidor';
     let error = 'Internal Server Error';
+    // Dados extras para o cliente (ex.: { missingKcal, missingCoins } no resgate da refeicao livre)
+    let details: Record<string, unknown> | undefined;
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
@@ -38,6 +40,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
         } else if (resObj.message) {
           message = resObj.message;
         }
+
+        if (resObj.details && typeof resObj.details === 'object') {
+          details = resObj.details;
+        }
       }
     } else if (typeof exception === 'object' && exception !== null) {
       const err = exception as Record<string, any>;
@@ -61,6 +67,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       statusCode: status,
       message,
       error,
+      ...(details ? { details } : {}),
       timestamp: new Date().toISOString(),
       path: request.url,
     });

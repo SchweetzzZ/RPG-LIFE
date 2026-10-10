@@ -179,6 +179,22 @@ export class VaultService {
         });
     }
 
+    /**
+     * Debito do resgate da refeicao livre da semana (refId = id da refeicao).
+     * Idempotente: chamar de novo (ex.: resgate repetido apos falha no meio) nao debita duas vezes.
+     */
+    async debitRedeem(cycle: CycleDocument, date: string, kcal: number, freeMealId: string): Promise<void> {
+        if (kcal <= 0) return;
+        await this.insertOnce({
+            user: cycle.user,
+            cycle: cycle._id as Types.ObjectId,
+            date,
+            kcal: -kcal,
+            type: VaultEntryType.REDEEM,
+            refId: freeMealId,
+        });
+    }
+
     private async insertOnce(entry: {
         user: Types.ObjectId;
         cycle: Types.ObjectId;

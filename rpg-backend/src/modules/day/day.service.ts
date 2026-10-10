@@ -172,6 +172,20 @@ export class DayService {
         };
     }
 
+    /**
+     * Fechamentos entre duas datas (inclusive), mais antigos primeiro.
+     * Usado pela refeicao livre (dias sem fechamento e previsao do cofre).
+     */
+    async closesBetween(userId: string, from: string, to: string) {
+        if (from > to) return [];
+        return this.dayCloseModel
+            .find({ user: new Types.ObjectId(userId), date: { $gte: from, $lte: to } })
+            .select('date foodLogsCount savedKcal vaultDebitKcal vaultApplied')
+            .sort({ date: 1 })
+            .lean()
+            .exec();
+    }
+
     private async updateStreak(userId: string) {
         const closes = await this.dayCloseModel
             .find({ user: new Types.ObjectId(userId) })

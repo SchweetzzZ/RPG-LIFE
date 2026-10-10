@@ -13,6 +13,7 @@ import { WorkoutModule } from './modules/workout/workout.module';
 import { EnergyModule } from './modules/energy/energy.module';
 import { VaultModule } from './modules/vault/vault.module';
 import { DayModule } from './modules/day/day.module';
+import { FreeMealModule } from './modules/free-meal/free-meal.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { DayModule } from './modules/day/day.module';
     EnergyModule,
     VaultModule,
     DayModule,
+    FreeMealModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -20,10 +20,6 @@ export class Cycle {
     @Prop({ required: true })
     endDate: string; // domingo
 
-    // Refeicao livre agendada neste ciclo (o modelo FreeMeal chega no Lote 3)
-    @Prop({ type: Types.ObjectId, required: false, default: null })
-    freeMeal: Types.ObjectId | null;
-
     @Prop({ type: String, enum: CycleStatus, default: CycleStatus.OPEN })
     status: CycleStatus;
 

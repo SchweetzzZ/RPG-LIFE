@@ -6,7 +6,7 @@ export type VaultEntryDocument = VaultEntry & Document;
 export enum VaultEntryType {
     DAY_CLOSE = 'day_close',     // + o que sobrou da meta num dia fechado
     OVERFLOW = 'overflow',       // - excedente do dia (limitado ao saldo)
-    REDEEM = 'redeem',           // - refeicao livre resgatada (Lote 3)
+    REDEEM = 'redeem',           // - refeicao livre da semana resgatada (refId = id da refeicao)
     CYCLE_RESET = 'cycle_reset', // - o que sobrou no fim do ciclo
 }
 

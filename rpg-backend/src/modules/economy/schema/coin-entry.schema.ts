@@ -9,7 +9,8 @@ export enum CoinReason {
     WORKOUT = 'workout',
     STEPS_GOAL = 'steps_goal',
     STREAK_7 = 'streak_7',
-    TICKET = 'ticket',
+    TICKET = 'ticket',           // ticket da refeicao livre da semana (Lote 3a)
+    TICKET_DAY = 'ticket_day',   // ticket da refeicao livre do dia (Lote 3a)
     CYCLE_RESET = 'cycle_reset', // fim do ciclo: zera o saldo que sobrou (decisao 5)
 }
 

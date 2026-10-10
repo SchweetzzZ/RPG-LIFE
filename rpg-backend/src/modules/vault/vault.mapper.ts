@@ -8,7 +8,6 @@ export function toCycleResponse(cycle: CycleDocument): CycleResponse {
         startDate: cycle.startDate,
         endDate: cycle.endDate,
         status: cycle.status,
-        hasFreeMeal: cycle.freeMeal != null,
     };
 }
 

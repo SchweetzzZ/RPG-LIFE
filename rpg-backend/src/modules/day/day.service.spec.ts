@@ -42,7 +42,7 @@ function setup(dayEnergy: DayEnergy = energy()) {
         }),
     };
 
-    const cycle = { _id: new Types.ObjectId(), user: new Types.ObjectId(userId), startDate: today, endDate: '2999-12-31', freeMeal: null };
+    const cycle = { _id: new Types.ObjectId(), user: new Types.ObjectId(userId), startDate: today, endDate: '2999-12-31' };
     let vaultBalance = 0;
 
     const profile = {

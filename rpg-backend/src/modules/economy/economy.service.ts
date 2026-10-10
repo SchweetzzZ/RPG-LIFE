@@ -75,7 +75,9 @@ export class CoinService {
     /**
      * Debita moedas (grava uma entrada negativa).
      * ATENCAO: conferir o saldo e gravar a entrada NAO e atomico; duas chamadas simultaneas
-     * podem gastar o mesmo saldo. Resolver no Lote 3 (resgate da refeicao livre).
+     * podem gastar o mesmo saldo. Hoje ninguem usa: o resgate da refeicao livre (Lote 3a) troca o
+     * status da refeicao numa operacao condicional e debita com `addOnce` (refId = id da refeicao).
+     * Para gastos novos, prefira esse padrao em vez de `spend`.
      */
     async spend(userId: string, amount: number, reason: CoinReason, refId?: string): Promise<CoinEntryDocument> {
         this.assertPositiveInteger(amount);

@@ -16,7 +16,6 @@ export const CycleResponseSchema = z.object({
     startDate: z.string(),
     endDate: z.string(),
     status: z.nativeEnum(CycleStatus),
-    hasFreeMeal: z.boolean(),
 });
 
 export const VaultResponseSchema = z.object({
