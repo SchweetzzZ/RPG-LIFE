@@ -10,6 +10,7 @@ export enum CoinReason {
     STEPS_GOAL = 'steps_goal',
     STREAK_7 = 'streak_7',
     TICKET = 'ticket',
+    CYCLE_RESET = 'cycle_reset', // fim do ciclo: zera o saldo que sobrou (decisao 5)
 }
 
 // Livro-razao de moedas: o saldo NAO e guardado em lugar nenhum, e a soma das entradas.
@@ -40,3 +41,8 @@ export class CoinEntry {
 
 export const CoinEntrySchema = SchemaFactory.createForClass(CoinEntry);
 CoinEntrySchema.index({ user: 1, createdAt: -1 });
+// Idempotencia: a mesma acao (motivo + refId, ex.: 'workout' + '2026-10-10') so paga uma vez.
+CoinEntrySchema.index(
+    { user: 1, reason: 1, refId: 1 },
+    { unique: true, partialFilterExpression: { refId: { $exists: true } } },
+);

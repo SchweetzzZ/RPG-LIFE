@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CoinEntry, CoinEntryDocument, CoinReason } from './schema/coin-entry.schema';
+import { isDuplicateKeyError } from '../common/utils/mongo-errors';
 
 @Injectable()
 export class CoinService {
@@ -27,10 +28,54 @@ export class CoinService {
     }
 
     /**
+     * Grava uma entrada no maximo UMA vez por (usuario, motivo, refId).
+     * Se ja existe, nao grava de novo e devolve `created: false`.
+     * A garantia vem do indice unico parcial em `coin_entries` (vale tambem para chamadas simultaneas).
+     */
+    async addOnce(
+        userId: string,
+        amount: number,
+        reason: CoinReason,
+        refId: string,
+    ): Promise<{ entry: CoinEntryDocument; created: boolean }> {
+        if (!Number.isInteger(amount) || amount === 0) {
+            throw new BadRequestException('A quantidade de moedas deve ser um inteiro diferente de zero');
+        }
+        const user = new Types.ObjectId(userId);
+        const existing = await this.coinEntryModel.findOne({ user, reason, refId }).exec();
+        if (existing) {
+            return { entry: existing, created: false };
+        }
+        try {
+            const entry = await this.coinEntryModel.create({ user, amount, reason, refId });
+            return { entry, created: true };
+        } catch (error) {
+            if (isDuplicateKeyError(error)) {
+                const winner = await this.coinEntryModel.findOne({ user, reason, refId }).orFail().exec();
+                return { entry: winner, created: false };
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Zera o saldo no fim do ciclo gravando uma entrada negativa (`cycle_reset`).
+     * O saldo continua sendo a soma do livro-razao. Idempotente por `cycleId`.
+     * Devolve quanto foi zerado (0 se o saldo ja era 0).
+     */
+    async resetBalance(userId: string, cycleId: string): Promise<number> {
+        const current = await this.balance(userId);
+        if (current <= 0) {
+            return 0;
+        }
+        const { entry, created } = await this.addOnce(userId, -current, CoinReason.CYCLE_RESET, cycleId);
+        return created ? -entry.amount : 0;
+    }
+
+    /**
      * Debita moedas (grava uma entrada negativa).
      * ATENCAO: conferir o saldo e gravar a entrada NAO e atomico; duas chamadas simultaneas
-     * podem gastar o mesmo saldo. Quando houver resgate real, isto deve virar transacao
-     * (ou operacao atomica) no MongoDB.
+     * podem gastar o mesmo saldo. Resolver no Lote 3 (resgate da refeicao livre).
      */
     async spend(userId: string, amount: number, reason: CoinReason, refId?: string): Promise<CoinEntryDocument> {
         this.assertPositiveInteger(amount);

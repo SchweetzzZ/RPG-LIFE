@@ -4,9 +4,10 @@ import { Workout, workoutDocument } from "./schemas/workout-schema";
 import { WorkoutLog, WorkoutLogDocument } from "./schemas/workout-log";
 import { Model, Types } from "mongoose";
 import { CreateWorkoutDto, UpdateWorkoutDto, LogWorkoutDto, CreateWorkoutLogInput } from "./dto/workout-dto";
-import { ProgressService } from "../progress/progress.service";
-import { CoinService } from "../economy/economy.service";
+import { RewardService, RewardResult } from "../economy/reward.service";
 import { CoinReason } from "../economy/schema/coin-entry.schema";
+import { VaultService } from "../vault/vault.service";
+import { calculateWorkoutNetKcal } from "../energy/energy-math";
 import { ProfileService } from "../profile/profile.service";
 import { toUserDate } from "../common/utils/user-date";
 
@@ -15,8 +16,8 @@ export class WorkoutService {
     constructor(
         @InjectModel(Workout.name) private readonly workoutModel: Model<workoutDocument>,
         @InjectModel(WorkoutLog.name) private readonly workoutLogModel: Model<WorkoutLogDocument>,
-        private readonly progressService: ProgressService,
-        private readonly coinService: CoinService,
+        private readonly rewardService: RewardService,
+        private readonly vaultService: VaultService,
         private readonly profileService: ProfileService,
     ) { }
 
@@ -114,16 +115,9 @@ export class WorkoutService {
             if (profile?.weightKg) weightKg = profile.weightKg;
         } catch { }
 
-        // MET por intensidade
-        let met = 3.5;
-        if (data.intensity === 'intense') met = 6.0;
-        else if (data.intensity === 'cycling_running') met = 7.5;
-
-        // Fórmula: MET * Peso * (Duração / 60)
+        // Kcal liquidas: (MET - 1) x peso x horas (o basal ja esta na Base do dia)
         const duration = data.durationMinutes || 45;
-        const caloriesBurned = Math.round(met * weightKg * (duration / 60));
-        const coinsEarned = Math.round(caloriesBurned * 0.25);
-        const xpEarned = 200;
+        const caloriesBurned = calculateWorkoutNetKcal(data.intensity, weightKg, duration);
 
         let totalVolumeKg = 0;
         let totalSets = 0;
@@ -148,7 +142,8 @@ export class WorkoutService {
             };
         });
 
-        const targetDate = data.date || toUserDate(await this.profileService.getTimezone(userId));
+        const today = toUserDate(await this.profileService.getTimezone(userId));
+        const targetDate = data.date || today;
 
         const log = await this.workoutLogModel.create({
             user: new Types.ObjectId(userId),
@@ -159,8 +154,8 @@ export class WorkoutService {
             caloriesBurned,
             totalVolumeKg,
             totalSets,
-            xpGained: xpEarned,
-            coinsGained: coinsEarned,
+            xpGained: 0,
+            coinsGained: 0,
             date: targetDate,
             exercises,
         });
@@ -176,22 +171,23 @@ export class WorkoutService {
             );
         }
 
-        // Credita moedas no livro-razao (formula atual mantida: round(kcal * 0.25))
-        if (coinsEarned > 0) {
-            await this.coinService.add(userId, coinsEarned, CoinReason.WORKOUT, log.id);
+        // +20 moedas (e XP) so no 1o treino do dia, e so se o dia e do ciclo aberto
+        let reward: RewardResult = { granted: false, coins: 0, xp: 0, leveledUp: false };
+        if (await this.vaultService.canEarnOn(userId, targetDate, today)) {
+            reward = await this.rewardService.grant(userId, CoinReason.WORKOUT, targetDate);
         }
-
-        let rpgResult = { xpGained: xpEarned, leveledUp: false };
-        try {
-            rpgResult = await this.progressService.addXp(userId, xpEarned);
-        } catch { }
+        if (reward.granted) {
+            log.coinsGained = reward.coins;
+            log.xpGained = reward.xp;
+            await log.save();
+        }
 
         return {
             workoutLog: log,
             caloriesBurned,
-            coinsEarned,
-            xpEarned: rpgResult.xpGained,
-            leveledUp: rpgResult.leveledUp,
+            coinsEarned: reward.coins,
+            xpEarned: reward.xp,
+            leveledUp: reward.leveledUp,
         };
     }
 

@@ -11,6 +11,8 @@ import { ActivityModule } from './modules/activity/activity.module';
 import { NutritionModule } from './modules/nutricion/nutricion.module';
 import { WorkoutModule } from './modules/workout/workout.module';
 import { EnergyModule } from './modules/energy/energy.module';
+import { VaultModule } from './modules/vault/vault.module';
+import { DayModule } from './modules/day/day.module';
 
 @Module({
   imports: [
@@ -33,6 +35,8 @@ import { EnergyModule } from './modules/energy/energy.module';
     NutritionModule,
     WorkoutModule,
     EnergyModule,
+    VaultModule,
+    DayModule,
   ],
   controllers: [AppController],
   providers: [AppService],

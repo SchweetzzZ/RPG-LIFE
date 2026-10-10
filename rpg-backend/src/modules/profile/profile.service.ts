@@ -1,17 +1,11 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { UserProfile, UserProfileDocument, ActivityLevel, BiologicalSex, PrimaryGoal } from './schema/profile.schema';
+import { UserProfile, UserProfileDocument, PrimaryGoal } from './schema/profile.schema';
 import { UpdateProfileDto, CalculateNutritionInput, CalculateNutritionUpdate } from './dto/profile-dto';
 import { resolveTimezone } from '../common/utils/user-date';
-
-const activityMultipliers: Record<ActivityLevel, number> = {
-    [ActivityLevel.SEDENTARY]: 1.2,
-    [ActivityLevel.LIGHT]: 1.375,
-    [ActivityLevel.MODERATE]: 1.55,
-    [ActivityLevel.INTENSE]: 1.725,
-    [ActivityLevel.VERY_INTENSE]: 1.9,
-};
+import { requireNutritionInput } from './nutrition-input';
+import { calculateBaseKcal, calculateBmr, calculateDailyTargetKcal } from '../energy/energy-math';
 
 @Injectable()
 export class ProfileService {
@@ -43,44 +37,18 @@ export class ProfileService {
         return updated;
     }
 
-    // Mifflin-St Jeor: a formula so tem versao masculina e feminina
-    private calculateBMR(weightKg: number, heightCm: number, age: number, biologicalSex: BiologicalSex): number {
-        const base = 10 * weightKg + 6.25 * heightCm - 5 * age
-        return biologicalSex === BiologicalSex.MALE ? base + 5 : base - 161
-    }
-
-    // Garante que o perfil fisico tem tudo o que a conta precisa; senao, 400 com a lista do que falta
-    private requireNutritionInput(profile: UserProfile): CalculateNutritionInput {
-        const { weightKg, heightCm, age, activityLevel, primaryGoal } = profile
-        // Valor fora do enum (ex.: um 'other' antigo no banco) conta como nao preenchido
-        const biologicalSex = Object.values(BiologicalSex).find((s) => s === profile.biologicalSex)
-
-        if (
-            weightKg == null || heightCm == null || age == null ||
-            biologicalSex === undefined || activityLevel == null || primaryGoal == null
-        ) {
-            const fields = { weightKg, heightCm, age, biologicalSex, activityLevel, primaryGoal }
-            const missing = Object.entries(fields)
-                .filter(([, value]) => value === null || value === undefined)
-                .map(([field]) => `${field}: obrigatório para calcular as metas`)
-            throw new BadRequestException(missing)
-        }
-
-        return { weightKg, heightCm, age, biologicalSex, activityLevel, primaryGoal }
+    // Perfil fisico completo para as contas do dia; 400 com o que falta se estiver incompleto
+    async getNutritionInput(userId: string): Promise<CalculateNutritionInput> {
+        const profile = await this.profileModel.findOne({ user: userId }).lean().exec();
+        return requireNutritionInput(profile ?? {});
     }
 
     async calculateNutritionTargets(data: CalculateNutritionInput) {
-        const bmr = Math.floor(this.calculateBMR(data.weightKg, data.heightCm, data.age, data.biologicalSex))
-
-        const multiplier = activityMultipliers[data.activityLevel]
-        const tdee = Math.floor(bmr * multiplier)
-
-        let targetCalories = tdee
-        if (data.primaryGoal === PrimaryGoal.LOSE_WEIGHT) {
-            targetCalories = Math.floor(tdee * 0.80)
-        } else if (data.primaryGoal === PrimaryGoal.GAIN_MUSCLE) {
-            targetCalories = tdee + 300
-        }
+        // Mesma formula do fechamento do dia (energy-math.ts), num dia SEM treino nem passos extras:
+        // tdee = Base do dia (TMB x rotina fora da academia); meta = Base x (1 - deficit do objetivo)
+        const bmr = calculateBmr(data)
+        const tdee = calculateBaseKcal(bmr, data.activityLevel)
+        const targetCalories = calculateDailyTargetKcal(tdee, 0, data.primaryGoal)
 
         const proteinFactor =
             data.primaryGoal === PrimaryGoal.GAIN_MUSCLE ? 2.0 :
@@ -111,7 +79,7 @@ export class ProfileService {
     async calculateNutritionByUser(userId: string, data: CalculateNutritionUpdate) {
         const updatedProfile = await this.updateProfile(userId, data as UpdateProfileDto);
 
-        const targets = await this.calculateNutritionTargets(this.requireNutritionInput(updatedProfile))
+        const targets = await this.calculateNutritionTargets(requireNutritionInput(updatedProfile))
 
         const finalProfile = await this.profileModel.findOneAndUpdate({
             user: userId

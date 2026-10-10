@@ -19,7 +19,7 @@ Duas moedas com papéis diferentes:
 | Mede | O que sobrou abaixo da meta, já com déficit | Consistência (dia fechado, treino, passos, sequência) |
 | Entra | Só em dia **fechado** | Ações concluídas |
 | Paga | As kcal da refeição livre | O "ticket" da refeição livre |
-| Zera | No fim do ciclo semanal (dia da refeição livre, máx. 7 dias) | Junto com o cofre |
+| Zera | Toda segunda-feira (semana fixa de segunda a domingo) | Junto com o cofre |
 
 A refeição livre exige **as duas** (regras completas na seção 4, todas confirmadas). Regra inegociável: moeda só vem de esforço real (nada de comprar moeda, nada de recompensa definida pelo usuário).
 
@@ -29,7 +29,8 @@ A refeição livre exige **as duas** (regras completas na seção 4, todas confi
 
 - Repositório: `github.com/SchweetzzZ/RPG-LIFE`. Branch de trabalho: **`refactor/nucleo`**, último commit conhecido **`e821e5d` ("new future main")**, enviado ao GitHub. `main` ainda está no commit antigo `88c4177`.
 - Existe uma alteração local não commitada em `docker-compose.yml` (`restart: always` → `no`), do usuário. Não é do Lote 1.
-- **Lote 1b concluído em 10/10/2026, mas SEM COMMIT** na `refactor/nucleo` (o usuário revisa e commita). Inclui: `.gitattributes`, `@types/react-dom`, `schema.ts` regenerado, DTOs de resposta + mappers (`workout.mapper.ts`, `nutrition.mapper.ts`, `profile.mapper.ts`) em `workout`/`nutricion`/`profile`, `/workout/all` só admin e `/workout/:id` só do dono, `/nutrition/barcode` com 404, enum `BiologicalSex` (`male`/`female`), 400 para perfil incompleto em `PATCH /profile/nutrition`, `primaryAttribute` removido, `BiometricsForm` → `PhysicalProfileForm`, skills reescritas, este plano. **Antes de começar o Lote 2, confirmar com o usuário que isso já foi commitado**; o Lote 2 sai de uma branch nova (`lote-2-nucleo-honesto`) a partir daí.
+- Lote 1b commitado na `refactor/nucleo` (`e7180d4`).
+- **Lote 2 implementado em 10/10/2026, SEM COMMIT**, na branch `lote-2-nucleo-honesto` (saiu de `e7180d4`). O usuário revisa e commita. Detalhes e decisões tomadas na implementação em 6.8.
 - Padrão adotado nas respostas da API: o controller converte o documento do Mongo com uma função `toXxxResponse` (arquivo `<modulo>.mapper.ts`): `_id` vira `id`, sem `user`, datas em ISO. Seguir o mesmo padrão nos módulos novos.
 - Stack: backend NestJS + MongoDB (Mongoose) + Zod (`nestjs-zod`); frontend React + Vite + TanStack Router + Tailwind 4 + `openapi-fetch` (tipos em `rpg-frontend/src/api/schema.ts`).
 
@@ -66,7 +67,7 @@ HP, atributos (força/inteligência…), classes de personagem, hábitos genéri
 
 **Ferramentas e armadilhas**
 - O shell do computador do usuário (`device_bash`) é um Linux virtual com a pasta montada. Cada chamada é um `bash -c` novo; **corta em 120 s** e processos em segundo plano **morrem** entre chamadas.
-- `node_modules` foi instalado no Windows: `jest`, `vite build` e `nest build` completo não rodam direito no Linux. Use **`node node_modules/typescript/bin/tsc --noEmit -p tsconfig.build.json`** no backend (~30–60 s) e **`tsc --noEmit`** no frontend (~11 s). O build e o jest completos o usuário roda no Windows.
+- `node_modules` foi instalado no Windows: `jest`, `vite build` e `nest build` completo não rodam direito no Linux. Use **`node node_modules/typescript/bin/tsc --noEmit -p tsconfig.build.json`** no backend (~30–60 s) e **`tsc --noEmit`** no frontend (~11 s). O build completo o usuário roda no Windows. **Testes automatizados (jest) não são exigidos:** a verificação é `tsc` verde + fluxo manual na API.
 - NUNCA iniciar o backend aqui: o `rpg-backend/.env` aponta para o banco real do usuário.
 - NUNCA rodar `npm run lint` do backend (tem `--fix` e reformata arquivos).
 - Quebra de linha: desde o Lote 1b existe `.gitattributes` (`* text=auto eol=lf`), e o `git status` comum já não mostra "modificados" falsos. Muitos arquivos no disco ainda estão em CRLF; por segurança continue usando `git -c core.autocrlf=true ...`. Para leituras use também `git --no-optional-locks`. Nunca `git add -A`/`git add .`; commit sempre com arquivos explícitos. Ao editar arquivo existente, preserve o estilo de quebra de linha dele.
@@ -84,21 +85,21 @@ HP, atributos (força/inteligência…), classes de personagem, hábitos genéri
 
 **A regra do jogo:** entrar todo dia, fechar o dia, treinar e bater os passos → juntar moedas e guardar kcal → se as duas metas baterem, a refeição livre está **conquistada**. O cofre diz **quanto** dá para comer; as moedas dizem **se a pessoa mereceu** (medem o esforço físico, que o cofre não vê).
 
-1. **O cofre é semanal e zera no fim do ciclo.** Base: "meta do dia × 7" (permite ciclar carboidrato durante a semana ou ficar bem abaixo e compensar na refeição livre, que é o objetivo). O ciclo **termina no dia da refeição livre agendada** e o cofre zera depois dele. Substitui a ideia antiga de validade de 14 dias por lotes.
+1. **O cofre é semanal e zera no fim do ciclo.** Base: "meta do dia × 7" (permite ciclar carboidrato durante a semana ou ficar bem abaixo e compensar na refeição livre, que é o objetivo). O ciclo **termina no dia da refeição livre agendada** e o cofre zera depois dele. Substitui a ideia antiga de validade de 14 dias por lotes. **Atualizado em 10/10 (usuário):** o ciclo passou a ser a **semana fixa de segunda a domingo**, e o cofre zera na virada para segunda (ver decisão 12).
 2. **Comer acima da meta desconta do que já estava guardado** no ciclo (o cofre nunca fica negativo). Não se perde moeda, XP nem sequência. A mensagem é um alerta neutro: "Você passou da meta hoje. Se foi consciente, tudo bem; se não foi, recomendamos um controle maior da próxima vez."
 3. **Ticket da refeição livre: 100 moedas** por enquanto (ajustar no teste do Lote 5).
 4. **"Comprar" a refeição livre só com as duas metas batidas** (kcal suficientes no cofre **e** 100 moedas). Sem isso:
    - a pessoa continua vendo tudo: saldo do cofre, custo estimado da refeição, quanto falta e a prévia do impacto ("seu cofre tem 1.200 kcal; um rodízio pesado dá ~2.500; você passaria 1.300 kcal da reserva");
    - se comer mesmo assim, registra no diário como qualquer refeição: conta como dia acima da meta (decisão 2), aparece o alerta neutro e **não** entra na galeria de conquistas;
    - nunca há bloqueio de registro nem mensagem de culpa.
-5. **Moedas zeram junto com o cofre** no fim do ciclo: toda semana é um jogo novo. (Manter moedas entre ciclos pode virar recurso pago no futuro; fora do escopo agora.)
+5. **Moedas zeram junto com o cofre** no fim do ciclo (na virada para segunda-feira): toda semana é um jogo novo. (Manter moedas entre ciclos pode virar recurso pago no futuro; fora do escopo agora.)
 6. **Previsão antes do dia marcado:** se o diário do ciclo está completo até hoje (todos os dias fechados), o app já mostra quanto a pessoa poderá gastar na refeição livre se seguir a meta até lá. Se faltarem dias registrados, ou se ela já tiver extrapolado muito, o app sugere: "recomendamos deixar essa refeição para a próxima semana".
 7. **Sexo usado no cálculo:** só `male`/`female` (feito no Lote 1b).
 8. **Nível e XP continuam**, como medidor de longo prazo. O XP vem das mesmas ações que dão moedas (fechar o dia, treino, passos, sequência) e **nunca zera** (as moedas zeram a cada ciclo; o nível mostra a evolução de meses). Substitui o XP fixo de 200 por treino.
 9. **Sem trava no que entra no cofre:** nem piso (TMB) nem teto (25%). Tudo o que sobra da meta num dia fechado vai para o cofre. Decisão do usuário: o app não controla quanto a pessoa come; ela é responsável pelas próprias escolhas.
 10. **Nome do produto:** continua em aberto; não bloqueia nada.
 11. **Rotina fora da academia + treino real somado no dia (opção A).** O perfil pergunta "como é sua rotina fora da academia?" com 3 opções: `sedentary` (trabalho sentado, 1,2) / `light` (em pé ou andando parte do dia, 1,375) / `moderate` (trabalho físico, 1,55). O treino e os passos entram na meta só nos dias em que acontecem (fórmula 6.2), para não serem contados duas vezes. O nível de treino da pessoa aparece pelo histórico (frequência, carga, XP), não por uma resposta do perfil.
-12. **Ciclo de no máximo 7 dias.** A refeição livre só pode ser agendada até o 7º dia do ciclo; sem refeição agendada, o ciclo fecha sozinho no 7º dia (cofre e moedas zeram) e começa outro.
+12. **Ciclo = semana fixa de segunda a domingo** (decisão do usuário em 10/10, "por enquanto"; substitui o "no máximo 7 dias terminando na refeição livre"). Na virada para segunda, cofre e moedas zeram e começa a semana nova. A refeição livre é agendada dentro da semana (até domingo) e não muda o fim do ciclo. Depois da refeição livre, o que sobrar no cofre continua lá e **só zera no fim do domingo**, junto com as moedas (confirmado pelo usuário em 10/10).
 13. (ver 9: sem teto)
 14. **Refeição livre "do dia" (ideia do usuário, 10/10):** além da refeição livre da semana (paga com o cofre), uma versão no escopo do dia, paga só com as kcal que sobram da meta de hoje. **Custo confirmado:** ticket igual às moedas de um dia completo no app (fechar o dia +10, treino +20, passos +10 = **40 moedas**). **Conta como conquista** (confirmado; entra na galeria como "refeição livre do dia"). Convive com a da semana no mesmo ciclo; o ticket de 40 sai do mesmo saldo de moedas da semana (confirmar no Lote 3).
 
@@ -142,14 +143,14 @@ Excedente    = Consumido > Meta ? débito no cofre de (Consumido − Meta), limi
 - O excedente gera o alerta neutro da decisão 2 (sem perder moeda, XP nem sequência).
 - Onboarding/perfil passa a perguntar a rotina **sem contar treino**; ajustar textos e o enum (decisão 11).
 - Calcular tudo no fuso do usuário. Funções puras e testáveis (separar a matemática do acesso ao banco).
-- [x] **`PATCH /profile/nutrition` quebrava** (feito antes do lote, em `refactor/nucleo`): o sexo virou o enum `BiologicalSex` só com `male`/`female` ("sexo usado no cálculo", não identidade de gênero; se um dia perguntar gênero, é outro campo fora da conta). `other` saiu da API. Perfil incompleto agora devolve 400 com a lista dos campos que faltam; um `other` antigo no banco conta como não preenchido. **Falta:** cobrir os dois casos nos testes da 6.7.
+- [x] **`PATCH /profile/nutrition` quebrava** (feito antes do lote, em `refactor/nucleo`): o sexo virou o enum `BiologicalSex` só com `male`/`female` ("sexo usado no cálculo", não identidade de gênero; se um dia perguntar gênero, é outro campo fora da conta). `other` saiu da API. Perfil incompleto agora devolve 400 com a lista dos campos que faltam; um `other` antigo no banco conta como não preenchido.
 - [x] **`primaryAttribute` removido do treino** (feito antes do lote): saiu do DTO, do schema do Mongo, do DTO de resposta e do mapper. O frontend não usava.
 
 ### 6.3 Modelos e endpoints
 - **`DayClose`** `{ user, date, targetKcal, consumedKcal, activeKcal, savedKcal, overflowKcal, closedAt }`, índice único `(user, date)`.
-- **`Cycle`** `{ user, startDate, endDate, freeMeal?, status: 'open'|'closed', closedReason?: 'meal_day'|'max_length' }`, no máximo 1 ciclo `open` por usuário. Começa no dia seguinte ao fim do anterior (ou no cadastro). `endDate` = dia da refeição livre agendada; sem refeição, `startDate + 6` (decisões 1 e 12). Fecha quando o dia `endDate` termina (no fuso do usuário), verificado de forma preguiçosa na próxima requisição do usuário (sem cron).
+- **`Cycle`** `{ user, startDate (segunda), endDate (domingo), freeMeal?, status: 'open'|'closed', closedAt? }`, no máximo 1 ciclo `open` por usuário. É sempre a semana de segunda a domingo que contém o dia (decisão 12). Fecha quando o domingo termina (no fuso do usuário), verificado de forma preguiçosa na próxima requisição do usuário (sem cron).
 - **`VaultEntry`** `{ user, cycle, date, kcal (+ depósito / − débito), type: 'day_close'|'overflow'|'redeem'|'cycle_reset', refId? }`. Saldo = soma das entradas do ciclo aberto, nunca negativo. Ao fechar o ciclo, grava `cycle_reset` zerando o que sobrou (o extrato mostra o que se perdeu).
-- `POST /day/close` `{ date? }`: só aceita **hoje ou ontem** (no fuso do usuário). **Idempotente:** fechar duas vezes devolve o fechamento existente sem pagar de novo. Exige pelo menos 1 `FoodLog` no dia para dar moedas. Calcula a meta, grava `DayClose`, deposita/debita no cofre, paga moedas, atualiza a sequência.
+- `POST /day/close` `{ date? }`: só aceita **hoje ou ontem** (no fuso do usuário). **Idempotente:** fechar duas vezes devolve o fechamento existente sem pagar de novo. Sem `FoodLog` no dia, fecha mas não guarda kcal, não dá moedas e quebra a sequência. Calcula a meta, grava `DayClose`, deposita/debita no cofre, paga moedas, atualiza a sequência.
 - `GET /day/:date`: estado do dia (aberto/fechado, meta, consumido, previsão do que seria guardado).
 - `GET /vault`: saldo do ciclo atual, datas do ciclo (início, fim, dias restantes) e extrato.
 - Remover `GET /energy/weekly-budget` e a lógica antiga; `GET /energy/daily-summary` passa a usar a fórmula nova (ou ser absorvido por `/day/:date`; decidir ao implementar e manter um só).
@@ -172,12 +173,23 @@ Decisão do usuário (10/10/2026): só faz sentido quando o app ler os passos di
 ### 6.6 Sequência (`progress`)
 - Ao fechar o dia D: se `lastClosedDate` = D−1 → `currentStreak + 1`; se = D → nada; senão → 1. Atualizar `bestStreak`. Gravar `lastClosedDate = D`.
 - Fechar "ontem" tardiamente pode reconstituir a sequência, mas não pode fechar dois dias de uma vez.
+- Dia fechado sem refeição registrada não conta e quebra a sequência (decisão do usuário, 10/10).
 
-### 6.7 Testes (jest, funções puras)
-Dia aberto rende 0 · dia fechado guarda tudo o que sobrou da meta · excedente debita e nunca deixa o cofre negativo · fim do ciclo zera cofre e moedas (no dia da refeição e no limite de 7 dias) · sexo `male`/`female` e perfil incompleto (400) no `PATCH /profile/nutrition` · idempotência do fechamento · sequência (consecutivo, falha, bestStreak) · moeda de treino só 1× por dia · fusos (22h em São Paulo ainda é "hoje").
+### 6.7 Pronto quando
+`tsc --noEmit` do backend verde; fluxo manual na API: registrar comida → fechar o dia → ver `/vault` e `/coins` → fechar de novo sem pagar em dobro.
 
-### 6.8 Pronto quando
-`tsc --noEmit` do backend verde; testes novos passando no Windows; fluxo manual na API: registrar comida → fechar o dia → ver `/vault` e `/coins` → fechar de novo sem pagar em dobro.
+### 6.8 Implementado (10/10/2026) — o que ficou e o que foi decidido no caminho
+- **Arquivos novos:** `energy/energy-math.ts` (fórmula 6.2, funções puras), `vault/` (`Cycle`, `VaultEntry`, `cycle-math.ts`, `VaultService`, `GET /vault`), `day/` (`DayClose`, `day-rules.ts`, `DayService`, `POST /day/close`, `GET /day/:date`), `progress/streak.ts`, `economy/rewards.ts` (tabela de moedas e XP), `economy/reward.service.ts`, `profile/nutrition-input.ts`, `common/utils/mongo-errors.ts`. Também foram escritos 7 arquivos `.spec.ts` (54 testes passando), mas testes jest deixaram de ser exigência do plano.
+- **Removidos:** `GET /energy/daily-summary` e `GET /energy/weekly-budget` (o `EnergyService` ficou sem controller e só calcula o dia para o `DayService`). O front ainda chama esses dois em `services/dashboard.service.ts`; trocar no Lote 3 ao regenerar o `schema.ts`.
+- **Rotina fora da academia:** `ActivityLevel` agora só tem `sedentary`/`light`/`moderate` (decisão 11). As metas do `PATCH /profile/nutrition` usam a mesma fórmula do fechamento (num dia sem treino). O `PhysicalProfileForm` do front ainda oferece 5 níveis: ajustar no Lote 3.
+- **Fechar o dia sem refeição registrada é permitido** (decisão do usuário): o dia fecha, mas não guarda kcal, não rende moedas nem XP e **quebra a sequência** (conta como dia não fechado para a sequência). A resposta traz um `notice` explicando. O `DayClose` guarda `foodLogsCount` para isso.
+- **Ciclo = semana fixa de segunda a domingo** (decisão 12, atualizada). O fechamento continua preguiçoso: a semana nova é aberta na primeira requisição depois do domingo.
+- **Dia de uma semana já encerrada** (ex.: na segunda, fechar o domingo como "ontem"; confirmado pelo usuário): fecha e conta para a sequência, mas não mexe no cofre nem rende moedas/XP (as moedas daquele ciclo já foram zeradas). O mesmo vale para treino e passos registrados nessa data. A resposta traz um `notice` explicando.
+- **XP = 5× as moedas** (fechar 50, treino 100, passos 50, sequência de 7 = 250). Aprovado pelo usuário; ajustar com o tempo em `economy/rewards.ts`.
+- **Meta de passos** = a recomendação por rotina (`sedentary` 6.000 / `light` 8.000 / `moderate` 10.000). Aprovado pelo usuário.
+- **Idempotência:** índices únicos em `coin_entries (user, reason, refId)`, `vault_entries (user, type, refId)`, `day_closes (user, date)` e no máximo 1 `cycles` aberto por usuário. Se o banco de desenvolvimento tiver moedas antigas duplicadas com o mesmo `refId`, o índice não sobe: resetar o banco.
+- **Jest:** adicionado `moduleNameMapper` para os imports `src/...` (sem isso, specs que importam schemas não rodavam).
+- Verificado na nuvem com MongoDB real: fluxo registrar → treino → passos → fechar → fechar de novo → `/vault` → `/coins`, bônus de 7 dias, excedente com cofre vazio, dia fechado vazio quebrando a sequência, virada de semana zerando cofre e moedas, e requisições simultâneas abrindo um só ciclo.
 
 ---
 
@@ -193,7 +205,7 @@ Dia aberto rende 0 · dia fechado guarda tudo o que sobrou da meta · excedente 
 `{ user, template?, title, scheduledFor, plannedItems[], estimatedKcal, actualItems?[], actualKcal?, ticketCost, status: 'planned'|'ready'|'redeemed'|'cancelled', photoUrl?, redeemedAt? }`. Os itens são **copiados** (snapshot) para o histórico não mudar se o catálogo for recalibrado.
 
 Endpoints: `GET /free-meal-templates`, `POST /free-meals`, `GET /free-meals/next`, `POST /free-meals/:id/redeem`, `DELETE /free-meals/:id`.
-- `POST /free-meals` agenda a refeição **dentro do ciclo aberto** (até o 7º dia) e move o `endDate` do ciclo para o dia dela.
+- `POST /free-meals` agenda a refeição **dentro do ciclo aberto** (até domingo). Não muda o fim do ciclo (decisão 12).
 - `GET /free-meals/next` devolve: refeição, saldo do cofre, saldo de moedas, `neededKcal`, `neededCoins`, `daysLeft`, **`perDayKcal`** (quanto guardar por dia até lá), **`projectedKcal`** (quanto terá no dia se seguir a meta até lá; só quando todos os dias do ciclo até ontem estão fechados), `canBuy` (as duas metas batidas) e `recommendPostpone` + motivo (dias sem registro no ciclo, ou previsão muito abaixo do estimado da refeição; limiar a definir ao implementar, sugestão: previsão < 50% do estimado).
 - **Comprar/resgatar** (`POST /free-meals/:id/redeem`): só com `canBuy` (decisão 4); senão 400 com o que falta em kcal e moedas. Debita kcal do cofre (`VaultEntry` tipo `redeem`) e o ticket (`CoinReason.TICKET`); aceita `actualItems`; entra na galeria de conquistas. Se `actualKcal` < estimado, a sobra volta ao cofre (até o ciclo fechar). Sem `canBuy`, a pessoa registra o que comeu no diário normal (`POST /nutrition/log`): vira dia acima da meta, com o alerta neutro, e não conta como conquista.
 - **Refeição livre do dia** (decisão 14): campo `scope: 'week'|'day'` no `FreeMeal`. A do dia usa só a sobra da meta de hoje (`Meta − Consumido até agora`), não mexe no cofre e custa **40 moedas** (`CoinReason.TICKET_DAY`); só pode ser comprada com sobra suficiente e 40 moedas; entra na galeria como "refeição livre do dia". Pode coexistir com a da semana no mesmo ciclo.

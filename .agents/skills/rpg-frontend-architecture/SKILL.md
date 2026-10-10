@@ -95,10 +95,11 @@ Legenda dos endpoints: **(existe)** já está na API · **(Lote N)** previsto no
 Objetivo: a **próxima refeição livre domina a tela** ("Rodízio sábado — guarde 360 kcal/dia, faltam 3 dias"), com saldo do cofre, saldo de moedas, meta do dia e o botão **Fechar o dia**.
 - `GET /user/me` (existe) — `{ user, profile, progress, coinBalance }`.
 - `GET /coins` (existe) — saldo e extrato de moedas.
-- `GET /day/:date` e `POST /day/close` (Lote 2) — estado do dia e fechamento.
-- `GET /vault` (Lote 2) — saldo do cofre no ciclo atual, dias restantes e extrato.
+- `GET /day/:date` (existe) — estado do dia: meta, consumido, ativo, `canClose`/`closeBlockedReason` e previsão do que iria para o cofre.
+- `POST /day/close` (existe) — `{ date? }` (hoje ou ontem); idempotente; devolve recompensas, sequência, saldo do cofre e `alert` (excedente) / `notice`.
+- `GET /vault` (existe) — saldo do cofre no ciclo atual, datas e dias restantes, extrato e `previousCycle` (o que foi zerado).
 - `GET /free-meals/next` (Lote 3) — refeição agendada, `neededKcal`, `daysLeft`, `perDayKcal`, `ready`.
-- `GET /energy/daily-summary` existe hoje com a fórmula antiga; será substituído no Lote 2. `GET /energy/weekly-budget` será **removido** — não usar.
+- `GET /energy/daily-summary` e `GET /energy/weekly-budget` foram **removidos** no Lote 2 (substituídos por `/day/:date` e `/vault`).
 
 ### Tela 2 — Treino (`/workouts`)
 - `GET /workout`, `POST /workout`, `GET /workout/:id`, `PUT /workout/:id`, `DELETE /workout/:id` (existem) — rotinas do próprio usuário.

@@ -1,6 +1,15 @@
-import { DEFAULT_TIMEZONE, addDays, dayOfWeek, resolveTimezone, toUserDate } from './user-date';
+import { DEFAULT_TIMEZONE, addDays, dayOfWeek, daysBetween, resolveTimezone, toUserDate } from './user-date';
 
 describe('user-date', () => {
+    describe('daysBetween', () => {
+        it('conta dias de calendario, inclusive na virada do mes', () => {
+            expect(daysBetween('2026-10-10', '2026-10-12')).toBe(2);
+            expect(daysBetween('2026-09-30', '2026-10-01')).toBe(1);
+            expect(daysBetween('2026-10-12', '2026-10-10')).toBe(-2);
+            expect(daysBetween('2026-10-10', '2026-10-10')).toBe(0);
+        });
+    });
+
     describe('toUserDate', () => {
         it('01:30 UTC ainda e o dia anterior em Sao Paulo', () => {
             const date = new Date('2026-10-06T01:30:00Z');

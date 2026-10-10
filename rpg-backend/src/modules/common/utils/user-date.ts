@@ -49,6 +49,12 @@ export function addDays(dateStr: string, days: number): string {
     return d.toISOString().slice(0, 10);
 }
 
+/** Diferenca em dias de calendario: daysBetween('2026-10-10', '2026-10-12') === 2. */
+export function daysBetween(fromDateStr: string, toDateStr: string): number {
+    const ms = parseDateStr(toDateStr).getTime() - parseDateStr(fromDateStr).getTime();
+    return Math.round(ms / 86_400_000);
+}
+
 /** Dia da semana de 'YYYY-MM-DD' no calendario puro: 0 = Domingo ... 6 = Sabado. */
 export function dayOfWeek(dateStr: string): number {
     return parseDateStr(dateStr).getUTCDay();

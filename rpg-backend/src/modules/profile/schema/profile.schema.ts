@@ -5,12 +5,12 @@ import { DEFAULT_TIMEZONE } from "../../common/utils/user-date"
 
 export type UserProfileDocument = UserProfile & Document
 
+// Rotina FORA da academia (sem contar treino). O treino e os passos entram na meta
+// so nos dias em que acontecem (ver energy-math.ts), para nao serem contados duas vezes.
 export enum ActivityLevel {
-    SEDENTARY = 'sedentary',
-    LIGHT = 'light',
-    MODERATE = 'moderate',
-    INTENSE = 'intense',
-    VERY_INTENSE = 'very_intense',
+    SEDENTARY = 'sedentary', // trabalho sentado
+    LIGHT = 'light',         // em pe ou andando parte do dia
+    MODERATE = 'moderate',   // trabalho fisico
 }
 
 // Sexo usado na formula de gasto calorico (Mifflin-St Jeor so tem estas duas versoes).

@@ -5,6 +5,7 @@ import { ActivityController } from './activity.controller';
 import { StepLog, StepLogSchema } from './schema/step-log-schema';
 import { ProfileModule } from '../profile/profile.module';
 import { EconomyModule } from '../economy/economy.module';
+import { VaultModule } from '../vault/vault.module';
 
 @Module({
     imports: [
@@ -13,6 +14,7 @@ import { EconomyModule } from '../economy/economy.module';
         ]),
         ProfileModule,
         EconomyModule,
+        VaultModule,
     ],
     controllers: [ActivityController],
     providers: [ActivityService],
