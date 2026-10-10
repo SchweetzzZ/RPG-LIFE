@@ -1,12 +1,9 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
+import { MealType } from '../schema/food-Log-schema';
 
-export enum MealType {
-    BREAKFAST = 'breakfast',
-    LUNCH = 'lunch',
-    DINNER = 'dinner',
-    SNACK = 'snack',
-}
+// Fonte unica do enum: o schema do Mongo
+export { MealType };
 
 // 🟢 DTO 1: Registrar Alimento Consumido
 export const CreateFoodLogSchema = z.object({
@@ -41,3 +38,39 @@ export const DailySummaryQuerySchema = z.object({
 });
 
 export class DailySummaryQueryDto extends createZodDto(DailySummaryQuerySchema) { }
+
+// ── Response DTOs ────────────────────────────────────────────────────────────
+
+export const FoodLogResponseSchema = z.object({
+    id: z.string(),
+    date: z.string(),
+    mealType: z.nativeEnum(MealType),
+    foodName: z.string(),
+    amountGrams: z.number(),
+    calories: z.number(),
+    proteinGrams: z.number(),
+    carbGrams: z.number(),
+    fatGrams: z.number(),
+    createdAt: z.string().optional(),
+});
+
+export const DailySummaryResponseSchema = z.object({
+    date: z.string(),
+    totals: z.object({
+        calories: z.number(),
+        proteinGrams: z.number(),
+        carbGrams: z.number(),
+        fatGrams: z.number(),
+    }),
+    logs: z.array(FoodLogResponseSchema),
+});
+
+export const FoodLogDeletedResponseSchema = z.object({
+    message: z.string(),
+});
+
+export type FoodLogResponse = z.infer<typeof FoodLogResponseSchema>;
+
+export class FoodLogResponseDto extends createZodDto(FoodLogResponseSchema) { }
+export class DailySummaryResponseDto extends createZodDto(DailySummaryResponseSchema) { }
+export class FoodLogDeletedResponseDto extends createZodDto(FoodLogDeletedResponseSchema) { }

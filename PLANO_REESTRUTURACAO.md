@@ -231,7 +231,7 @@ Excedente      = Consumido > Meta ? débito no cofre (linguagem neutra, sem perd
 - **Refeições livres** (substitui `rewards.tsx`): agendar, acompanhar, resgatar, galeria de conquistas.
 - **Dieta:** registro rápido: recentes, favoritos, "repetir refeição de ontem", código de barras.
 - **Treino:** mantém o atual (já é bom), só troca a recompensa.
-- **Perfil:** biometria + objetivo + fuso.
+- **Perfil:** perfil físico + objetivo + fuso.
 
 ---
 
@@ -283,6 +283,9 @@ Métricas:
 ---
 
 ## 8. Decisões em aberto
+
+> Atualizado em 10/10/2026: as decisões 1 a 3 foram tomadas e estão na seção 4 do `PLANO_PROXIMOS_LOTES.md`, que vence este texto (cofre semanal que zera no dia da refeição livre, excedente desconta do cofre com alerta neutro, compra da refeição livre só com kcal e moedas suficientes, moedas zeram junto com o cofre). O `VaultEntry` com `expire` e validade de 14 dias foi substituído por `Cycle` + `cycle_reset`.
+
 1. **Cofre expira?** Sugestão: kcal guardadas valem por 14 dias, para não acumular "crédito" de mês passado.
 2. **Excedente debita do cofre?** Sugestão: sim, com linguagem neutra ("ajuste do dia"), sem perder moedas ou sequência.
 3. **Resgatar sem saldo suficiente?** Sugestão: permitir (a vida é do usuário), mostrando o número honesto.

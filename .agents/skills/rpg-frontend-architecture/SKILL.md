@@ -1,225 +1,162 @@
 ---
 name: rpg-frontend-architecture
-description: Especificação arquitetural de telas, fluxos de design (benchmark Habitica/MyFitnessPal), integração de API orientada a contratos e design system anti-AI slop para o frontend RPG-LIFE.
+description: Especificação arquitetural das telas do RPG-LIFE (núcleo pós-reestruturação), integração de API orientada a contratos e design system anti-AI slop para o frontend.
 ---
 
-# ⚔️ RPG-LIFE Frontend Architecture & Design Specification
+# RPG-LIFE — Arquitetura e especificação do frontend
 
-Este documento é a especificação oficial e diretriz operacional para a construção de todo o ecossistema de front-end do **RPG-LIFE**. Ele unifica a ergonomia e precisão biométrica de aplicativos de alta performance (*MyFitnessPal*, *MacroFactor*, *Hevy*) com a psicologia de gamificação comportamental do *Habitica*, sem cair em clichês infantis ou vícios de código gerado por IA (*AI Slop*).
+Este documento orienta a construção das telas do **RPG-LIFE**. A fonte de verdade de produto e prioridades é `PLANO_REESTRUTURACAO.md` (visão e fórmulas) junto com `PLANO_PROXIMOS_LOTES.md` (ordem de execução). Em caso de conflito, eles vencem este arquivo.
 
----
+**O produto em uma frase:** "o app que te deixa comer pizza no sábado sem culpa."
+O ciclo central: agendar uma refeição livre → guardar kcal todo dia fechando o dia → ganhar o ticket com consistência → resgatar no dia marcado → registrar o que comeu de fato.
 
-## 1. Princípios Imutáveis de Arquitetura
+Duas moedas com papéis diferentes, e a refeição livre exige as duas:
 
-1. **Backend Imutável & Pré-estabelecido:**
-   - O backend NestJS é a fonte de verdade absoluta. Não serão criadas rotas mockadas ou bancos fakes em `localStorage`.
-   - Autenticação 100% baseada em **Cookies HttpOnly** (`jwt`), transmitidos automaticamente pelo navegador com `credentials: 'include'`.
-   - Toda rota autenticada utiliza `@CurrentUser('sub') userId` e guards JWT.
+| | Cofre de kcal (permissão) | Moedas (mérito) |
+|---|---|---|
+| Mede | O que sobrou abaixo da meta, já com déficit | Consistência (dia fechado, treino, passos, sequência) |
+| Entra | Só em dia **fechado** | Ações concluídas |
+| Paga | As kcal da refeição livre | O "ticket" da refeição livre |
 
-2. **Tipagem Estrita (Zero Any / Zero Unknown):**
-   - Consumo exclusivo via `client` do `openapi-fetch` gerado a partir do contrato OpenAPI (`rpg-frontend/src/api/schema.ts`).
-   - Todos os inputs de formulário e outputs de queries devem derivar de `components['schemas']`.
-   - Nenhuma chamada de API pode ter `as any` ou cast forçado.
-
-3. **Design System "Tactical Kinetic HUD" (Anti-AI Slop):**
-   - **Zero Emojis:** Ícones vetoriais SVG de precisão (`lucide-react` com `stroke-[1.5px]` ou `stroke-[1.75px]`).
-   - **Zero Gradientes Genéricos:** Sem roxo/índigo artificial. Fundo obsidiana profundo (`#08090a`), superfícies sólidas (`#0c0e12`, `#14171d`) e bordas cirúrgicas de 1px translúcido (`border-white/[0.08]`).
-   - **Tipografia Técnica:** Valores numéricos em `tabular-nums font-mono tracking-tight`, rótulos em micro-tipografia mono (`text-[10px] font-mono uppercase tracking-widest text-zinc-500`).
-   - **Alta Densidade de Informação:** Layout compacto e ergonômico, inspirado em cockpits de software de alta performance (Linear, Raycast, Garmin).
+**Fora do produto (não recriar nem referenciar):** HP, atributos (força, inteligência…), classes de personagem, ficha de personagem, hábitos genéricos, quests, água, loja de recompensas definidas pelo usuário, gemas/skins/battle pass. Moeda só vem de esforço real: nada de comprar moeda nem de recompensa criada pelo usuário.
 
 ---
 
-## 2. Benchmarks Estruturais: Extração dos Padrões de Mercado
+## 1. Princípios de arquitetura
 
-### 🎮 A. Habitica (Psicologia de Hábitos & Economia de Recompensas)
-* **O que extraímos:**
-  - **Classificação em 3 Categorias de Ação:**
-    - *Hábitos (Habits):* Ações repetíveis com contador de frequência (ex: beber 500ml de água, evitar refrigerante).
-    - *Diárias (Dailies / Quests):* Missões com prazo diário e streaks cumulativos (ex: bater meta de passos, treinar).
-    - *Tarefas (To-Dos):* Tarefas únicas com prazo pontual.
-  - **Avatar & Estatísticas RPG:** Barra superior contínua com Level, Barra de XP, HP (vida que pune a inconsistência) e Moedas de ouro.
-  - **Loja de Recompensas Personalizadas (Custom Rewards):** O usuário pode criar suas próprias recompensas da vida real com custo em moedas (ex: "Sessão de Videogame", "Pedir Hamburguer").
-* **O que modernizamos no RPG-LIFE:**
-  - Em vez de gráficos 8-bit retrô pixelados, usamos a estética de hardware militar moderno e relógios biométricos (*Tactical HUD*).
-  - As moedas e os hábitos são matematicamente atrelados a **calorias reais**, balanço energético e desempenho de treino na academia.
+1. **Backend é a fonte de verdade**
+   - Nenhuma tela usa mock, dado fixo ou `localStorage` como banco fake.
+   - Autenticação por **cookie HttpOnly** (`jwt`), enviado com `credentials: 'include'`.
+   - Se a tela precisa de um dado que a API não tem, primeiro estende-se o DTO/endpoint no backend, depois regenera-se o `schema.ts`.
 
----
+2. **Tipagem estrita (zero `any`, zero `unknown`, zero cast forçado)**
+   - Toda chamada passa pelo `client` do `openapi-fetch` alimentado por `rpg-frontend/src/api/schema.ts`.
+   - Tipos de formulário e de resposta derivam de `components['schemas']`.
+   - `schema.ts` é **gerado**, não editado à mão: `npx openapi-typescript http://localhost:4000/api/json -o src/api/schema.ts` com o backend rodando.
 
-### 🥗 B. MyFitnessPal & MacroFactor (Balanço Energético & Diário de Macros)
-* **O que extraímos:**
-  - **Balanço Energético Rápido:** Fórmula visível em 1 segundo: `Meta Calórica - Alimentos + Exercício = Restante`.
-  - **Divisão de Macronutrientes por Metas:** Proteína, Carboidrato e Gordura em gramas e barras de progresso proporcionais com limites dinâmicos.
-  - **Refeições Divididas por Janelas Temporais:** Café da Manhã, Almoço, Jantar e Snacks/Lanches.
-  - **Busca Instantânea e Scanner de Código de Barras (EAN):** Redução drástica da fricção ao registrar alimentos com catálogo Open Food Facts / TACO.
-* **O que modernizamos no RPG-LIFE:**
-  - Eliminação da culpa: calorias economizadas ao longo da semana vão para o **Cofre Calórico Semanal (Caloric Vault)**, criando um buffer matemático para o fim de semana.
-  - Cada registro de refeição dentro da meta gera moedas de disciplina para gastar na loja.
+3. **Datas e fuso**
+   - O "dia" do usuário é calculado no backend com o fuso do perfil. O frontend não deriva datas com `toISOString().split('T')[0]`; quando precisar enviar uma data, usa a que a API devolveu ou formata no fuso do perfil.
+
+4. **Bem-estar (vale para todo texto de interface)**
+   - Dieta flexível, nunca punição: comer acima da meta não tira moeda, XP nem sequência.
+   - Linguagem neutra no excedente ("ajuste do dia"). Nenhum texto incentiva jejum ou comer muito pouco.
+
+5. **Design system "Tactical Kinetic HUD"** — detalhes na skill `rpg-life-ui-engine`.
+   - Sem emojis: ícones `lucide-react` com `stroke-[1.5px]`/`stroke-[1.75px]`.
+   - Sem gradientes genéricos. Fundo `#08090a`, superfícies `#0c0e12`/`#14171d`, bordas `border-white/[0.08]`.
+   - Números com `tabular-nums font-mono tracking-tight`; rótulos `text-[10px] font-mono uppercase tracking-widest text-zinc-500`.
 
 ---
 
-### 🏋️ C. Hevy & Strong (Ergonomia de Treino na Academia)
-* **O que extraímos:**
-  - **Card de Séries Funcional:** Tabela de séries com tipo (*Aquecimento*, *Normal*, *Falha*, *Drop-set*), Carga em kg, Repetições e checkbox de conclusão com feedback tátil.
-  - **Rest Timer Flutuante:** Cronômetro regressivo após cada série com botões rápidos de `+30s` sem sair da tela.
-  - **Histórico e 1RM:** Estimativa de progressão de carga por exercício ao longo do tempo.
-* **O que modernizamos no RPG-LIFE:**
-  - Conclusão do treino calcula calorias gastas via METs no backend, concedendo moedas instantâneas e abastecendo o cofre de calorias do usuário.
+## 2. Referências de mercado (o que aproveitamos)
+
+### MyFitnessPal / MacroFactor — diário e balanço energético
+- Meta do dia, consumido e restante legíveis em 1 segundo.
+- Macros (proteína, carboidrato, gordura) com barras proporcionais à meta.
+- Refeições separadas (café, almoço, jantar, lanches); busca rápida e código de barras (TACO / Open Food Facts).
+- **No RPG-LIFE:** o que sobra abaixo da meta em dia fechado vai para o **cofre de kcal** semanal, que zera no dia da refeição livre e paga as kcal dela.
+
+### Hevy / Strong — ergonomia de treino
+- Tabela de séries com técnica, carga, repetições e conclusão; timer de descanso; histórico por exercício.
+- **No RPG-LIFE:** mostrar a carga da última vez por exercício (`GET /workout/progression/:exerciseName`); treino concluído rende moedas pela tabela fixa do backend.
+
+### WeightWatchers — rollover
+- Pontos não usados viram saldo para depois. Valida a ideia de guardar para gastar no dia escolhido.
 
 ---
 
-## 3. Mapeamento Exaustivo de Telas & Endpoints Conectados
+## 3. Mapa de telas e endpoints
 
 ```
-                                    ┌───────────────────────┐
-                                    │  /login (Auth Flow)   │
-                                    └───────────┬───────────┘
-                                                │ (Cookie HttpOnly)
-                                                ▼
-┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│                             BOTTOM NAVIGATION (App Shell)                                   │
-├─────────────────┬─────────────────┬──────────────────┬──────────────────┬───────────────────┤
-│ [⚡ Hub / Home] │ [🏋️ Workouts]   │ [🥗 Nutrition]   │ [📜 Quests/Hab]  │ [🍔 Cheat Store]  │
-│       `/`       │   `/workouts`   │   `/nutrition`   │    `/habits`     │    `/rewards`     │
-└─────────────────┴─────────────────┴──────────────────┴──────────────────┴───────────────────┘
-                                                │
-                                    ┌───────────┴───────────┐
-                                    │  /profile (Biometria) │
-                                    └───────────────────────┘
+                      ┌──────────────────────┐
+                      │  /login (auth)       │
+                      └──────────┬───────────┘
+                                 │ cookie HttpOnly
+                                 ▼
+┌───────────────┬───────────────┬───────────────┬───────────────┬───────────────┐
+│ Hub           │ Treino        │ Nutrição      │ Atividade     │ Refeições     │
+│ `/`           │ `/workouts`   │ `/nutrition`  │ `/activity`   │ livres        │
+│               │               │               │               │ `/rewards`    │
+└───────────────┴───────────────┴───────────────┴───────────────┴───────────────┘
+                                 │
+                      ┌──────────┴───────────┐
+                      │  /profile            │
+                      └──────────────────────┘
 ```
 
----
+Legenda dos endpoints: **(existe)** já está na API · **(Lote N)** previsto no `PLANO_PROXIMOS_LOTES.md`, ainda não implementado. Não ligar tela a endpoint que ainda não existe.
 
-### 📱 Tela 0: Autenticação & Onboarding (`/login`)
-- **Objetivo:** Acesso seguro com visual Dark Obsidian minimalista, alternância fluida entre "Entrar" e "Criar Conta de Caçador".
-- **Endpoints Conectados:**
-  - `POST /user/login` (Body: `LoginUserDto`, seta cookie `jwt` HttpOnly)
-  - `POST /user/register` (Body: `RegisterUserDto`, criação atômica de usuário e perfil)
-- **Componentes Chave:**
-  - `AuthForm.tsx` (Tabs Entrar/Cadastrar, validação client-side com feedback de erro em tempo real).
-  - Indicador de segurança militar/criptográfica.
+### Tela 0 — Login e cadastro (`/login`)
+- `POST /user/login` (existe) — seta o cookie `jwt`.
+- `POST /user/register` (existe) — cria usuário, `Progress` e `UserProfile`.
+- `POST /user/logout` (existe).
 
----
+### Tela 1 — Hub (`/`)
+Objetivo: a **próxima refeição livre domina a tela** ("Rodízio sábado — guarde 360 kcal/dia, faltam 3 dias"), com saldo do cofre, saldo de moedas, meta do dia e o botão **Fechar o dia**.
+- `GET /user/me` (existe) — `{ user, profile, progress, coinBalance }`.
+- `GET /coins` (existe) — saldo e extrato de moedas.
+- `GET /day/:date` e `POST /day/close` (Lote 2) — estado do dia e fechamento.
+- `GET /vault` (Lote 2) — saldo do cofre no ciclo atual, dias restantes e extrato.
+- `GET /free-meals/next` (Lote 3) — refeição agendada, `neededKcal`, `daysLeft`, `perDayKcal`, `ready`.
+- `GET /energy/daily-summary` existe hoje com a fórmula antiga; será substituído no Lote 2. `GET /energy/weekly-budget` será **removido** — não usar.
 
-### 📱 Tela 1: Dashboard Tático / Central de Comando (`/`)
-- **Objetivo:** Visão panorâmica do status do caçador, balanço calórico diário e acesso rápido ao loop de valor (Treino + Dieta = Moedas na Loja).
-- **Endpoints Conectados:**
-  - `GET /user/me` (Dados de identidade, moedas, peso, meta e atributos do personagem)
-  - `GET /energy/daily-summary` (TMB, GET, queima em treinos, queima em passos, calorias consumidas e saldo)
-  - `GET /energy/weekly-budget` (Cofre semanal e buffer acumulado para o fim de semana)
-- **Componentes Chave:**
-  - `UserHUD.tsx`: Avatar, Level, XP, Meta corporal ativa e Saldo de Moedas em destaque com atalho direto à Loja.
-  - `ShopRewardBanner.tsx`: Vitrine da próxima recompensa gastronômica selecionada e % de moedas acumuladas.
-  - `EnergyBalance.tsx`: Barra de progresso do balanço energético diário com decomposição detalhada (TMB + Atividade vs. Consumo).
-  - `CaloricVault.tsx`: Visualizador do cofre calórico semanal, mostrando os dias da semana e o buffer para o sábado/domingo.
+### Tela 2 — Treino (`/workouts`)
+- `GET /workout`, `POST /workout`, `GET /workout/:id`, `PUT /workout/:id`, `DELETE /workout/:id` (existem) — rotinas do próprio usuário.
+- `POST /workout/session` (existe) — conclui o treino; devolve kcal, moedas, XP e o log.
+- `GET /workout/logs/user` (existe) — histórico.
+- `GET /workout/progression/:exerciseName` (existe) — carga da última vez e evolução.
+- Componentes: cartão de rotina, sessão ativa com séries, timer de descanso, carga anterior por exercício.
 
----
+### Tela 3 — Nutrição (`/nutrition`)
+- `GET /nutrition/getDailySummary` (existe) — totais de macros e registros do dia.
+- `POST /nutrition/log`, `DELETE /nutrition/log/:id` (existem).
+- `GET /nutrition/search` (existe) — TACO + Open Food Facts.
+- `GET /nutrition/barcode/:barcode` (existe) — 404 quando o produto não existe.
+- Recentes, favoritos, repetir refeição e alimento próprio (Lote 4).
 
-### 📱 Tela 2: Treinos & Sobrecarga Progressiva (`/workouts`)
-- **Objetivo:** Ergonomia máxima durante a musculação; criação de rotinas, histórico de sessões e execução com rest timer.
-- **Endpoints Conectados:**
-  - `GET /workout` (Rotinas do usuário)
-  - `POST /workout` (Criar nova rotina personalizada)
-  - `GET /workout/:id` e `PUT /workout/:id` (Detalhes e edição de rotina)
-  - `DELETE /workout/:id` (Exclusão de rotina)
-  - `POST /workout/session` ou `POST /workout/logs` (Salva a sessão executada e credita moedas/calorias)
-  - `GET /workout/logs/user` (Histórico de treinos anteriores)
-  - `GET /workout/progression/:exerciseName` (Evolução de carga/1RM por exercício)
-  - `POST /workout/check-missed` (Auditoria de treinos pendentes)
-- **Componentes Chave:**
-  - `RoutineCard.tsx`: Cartão com resumo dos grupos musculares e botão "Iniciar Sessão".
-  - `ActiveWorkoutSession.tsx`: Modo de treino ativo com séries (aquecimento/normal/falha), cargas e reps.
-  - `RestTimerFloating.tsx`: Timer flutuante de descanso com presets de 60s, 90s, 120s e som sutil.
-  - `ProgressionChart.tsx`: Gráfico linear da sobrecarga progressiva ao longo das semanas.
+### Tela 4 — Atividade (`/activity`)
+- `POST /activity/steps`, `GET /activity/steps/today`, `GET /activity/steps/recommendation` (existem).
+- Por enquanto passo digitado à mão rende moeda. Quando a leitura automática chegar (Lote 4), passo manual vira só registro e a moeda vem só de `health_connect`/`healthkit`. Leitura automática pelo celular no Lote 4 (Capacitor).
 
----
+### Tela 5 — Refeições livres (`/rewards`)
+O clímax do ciclo: escolher, agendar e resgatar a refeição livre.
+- `GET /free-meal-templates` (Lote 3) — catálogo curado (rodízio, pizza, hambúrguer…), com atalhos leve/média/pesada.
+- `POST /free-meals`, `GET /free-meals/next`, `POST /free-meals/:id/redeem`, `DELETE /free-meals/:id` (Lote 3).
+- Componentes: catálogo, montador com contadores +/−, agendamento, resgate com "o que comi de fato" e foto opcional, galeria de conquistas.
+- Comprar a refeição livre só com as duas metas batidas (kcal no cofre e 100 moedas); com o botão travado, mostrar o que falta e a prévia do impacto. Sem as metas, a pessoa registra o que comeu no diário normal (dia acima da meta, alerta neutro, sem conquista). Nunca bloquear o registro.
 
-### 📱 Tela 3: Diário Nutricional & Balanço de Macros (`/nutrition`)
-- **Objetivo:** Registro ágil de alimentos consumidos no dia, controle de macronutrientes (Proteína, Carboidrato, Gordura) e busca por código de barras.
-- **Endpoints Conectados:**
-  - `GET /nutrition/getDailySummary` (Resumo de refeições do dia e totais consumidos)
-  - `POST /nutrition/log` (Registro de alimento em uma das refeições: Café, Almoço, Jantar, Lanches)
-  - `DELETE /nutrition/log/:id` (Remoção de item registrado)
-  - `GET /nutrition/search` (Busca textual rápida no banco de alimentos)
-  - `GET /nutrition/barcode/:barcode` (Consulta instantânea de EAN via Open Food Facts)
-- **Componentes Chave:**
-  - `MacroRings.tsx`: Anéis ou barras compactas com gramas consumidas vs. metas diárias calculadas.
-  - `MealSection.tsx`: Seções sanfonadas por refeição com calorias parciais e lista de itens adicionados.
-  - `FoodSearchModal.tsx`: Modal com input de busca rápida, lista de sugestões com macros discriminados e botão para leitor de código de barras.
-  - `BarcodeScannerSheet.tsx`: Integração com câmera/leitor para leitura instantânea de código de barras de embalagens.
+### Tela 6 — Perfil (`/profile`)
+- `GET /profile`, `PATCH /profile` (existem) — peso, altura, idade, sexo biológico, rotina **sem contar treino**, objetivo e fuso.
+- `PATCH /profile/nutrition` (existe) — recalcula metas de calorias e macros e devolve `{ profile, targets }`.
+- Registro de peso ao longo do tempo (`/weight`, Lote 3); extratos de cofre e moedas.
+- Componentes: `PhysicalProfileForm`, `PrimaryGoalSelector`.
 
 ---
 
-### 📱 Tela 4: Hábitos & Quests do Caçador (`/habits`)
-- **Objetivo:** Monitoramento das rotinas diárias não-musculares que constroem a consistência e regeneram os atributos RPG do avatar (Vitalidade, Foco, Inteligência).
-- **Endpoints Conectados:**
-  - `GET /habits` (Lista de hábitos diários do usuário e streaks atuais)
-  - `POST /habits` (Criação de novo hábito com categoria e atributo-alvo)
-  - `POST /habits/:id/checkin` (Check-in ou progresso de quantidade do hábito)
-  - `PATCH /habits/:id` e `DELETE /habits/:id` (Edição/exclusão de hábito)
-  - `GET /habits/steps/today` e `POST /habits/steps` (Consulta e log de passos diários)
-  - `GET /habits/steps/recommendation` (Meta recomendada de passos)
-  - `GET /quests` e `POST /quests/:id/complete` (Missões ativas com prazos e recompensas)
-- **Componentes Chave:**
-  - `WaterTrackerCard.tsx`: Widget de copos/garrafas de água com meta automática calculada pelo peso (`peso * 35ml`).
-  - `StepsProgressCard.tsx`: Visualizador de passos diários conectados à geração de moedas e queima calórica.
-  - `HabitItemRow.tsx`: Linha densa de hábito com checkbox tátil, streak de dias seguidos e tag do atributo RPG (`+Vitality`, `+Focus`).
-  - `QuestList.tsx`: Missões especiais semanais ou diárias com badges de XP e Moedas.
-
----
-
-### 📱 Tela 5: Loja de Refeições Livres / The Vault Market (`/rewards`)
-- **Objetivo:** O clímax do loop comportamental. O usuário gasta suas moedas acumuladas para autorizar refeições livres (Cheat Meals) calculadas, descontando o excedente do Cofre Semanal sem comprometer o déficit.
-- **Endpoints Conectados:**
-  - `GET /user/me` (Saldo de moedas disponíveis)
-  - `GET /energy/weekly-budget` (Saldo disponível no cofre calórico semanal)
-  - *Fluxo de resgate*: deduz moedas do perfil e compensa no cofre calórico.
-- **Componentes Chave:**
-  - `VaultBalanceSummary.tsx`: Exibição sinérgica: Moedas Disponíveis + Saldo Calórico no Cofre de Fim de Semana.
-  - `CheatMealCard.tsx`: Card de refeição livre (ex: Pizza Artesanal, Burger Duplo, Rodízio) com custo em moedas, estimativa calórica e botão de resgate condicional (habilitado apenas com moedas suficientes).
-  - `CustomRewardModal.tsx`: Permite ao usuário cadastrar seus próprios pratos favoritos ou recompensas pessoais da vida real.
-
----
-
-### 📱 Tela 6: Perfil do Caçador & Metas Biométricas (`/profile`)
-- **Objetivo:** Ajuste fino dos parâmetros biológicos que regem o motor de cálculo da dieta e visualização da ficha de atributos do personagem.
-- **Endpoints Conectados:**
-  - `GET /profile` e `PATCH /profile` (Peso, altura, idade, sexo biológico, nível de atividade e meta primária)
-  - `GET /profile/recommendations` (Recomendações automáticas de calorias e macros)
-  - `PATCH /profile/nutrition` (Recálculo da dieta)
-  - `POST /user/logout` (Encerra a sessão limpando os cookies)
-- **Componentes Chave:**
-  - `BiometricsForm.tsx`: Campos numéricos compactos para peso atual, altura e nível de atividade física.
-  - `PrimaryGoalSelector.tsx`: Seleção tática entre Déficit (-400 kcal), Hipertrofia (+300 kcal) ou Manutenção.
-  - `CharacterSheet.tsx`: Visualizador de atributos RPG do caçador (Força, Vitalidade, Agilidade, Disciplina, HP Atual / Max HP).
-
----
-
-## 4. Design Tokens & Cores Semânticas (Tailwind)
+## 4. Tokens de cor semânticos (Tailwind)
 
 ```css
-/* Paleta Dark Obsidian */
+/* Base */
 --bg-base: #08090a;
 --bg-surface: #0c0e12;
 --bg-surface-elevated: #14171d;
 --border-subtle: rgba(255, 255, 255, 0.08);
 --border-focus: rgba(255, 255, 255, 0.20);
 
-/* Cores Semânticas de Domínio */
---color-coins: #f59e0b;     /* Amber: Moedas, Loja de Recompensas, Economia */
---color-workout: #f43f5e;   /* Rose: Treinos, Frequência Cardíaca, Sobrecarga */
---color-nutrition: #10b981; /* Emerald: Nutrição, Macros, Recuperação */
---color-vault: #06b6d4;     /* Cyan: Cofre Calórico Semanal, Buffer de Fim de Semana */
---color-stats: #8b5cf6;     /* Violet/Slate: Atributos de Personagem (RPG) */
+/* Domínio */
+--color-coins: #f59e0b;     /* Amber: moedas e ticket da refeição livre */
+--color-workout: #f43f5e;   /* Rose: treino e esforço */
+--color-nutrition: #10b981; /* Emerald: nutrição e macros */
+--color-vault: #06b6d4;     /* Cyan: cofre de kcal */
 ```
 
 ---
 
-## 5. Checklist de Verificação de Telas (Critérios de Aceite)
+## 5. Critérios de aceite de cada tela
 
-- [ ] Toda tela consome 100% dos dados da API real via `client` do `openapi-fetch` sem `as any`.
-- [ ] Todo número de métrica usa `tabular-nums` e `font-mono`.
-- [ ] Nenhuma cor de gradiente clichê roxo/arco-íris é utilizada em botões ou cards.
-- [ ] O Rest Timer e a sessão de treino funcionam sem perder o estado caso o usuário mude de aba.
-- [ ] O leitor de código de barras e a busca de alimentos trazem macros reais calculados.
-- [ ] O resgate de recompensas na loja valida se o usuário possui saldo de moedas suficiente.
-- [ ] O comando `npm run lint` (`tsc --noEmit`) no diretório `rpg-frontend` passa com **zero erros**.
+- [ ] 100% dos dados vêm da API real via `client` do `openapi-fetch`, sem `any`, `unknown` ou cast forçado.
+- [ ] Nenhuma referência a HP, atributos, classes, hábitos, quests ou loja de recompensas personalizadas.
+- [ ] Estados de carregamento, vazio e erro tratados (zero moedas, cofre vazio, perfil físico não preenchido).
+- [ ] Números com `tabular-nums` e `font-mono`.
+- [ ] Textos revisados com o cuidado de bem-estar (sem culpa, sem punição).
+- [ ] `npm run lint` (`tsc --noEmit`) em `rpg-frontend` com **zero erros**.

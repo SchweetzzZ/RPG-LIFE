@@ -1,0 +1,3 @@
+# Todo arquivo de texto e gravado no repositorio com fim de linha LF (padrao Linux),
+# vindo de Windows ou de Linux. O git detecta sozinho o que e binario (imagens etc.).
+* text=auto eol=lf

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { User, ShieldCheck, Flame, Zap } from 'lucide-react';
 import { PrimaryGoalSelector, type GoalType } from '../components/profile/PrimaryGoalSelector';
-import { BiometricsForm } from '../components/profile/BiometricsForm';
+import { PhysicalProfileForm, type PhysicalProfileData } from '../components/profile/PhysicalProfileForm';
 
 export const Route = createFileRoute('/profile')({
   component: ProfileRouteComponent,
@@ -12,7 +12,7 @@ function ProfileRouteComponent() {
   const navigate = useNavigate();
   const [selectedGoal, setSelectedGoal] = useState<GoalType>('lose_weight');
 
-  const handleSaveBiometrics = (data: any) => {
+  const handleSavePhysicalProfile = (data: PhysicalProfileData) => {
     // Simula recálculo de dieta do usuário
     console.log('Dados biométricos salvos:', data, 'Meta:', selectedGoal);
   };
@@ -33,11 +33,11 @@ function ProfileRouteComponent() {
                 <User className="h-4 w-4 stroke-[2]" />
               </div>
               <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-zinc-100">
-                Perfil & Ficha do Caçador
+                Perfil
               </h1>
             </div>
             <p className="text-xs text-zinc-400">
-              Parametrização biológica e status de combate no RPG-LIFE.
+              Seus dados para calcular as metas de calorias e macros.
             </p>
           </div>
         </header>
@@ -48,9 +48,9 @@ function ProfileRouteComponent() {
           onChange={setSelectedGoal}
         />
 
-        {/* 2. Formulário de Biometria & Recálculo */}
-        <BiometricsForm
-          onSave={handleSaveBiometrics}
+        {/* 2. Perfil físico & recálculo das metas */}
+        <PhysicalProfileForm
+          onSave={handleSavePhysicalProfile}
           onLogout={handleLogout}
         />
       </div>

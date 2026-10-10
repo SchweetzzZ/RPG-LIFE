@@ -13,6 +13,13 @@ export enum ActivityLevel {
     VERY_INTENSE = 'very_intense',
 }
 
+// Sexo usado na formula de gasto calorico (Mifflin-St Jeor so tem estas duas versoes).
+// Nao e identidade de genero: se um dia o app perguntar genero, sera outro campo, fora da conta.
+export enum BiologicalSex {
+    MALE = 'male',
+    FEMALE = 'female',
+}
+
 export enum PrimaryGoal {
     LOSE_WEIGHT = 'lose_weight',
     MAINTAIN = 'maintain',
@@ -34,8 +41,8 @@ export class UserProfile {
     @Prop({ default: null })
     age: number
 
-    @Prop({ type: String, enum: ['male', 'female', 'other'], default: null })
-    biologicalSex: string
+    @Prop({ type: String, enum: BiologicalSex, default: null })
+    biologicalSex: BiologicalSex
 
     @Prop({ type: String, enum: ActivityLevel, default: null })
     activityLevel: ActivityLevel

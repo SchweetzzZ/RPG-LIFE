@@ -5,7 +5,7 @@ description: Diretrizes obrigatórias de design de alta fidelidade, eliminação
 
 # 🛡️ RPG-LIFE UI Engine: Guia Definitivo Anti-AI Slop & Design de Alta Performance
 
-Este documento é a especificação obrigatória para o desenvolvimento de interfaces no **RPG-LIFE**. Ele define o padrão estético, elimina os vícios gerados automaticamente por modelos de linguagem e estabelece a arquitetura visual da trindade do app: **Treinos + Nutrição + Loja de Moedas (Marketplace)**.
+Este documento é a especificação obrigatória para o desenvolvimento de interfaces no **RPG-LIFE**. Ele define o padrão estético, elimina os vícios gerados automaticamente por modelos de linguagem e estabelece a arquitetura visual do ciclo central do app: **fechar o dia (Nutrição + Treino + Passos) → cofre de kcal + moedas → refeição livre agendada**.
 
 ---
 
@@ -24,7 +24,7 @@ Quando IAs geram código de front-end sem direcionamento estrito, produzem layou
 | 7 | **Responsividade Preguiçosa** | Colapsar tudo cegamente em `col-span-12` empilhado no mobile, gerando uma tripa vertical quilométrica. | Layouts adaptativos reais: tabelas que viram listas com dados condensados, gráficos com aspect-ratio fixo, gavetas/sheets inferiores para filtros. |
 | 8 | **Falta de Estados Reais (Edge Cases)** | Telas projetadas apenas para o caso perfeito (quando tudo tem dados), quebrando quando há zero moedas, valores longos ou dados nulos. | Skeleton loaders fieis ao wireframe, zero-states inspiradores com ação de desbloqueio, e tratamento rigoroso de overflow e nulos. |
 | 9 | **Monotonia de Contraste** | Textos secundários em `text-gray-400` que se misturam com o fundo, violando acessibilidade WCAG. | Escala de luminância calibrada: Titular (`#f4f4f5`), Corpo (`#a1a1aa`), Rótulo/Metadado (`#71717a`), Borda base (`rgba(255,255,255,0.06)`). |
-| 10 | **Desconexão da Proposta de Valor** | Criar widgets soltos que não conversam entre si, esquecendo o loop central de recompensa do produto. | Toda ação visual reflete o fluxo de valor: **Esforço Físico (Treino/Nutrição) ➔ Recompensa Tangível (Moedas ➔ Loja)**. |
+| 10 | **Desconexão da Proposta de Valor** | Criar widgets soltos que não conversam entre si, esquecendo o loop central de recompensa do produto. | Toda ação visual reflete o fluxo de valor: **dia fechado (Nutrição/Treino/Passos) ➔ cofre de kcal + moedas ➔ refeição livre agendada**. |
 
 ---
 
@@ -36,25 +36,31 @@ A identidade visual é um **HUD Tático de Alta Precisão** (inspirado na estét
 
 1. **Superfícies**: Fundo absoluto profundo (`#08090a`), com camadas de elevação em superfícies discretas (`#0c0e12`, `#14171d`). Bordas com precisão cirúrgica de 1px translúcido (`border-white/[0.08]`).
 2. **Cores Semânticas Funcionais**:
-   - 🪙 **Forged Amber (Moedas & Loja)**: `#f59e0b` / `amber-400` (Simboliza valor, riqueza acumulada e recompensas desbloqueáveis).
+   - 🪙 **Forged Amber (Moedas & Ticket)**: `#f59e0b` / `amber-400` (Simboliza mérito acumulado e o ticket da refeição livre).
    - ⚡ **Kinetic Crimson/Rose (Treinos & Queima)**: `#f43f5e` / `rose-400` (Simboliza frequência cardíaca, gasto térmico e esforço muscular).
    - 🥗 **Bio Emerald (Nutrição & Balanço)**: `#10b981` / `emerald-400` (Simboliza integridade metabólica, regeneração e déficit controlado).
-   - 🛡️ **Titanium Cyan (Cofre & Buffer)**: `#06b6d4` / `cyan-400` (Simboliza segurança calórica e reserva estratégica).
+   - 🛡️ **Titanium Cyan (Cofre de kcal)**: `#06b6d4` / `cyan-400` (Simboliza as kcal guardadas para a refeição livre).
 
 ---
 
-## 3. O Loop Central de Produto: Treino + Nutrição + Loja de Moedas
+## 3. O Loop Central de Produto: fechar o dia → cofre + moedas → refeição livre
 
 ```mermaid
 graph LR
-    A["Treinos & Passos (Esforço)"] -->|"Gera Moedas + Queima"| C["Saldo de Moedas (Poder)"]
-    B["Nutrição & Déficit (Disciplina)"] -->|"Gera Buffer no Cofre"| C
-    C -->|"Gastar Moedas"| D["A LOJA (The Vault Market)"]
-    D -->|"Desbloqueia"| E["Refeições Livres, Suplementos & Upgrades"]
+    N["Nutrição registrada"] --> F["Fechar o dia"]
+    T["Treino concluído"] -->|"+ moedas"| M["Moedas (mérito)"]
+    P["Passos (origem do sistema)"] -->|"+ moedas"| M
+    F -->|"kcal abaixo da meta (zera no fim do ciclo semanal)"| V["Cofre de kcal (permissão)"]
+    F -->|"+ moedas e sequência"| M
+    V -->|"paga as kcal"| R["Refeição livre agendada"]
+    M -->|"paga o ticket"| R
+    R -->|"resgate + o que comeu de fato"| G["Galeria de conquistas"]
 ```
 
-### A Loja é o Ponto Focal
-As moedas não são cosméticas. O usuário precisa **ver o que ele pode comprar** o tempo todo. Cada repetição na academia e cada refeição saudável registrada o aproxima de um objetivo de consumo tangível (ex: *Burguer de Sábado sem Culpa*, *Acessório de Treino*, *Whey Premium*).
+### A refeição livre é o ponto focal
+Moedas e cofre não são cosméticos: o usuário precisa **ver a próxima refeição livre** o tempo todo e quanto falta para ela ("Rodízio sábado — guarde 360 kcal/dia, faltam 3 dias"). Cada dia fechado o aproxima de algo concreto. Não existe loja de itens, suplementos, upgrades nem recompensa criada pelo usuário; moeda só vem de esforço real.
+
+Cuidado de bem-estar: comer acima da meta aparece como "ajuste do dia", em linguagem neutra, sem perder moeda, XP nem sequência.
 
 ---
 
@@ -78,7 +84,7 @@ RESTRIÇÕES VISUAIS OBRIGATÓRIAS (ANTI-AI SLOP):
 7. Bordas devem ser ultra-finas e discretas: 'border border-white/[0.08]'.
 8. Superfícies: Fundo principal #08090a, superfícies #0c0e12, hover #14171d.
 9. Cores de acento:
-   - Moedas/Loja: Amber (#f59e0b)
+   - Moedas/Ticket: Amber (#f59e0b)
    - Treino/Esforço: Rose (#f43f5e)
    - Nutrição/Regeneração: Emerald (#10b981)
    - Reserva/Cofre: Cyan (#06b6d4)

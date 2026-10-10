@@ -1,41 +1,63 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, NotFoundException, Param, Post, Query, UseGuards } from "@nestjs/common";
+import { ApiBearerAuth, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiTags } from "@nestjs/swagger";
 import { NutritionService } from "./nutricion.service";
 import { JwtAuthGuard } from "../common/guards/jwt-guard";
-import { DailySummaryQueryDto, SearchFoodQueryDto } from "./dto/nutrition-dto";
-import { CreateFoodLogDto } from "./dto/nutrition-dto";
+import {
+    CreateFoodLogDto,
+    DailySummaryQueryDto,
+    DailySummaryResponseDto,
+    FoodLogDeletedResponseDto,
+    FoodLogResponseDto,
+    SearchFoodQueryDto,
+} from "./dto/nutrition-dto";
+import { FoodResultDto } from "./dto/food-dto";
+import { toFoodLogResponse } from "./nutrition.mapper";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 
+@ApiTags('Nutrition')
+@ApiBearerAuth()
 @Controller('nutrition')
+@UseGuards(JwtAuthGuard)
 export class NutritionController {
     constructor(private readonly nutritionService: NutritionService) { }
 
     @Post('log')
-    @UseGuards(JwtAuthGuard)
-    async createLog(@CurrentUser('sub') userId: string, @Body() dto: CreateFoodLogDto) {
-        return this.nutritionService.logFood(userId, dto)
+    @ApiCreatedResponse({ type: FoodLogResponseDto, description: 'Alimento registrado no diario' })
+    async createLog(@CurrentUser('sub') userId: string, @Body() dto: CreateFoodLogDto): Promise<FoodLogResponseDto> {
+        const log = await this.nutritionService.logFood(userId, dto);
+        return toFoodLogResponse(log);
     }
 
     @Get('getDailySummary')
-    @UseGuards(JwtAuthGuard)
-    async getDailySumaty(@CurrentUser('sub') userId: string, @Query() queryDto: DailySummaryQueryDto) {
-        return this.nutritionService.getDailySummary(userId, queryDto.date)
+    @ApiOkResponse({ type: DailySummaryResponseDto, description: 'Totais de macros e registros do dia' })
+    async getDailySumaty(@CurrentUser('sub') userId: string, @Query() queryDto: DailySummaryQueryDto): Promise<DailySummaryResponseDto> {
+        const summary = await this.nutritionService.getDailySummary(userId, queryDto.date);
+        return {
+            ...summary,
+            logs: summary.logs.map(toFoodLogResponse),
+        };
     }
 
     @Delete('log/:id')
-    @UseGuards(JwtAuthGuard)
-    async deleteLog(@CurrentUser('sub') userId: string, @Param('id') logId: string) {
-        return this.nutritionService.deleteFoodLog(userId, logId)
+    @ApiOkResponse({ type: FoodLogDeletedResponseDto, description: 'Registro removido' })
+    async deleteLog(@CurrentUser('sub') userId: string, @Param('id') logId: string): Promise<FoodLogDeletedResponseDto> {
+        return this.nutritionService.deleteFoodLog(userId, logId);
     }
 
     @Get("search")
-    @UseGuards(JwtAuthGuard)
-    async getAllFoods(@Query() queryDto: SearchFoodQueryDto) {
-        return this.nutritionService.searchFoods(queryDto.q)
+    @ApiOkResponse({ type: FoodResultDto, isArray: true, description: 'Alimentos da TACO e do Open Food Facts' })
+    async getAllFoods(@Query() queryDto: SearchFoodQueryDto): Promise<FoodResultDto[]> {
+        return this.nutritionService.searchFoods(queryDto.q);
     }
 
     @Get('barcode/:barcode')
-    @UseGuards(JwtAuthGuard)
-    async getByBarcode(@Param('barcode') barcode: string) {
-        return this.nutritionService.searchByBarcode(barcode);
+    @ApiOkResponse({ type: FoodResultDto, description: 'Produto encontrado pelo codigo de barras' })
+    @ApiNotFoundResponse({ description: 'Produto nao encontrado' })
+    async getByBarcode(@Param('barcode') barcode: string): Promise<FoodResultDto> {
+        const food = await this.nutritionService.searchByBarcode(barcode);
+        if (!food) {
+            throw new NotFoundException('Produto nao encontrado');
+        }
+        return food;
     }
 }

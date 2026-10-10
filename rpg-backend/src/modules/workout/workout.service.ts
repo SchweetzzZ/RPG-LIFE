@@ -3,7 +3,7 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Workout, workoutDocument } from "./schemas/workout-schema";
 import { WorkoutLog, WorkoutLogDocument } from "./schemas/workout-log";
 import { Model, Types } from "mongoose";
-import { CreateWorkoutDto, UpdateWorkoutDto, LogWorkoutDto } from "./dto/workout-dto";
+import { CreateWorkoutDto, UpdateWorkoutDto, LogWorkoutDto, CreateWorkoutLogInput } from "./dto/workout-dto";
 import { ProgressService } from "../progress/progress.service";
 import { CoinService } from "../economy/economy.service";
 import { CoinReason } from "../economy/schema/coin-entry.schema";
@@ -61,8 +61,15 @@ export class WorkoutService {
             .exec();
     }
 
-    async getWorkoutById(workoutId: string): Promise<Workout> {
-        const workout = await this.workoutModel.findById(workoutId).lean().exec();
+    async getWorkoutById(userId: string, workoutId: string): Promise<Workout> {
+        if (!Types.ObjectId.isValid(workoutId)) {
+            throw new NotFoundException("Workout not found");
+        }
+        // So devolve rotinas do proprio usuario
+        const workout = await this.workoutModel
+            .findOne({ _id: new Types.ObjectId(workoutId), user: new Types.ObjectId(userId) })
+            .lean()
+            .exec();
         if (!workout) {
             throw new NotFoundException("Workout not found");
         }
@@ -75,16 +82,7 @@ export class WorkoutService {
 
     // ── Workout Log ──────────────────────────────────────────────────────────
 
-    async createWorkoutLog(userId: string, data: {
-        routineId?: string;
-        routineTitle?: string;
-        durationMinutes: number;
-        totalVolumeKg: number;
-        totalSetsCompleted: number;
-        xpEarned: number;
-        coinsEarned: number;
-        exerciseLogs: { exerciseName: string; maxWeightKg: number; completedSetsCount: number }[];
-    }): Promise<WorkoutLog> {
+    async createWorkoutLog(userId: string, data: CreateWorkoutLogInput): Promise<WorkoutLog> {
         // A data do log e sempre o "hoje" do usuario (fuso do perfil)
         const date = toUserDate(await this.profileService.getTimezone(userId));
         return this.workoutLogModel.create({
@@ -199,10 +197,12 @@ export class WorkoutService {
 
     async getProgression(userId: string, exerciseName: string) {
         const timezone = await this.profileService.getTimezone(userId);
+        // Escapa o nome para nao ser interpretado como expressao regular
+        const escapedName = exerciseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const logs = await this.workoutLogModel
             .find({
                 user: new Types.ObjectId(userId),
-                'exercises.exerciseName': { $regex: new RegExp(`^${exerciseName}$`, 'i') },
+                'exercises.exerciseName': { $regex: new RegExp(`^${escapedName}$`, 'i') },
             })
             .sort({ completedAt: 1 })
             .lean()
@@ -210,12 +210,12 @@ export class WorkoutService {
 
         const history = logs.map((log) => {
             const exercise = log.exercises?.find(
-                (e: any) => e.exerciseName?.toLowerCase() === exerciseName.toLowerCase()
+                (e) => e.exerciseName?.toLowerCase() === exerciseName.toLowerCase()
             );
 
             let exerciseVolume = 0;
             if (exercise?.sets) {
-                exercise.sets.forEach((s: any) => {
+                exercise.sets.forEach((s) => {
                     exerciseVolume += (s.weightKg || 0) * (s.reps || 0);
                 });
             }

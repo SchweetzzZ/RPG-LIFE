@@ -39,9 +39,6 @@ export class WorkoutExercise {
     @Prop({ required: false, default: 'Peito' })
     category?: string;
 
-    @Prop({ required: false, default: 'strength' })
-    primaryAttribute?: string;
-
     @Prop({ type: [ExerciseSetSchema], default: [] })
     sets: ExerciseSet[];
 

@@ -1,32 +1,49 @@
 import React, { useState } from 'react';
 import { Save, LogOut, Check } from 'lucide-react';
 
-interface BiometricsData {
+// Valores iguais aos da API (UpdateProfileDto). No Lote 3 este tipo passa a vir do schema.ts.
+type BiologicalSex = 'male' | 'female';
+type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'intense' | 'very_intense';
+
+export interface PhysicalProfileData {
   weightKg: number;
   heightCm: number;
   age: number;
-  biologicalSex: 'M' | 'F';
-  activityLevel: 'sedentary' | 'light' | 'moderate' | 'very_active';
+  biologicalSex: BiologicalSex;
+  activityLevel: ActivityLevel;
 }
 
-interface BiometricsFormProps {
-  initialData?: BiometricsData;
-  onSave: (data: BiometricsData) => void;
+const SEX_OPTIONS: { value: BiologicalSex; label: string }[] = [
+  { value: 'male', label: 'Masculino' },
+  { value: 'female', label: 'Feminino' },
+];
+
+const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string }[] = [
+  { value: 'sedentary', label: 'Sedentário (pouco ou nenhum exercício)' },
+  { value: 'light', label: 'Leve (exercício leve 1 a 3 dias na semana)' },
+  { value: 'moderate', label: 'Moderado (treino moderado 3 a 5 dias na semana)' },
+  { value: 'intense', label: 'Intenso (treino pesado 6 a 7 dias na semana)' },
+  { value: 'very_intense', label: 'Muito intenso (treino pesado diário ou trabalho físico)' },
+];
+
+interface PhysicalProfileFormProps {
+  initialData?: PhysicalProfileData;
+  onSave: (data: PhysicalProfileData) => void;
   onLogout: () => void;
 }
 
-export function BiometricsForm({
+export function PhysicalProfileForm({
   initialData = {
     weightKg: 80,
     heightCm: 175,
     age: 28,
-    biologicalSex: 'M',
+    biologicalSex: 'male',
     activityLevel: 'moderate',
   },
   onSave,
   onLogout,
-}: BiometricsFormProps) {
-  const [formData, setFormData] = useState<BiometricsData>(initialData);
+}: PhysicalProfileFormProps) {
+  const [formData, setFormData] = useState<PhysicalProfileData>(initialData);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -40,7 +57,7 @@ export function BiometricsForm({
     <form onSubmit={handleSubmit} className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0c0e12] p-4 sm:p-5 shadow-xl space-y-4">
       <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
         <h3 className="font-mono text-xs font-semibold uppercase tracking-wider text-zinc-300">
-          Dados Biométricos do Motor de Cálculo
+          Perfil físico
         </h3>
         <span className="font-mono text-[10px] text-zinc-500">
           Fórmula Mifflin-St Jeor
@@ -91,21 +108,26 @@ export function BiometricsForm({
           />
         </div>
 
-        {/* Sexo Biológico */}
+        {/* Sexo usado no cálculo (não é identidade de gênero) */}
         <div className="space-y-1.5">
           <label className="font-mono text-[11px] uppercase tracking-wider text-zinc-400">
-            Sexo Biológico
+            Sexo usado no cálculo
           </label>
           <select
             value={formData.biologicalSex}
-            onChange={(e) =>
-              setFormData({ ...formData, biologicalSex: e.target.value as 'M' | 'F' })
-            }
+            onChange={(e) => {
+              const option = SEX_OPTIONS.find((o) => o.value === e.target.value);
+              if (option) setFormData({ ...formData, biologicalSex: option.value });
+            }}
             className="w-full h-11 rounded-xl border border-white/[0.1] bg-[#08090a] px-3 font-mono text-xs font-semibold text-zinc-100 focus:border-amber-400/60 focus:outline-none"
           >
-            <option value="M">Masculino</option>
-            <option value="F">Feminino</option>
+            {SEX_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
           </select>
+          <p className="text-[10px] leading-snug text-zinc-500">
+            A fórmula de gasto calórico tem uma versão para cada sexo. Escolha a que mais se aproxima do seu corpo.
+          </p>
         </div>
       </div>
 
@@ -116,18 +138,15 @@ export function BiometricsForm({
         </label>
         <select
           value={formData.activityLevel}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              activityLevel: e.target.value as BiometricsData['activityLevel'],
-            })
-          }
+          onChange={(e) => {
+            const option = ACTIVITY_OPTIONS.find((o) => o.value === e.target.value);
+            if (option) setFormData({ ...formData, activityLevel: option.value });
+          }}
           className="w-full h-11 rounded-xl border border-white/[0.1] bg-[#08090a] px-3 text-xs text-zinc-100 focus:border-amber-400/60 focus:outline-none"
         >
-          <option value="sedentary">Sedentário (Pouco ou nenhum exercício)</option>
-          <option value="light">Leve (Exercício leve 1 a 3 dias na semana)</option>
-          <option value="moderate">Moderado (Treino moderado 3 a 5 dias na semana)</option>
-          <option value="very_active">Intenso (Treino pesado 6 a 7 dias na semana)</option>
+          {ACTIVITY_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
         </select>
       </div>
 

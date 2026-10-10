@@ -6,7 +6,6 @@ interface CaloricVaultProps {
 }
 
 export function CaloricVault({ data }: CaloricVaultProps) {
-    const { } = data
     return (
         <div className="flex flex-col justify-between border border-neutral-800 bg-neutral-900 rounded-xl p-3">
             <div>
@@ -16,8 +15,8 @@ export function CaloricVault({ data }: CaloricVaultProps) {
                 </div>
             </div>
             <div className="text-xs text-neutral-400 mt-3 pt-2 border-t border-neutral-800">
-                Buffer Fim de semana: <span className="text-esmerald-400 font-medium">+{data.weekendBufferTotal} kcal</span>
+                Buffer Fim de semana: <span className="text-emerald-400 font-medium">+{data.weekendBufferTotal} kcal</span>
             </div>
-        </div >
+        </div>
     )
 }

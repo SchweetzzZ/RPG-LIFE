@@ -71,11 +71,10 @@ function LoginPage() {
               setMode('login');
               setErrorMessage(null);
             }}
-            className={`py-2.5 rounded-lg transition-all min-h-[38px] ${
-              mode === 'login'
+            className={`py-2.5 rounded-lg transition-all min-h-[38px] ${mode === 'login'
                 ? 'bg-[#14171d] text-zinc-100 shadow-sm border border-white/[0.08]'
                 : 'text-zinc-500 hover:text-zinc-300'
-            }`}
+              }`}
           >
             Entrar
           </button>
@@ -85,11 +84,10 @@ function LoginPage() {
               setMode('register');
               setErrorMessage(null);
             }}
-            className={`py-2.5 rounded-lg transition-all min-h-[38px] ${
-              mode === 'register'
+            className={`py-2.5 rounded-lg transition-all min-h-[38px] ${mode === 'register'
                 ? 'bg-[#14171d] text-zinc-100 shadow-sm border border-white/[0.08]'
                 : 'text-zinc-500 hover:text-zinc-300'
-            }`}
+              }`}
           >
             Criar Conta
           </button>

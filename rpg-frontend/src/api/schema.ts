@@ -100,22 +100,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/coins": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["EconomyController_getCoins"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/profile": {
         parameters: {
             query?: never;
@@ -146,6 +130,22 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["ProfileController_updateNutrition"];
+        trace?: never;
+    };
+    "/coins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EconomyController_getCoins"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/activity/steps": {
@@ -492,6 +492,62 @@ export interface components {
         LogoutResponseDto: {
             message: string;
         };
+        ProfileResponseDto: {
+            id: string;
+            weightKg: number | null;
+            heightCm: number | null;
+            age: number | null;
+            /** @enum {string|null} */
+            biologicalSex: "male" | "female" | null;
+            /** @enum {string|null} */
+            activityLevel: "sedentary" | "light" | "moderate" | "intense" | "very_intense" | null;
+            /** @enum {string|null} */
+            primaryGoal: "lose_weight" | "maintain" | "gain_muscle" | null;
+            timezone: string;
+            targetCalories: number | null;
+            targetProteinGrams: number | null;
+            targetCarbGrams: number | null;
+            targetFatGrams: number | null;
+        };
+        UpdateProfileDto: {
+            weightKg?: number;
+            heightCm?: number;
+            age?: number;
+            /** @enum {string} */
+            biologicalSex?: "male" | "female";
+            /** @enum {string} */
+            activityLevel?: "sedentary" | "light" | "moderate" | "intense" | "very_intense";
+            /** @enum {string} */
+            primaryGoal?: "lose_weight" | "maintain" | "gain_muscle";
+            timezone?: string;
+        };
+        UpdateNutritionResponseDto: {
+            profile: {
+                id: string;
+                weightKg: number | null;
+                heightCm: number | null;
+                age: number | null;
+                /** @enum {string|null} */
+                biologicalSex: "male" | "female" | null;
+                /** @enum {string|null} */
+                activityLevel: "sedentary" | "light" | "moderate" | "intense" | "very_intense" | null;
+                /** @enum {string|null} */
+                primaryGoal: "lose_weight" | "maintain" | "gain_muscle" | null;
+                timezone: string;
+                targetCalories: number | null;
+                targetProteinGrams: number | null;
+                targetCarbGrams: number | null;
+                targetFatGrams: number | null;
+            };
+            targets: {
+                bmr: number;
+                tdee: number;
+                targetCalories: number;
+                proteinGrams: number;
+                carbGrams: number;
+                fatGrams: number;
+            };
+        };
         CoinsResponseDto: {
             balance: number;
             entries: {
@@ -503,18 +559,6 @@ export interface components {
                 createdAt: string;
             }[];
         };
-        UpdateProfileDto: {
-            weightKg?: number;
-            heightCm?: number;
-            age?: number;
-            /** @enum {string} */
-            biologicalSex?: "male" | "female" | "other";
-            /** @enum {string} */
-            activityLevel?: "sedentary" | "light" | "moderate" | "intense" | "very_intense";
-            /** @enum {string} */
-            primaryGoal?: "lose_weight" | "maintain" | "gain_muscle";
-            timezone?: string;
-        };
         LogStepsDto: {
             steps: number;
             date?: string;
@@ -522,7 +566,7 @@ export interface components {
              * @default manual
              * @enum {string}
              */
-            source?: "manual" | "health_connect" | "healthkit";
+            source: "manual" | "health_connect" | "healthkit";
         };
         LogStepsResponseDto: {
             date: string;
@@ -556,6 +600,61 @@ export interface components {
             fatGrams: number;
             date?: string;
         };
+        FoodLogResponseDto: {
+            id: string;
+            date: string;
+            /** @enum {string} */
+            mealType: "breakfast" | "lunch" | "dinner" | "snack";
+            foodName: string;
+            amountGrams: number;
+            calories: number;
+            proteinGrams: number;
+            carbGrams: number;
+            fatGrams: number;
+            createdAt?: string;
+        };
+        DailySummaryResponseDto: {
+            date: string;
+            totals: {
+                calories: number;
+                proteinGrams: number;
+                carbGrams: number;
+                fatGrams: number;
+            };
+            logs: {
+                id: string;
+                date: string;
+                /** @enum {string} */
+                mealType: "breakfast" | "lunch" | "dinner" | "snack";
+                foodName: string;
+                amountGrams: number;
+                calories: number;
+                proteinGrams: number;
+                carbGrams: number;
+                fatGrams: number;
+                createdAt?: string;
+            }[];
+        };
+        FoodLogDeletedResponseDto: {
+            message: string;
+        };
+        FoodResultDto: {
+            id: string;
+            name: string;
+            /** @enum {string} */
+            source: "TACO" | "OPEN_FOOD_FACTS";
+            brand?: string;
+            barcode?: string;
+            /** @default 100 */
+            servingSizeGrams: number;
+            nutrientsPer100g: {
+                calories: number;
+                protein: number;
+                carbs: number;
+                fat: number;
+                fiber?: number;
+            };
+        };
         CreateWorkoutDtoClass: {
             title: string;
             /** @default  */
@@ -580,11 +679,6 @@ export interface components {
                  * @enum {string}
                  */
                 category: "Peito" | "Costas" | "Pernas" | "Ombros" | "Braços" | "Abdômen" | "Cardio";
-                /**
-                 * @default strength
-                 * @enum {string}
-                 */
-                primaryAttribute: "strength" | "intelligence" | "vitality" | "focus";
                 /** @default [] */
                 sets: {
                     id?: string;
@@ -611,6 +705,36 @@ export interface components {
             completionCount: number;
             lastCompletedDate?: string | null;
         };
+        WorkoutResponseDto: {
+            id: string;
+            title: string;
+            description: string;
+            estimatedMinutes: number;
+            targetMuscleGroups: string[];
+            scheduledDays: number[];
+            /** @enum {string} */
+            intensity: "moderate" | "intense" | "cycling_running";
+            exercises: {
+                id?: string;
+                name: string;
+                category?: string;
+                sets: {
+                    setNumber: number;
+                    weightKg: number;
+                    reps: number;
+                    completed: boolean;
+                    rpe?: number;
+                    /** @enum {string} */
+                    technique: "normal" | "back_off_set" | "cluster_set" | "drop_set";
+                    restSeconds: number;
+                }[];
+                notes?: string;
+            }[];
+            completionCount: number;
+            lastCompletedDate: string | null;
+            createdAt?: string;
+            updatedAt?: string;
+        };
         UpdateWorkoutDtoClass: {
             title?: string;
             /** @default  */
@@ -635,11 +759,6 @@ export interface components {
                  * @enum {string}
                  */
                 category: "Peito" | "Costas" | "Pernas" | "Ombros" | "Braços" | "Abdômen" | "Cardio";
-                /**
-                 * @default strength
-                 * @enum {string}
-                 */
-                primaryAttribute: "strength" | "intelligence" | "vitality" | "focus";
                 /** @default [] */
                 sets: {
                     id?: string;
@@ -665,6 +784,138 @@ export interface components {
             /** @default 0 */
             completionCount: number;
             lastCompletedDate?: string | null;
+        };
+        WorkoutDeletedResponseDto: {
+            message: string;
+        };
+        CreateWorkoutLogDto: {
+            routineId?: string;
+            routineTitle?: string;
+            /** @default 0 */
+            durationMinutes: number;
+            /** @default 0 */
+            totalVolumeKg: number;
+            /** @default 0 */
+            totalSetsCompleted: number;
+            /** @default 0 */
+            xpEarned: number;
+            /** @default 0 */
+            coinsEarned: number;
+            /** @default [] */
+            exerciseLogs: {
+                exerciseName: string;
+                /** @default 0 */
+                maxWeightKg: number;
+                /** @default 0 */
+                completedSetsCount: number;
+            }[];
+        };
+        WorkoutLogResponseDto: {
+            id: string;
+            routineId?: string;
+            routineName: string;
+            date: string;
+            durationMinutes: number;
+            /** @enum {string} */
+            intensity: "moderate" | "intense" | "cycling_running";
+            caloriesBurned: number;
+            totalVolumeKg: number;
+            totalSets: number;
+            xpGained: number;
+            coinsGained: number;
+            exercises: {
+                exerciseName: string;
+                maxWeightKg?: number;
+                completedSetsCount?: number;
+                sets?: {
+                    setNumber: number;
+                    weightKg: number;
+                    reps: number;
+                    technique?: string;
+                    restSeconds?: number;
+                }[];
+            }[];
+            completedAt: string;
+        };
+        LogWorkoutDto: {
+            routineId?: string;
+            routineName: string;
+            /** @default 45 */
+            durationMinutes: number;
+            /**
+             * @default moderate
+             * @enum {string}
+             */
+            intensity: "moderate" | "intense" | "cycling_running";
+            date?: string;
+            /** @default [] */
+            exercises: {
+                exerciseName: string;
+                maxWeightKg?: number;
+                completedSetsCount?: number;
+                sets?: {
+                    setNumber: number;
+                    weightKg: number;
+                    reps: number;
+                    /**
+                     * @default normal
+                     * @enum {string}
+                     */
+                    technique: "normal" | "back_off_set" | "cluster_set" | "drop_set";
+                    /** @default 60 */
+                    restSeconds: number;
+                }[];
+            }[];
+        };
+        LogWorkoutSessionResponseDto: {
+            workoutLog: {
+                id: string;
+                routineId?: string;
+                routineName: string;
+                date: string;
+                durationMinutes: number;
+                /** @enum {string} */
+                intensity: "moderate" | "intense" | "cycling_running";
+                caloriesBurned: number;
+                totalVolumeKg: number;
+                totalSets: number;
+                xpGained: number;
+                coinsGained: number;
+                exercises: {
+                    exerciseName: string;
+                    maxWeightKg?: number;
+                    completedSetsCount?: number;
+                    sets?: {
+                        setNumber: number;
+                        weightKg: number;
+                        reps: number;
+                        technique?: string;
+                        restSeconds?: number;
+                    }[];
+                }[];
+                completedAt: string;
+            };
+            caloriesBurned: number;
+            coinsEarned: number;
+            xpEarned: number;
+            leveledUp: boolean;
+        };
+        ProgressionResponseDto: {
+            exerciseName: string;
+            totalSessions: number;
+            history: {
+                date: string;
+                maxWeightKg: number;
+                completedSetsCount: number;
+                totalVolumeKg: number;
+                sets: {
+                    setNumber: number;
+                    weightKg: number;
+                    reps: number;
+                    technique?: string;
+                    restSeconds?: number;
+                }[];
+            }[];
         };
         EnergyDailySummaryResponseDto: {
             date: string;
@@ -991,6 +1242,74 @@ export interface operations {
             };
         };
     };
+    ProfileController_getProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Perfil do usuario */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileResponseDto"];
+                };
+            };
+        };
+    };
+    ProfileController_updateProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateProfileDto"];
+            };
+        };
+        responses: {
+            /** @description Perfil atualizado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileResponseDto"];
+                };
+            };
+        };
+    };
+    ProfileController_updateNutrition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateProfileDto"];
+            };
+        };
+        responses: {
+            /** @description Perfil atualizado com as novas metas de calorias e macros */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateNutritionResponseDto"];
+                };
+            };
+        };
+    };
     EconomyController_getCoins: {
         parameters: {
             query?: never;
@@ -1008,65 +1327,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["CoinsResponseDto"];
                 };
-            };
-        };
-    };
-    ProfileController_getProfile: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ProfileController_updateProfile: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateProfileDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ProfileController_updateNutrition: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateProfileDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };
@@ -1096,8 +1356,8 @@ export interface operations {
     };
     ActivityController_getTodaySteps: {
         parameters: {
-            query?: {
-                date?: string;
+            query: {
+                date: string;
             };
             header?: never;
             path?: never;
@@ -1149,11 +1409,14 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Alimento registrado no diario */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["FoodLogResponseDto"];
+                };
             };
         };
     };
@@ -1168,11 +1431,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Totais de macros e registros do dia */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["DailySummaryResponseDto"];
+                };
             };
         };
     };
@@ -1187,11 +1453,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Registro removido */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["FoodLogDeletedResponseDto"];
+                };
             };
         };
     };
@@ -1206,11 +1475,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Alimentos da TACO e do Open Food Facts */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["FoodResultDto"][];
+                };
             };
         };
     };
@@ -1225,7 +1497,17 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Produto encontrado pelo codigo de barras */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FoodResultDto"];
+                };
+            };
+            /** @description Produto nao encontrado */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1242,11 +1524,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Rotinas do usuario */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["WorkoutResponseDto"][];
+                };
             };
         };
     };
@@ -1263,11 +1548,14 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Rotina criada */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["WorkoutResponseDto"];
+                };
             };
         };
     };
@@ -1282,11 +1570,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Rotina do usuario */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["WorkoutResponseDto"];
+                };
             };
         };
     };
@@ -1305,11 +1596,14 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Rotina atualizada */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["WorkoutResponseDto"];
+                };
             };
         };
     };
@@ -1324,11 +1618,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Rotina removida */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["WorkoutDeletedResponseDto"];
+                };
             };
         };
     };
@@ -1341,11 +1638,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Todas as rotinas (somente admin) */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["WorkoutResponseDto"][];
+                };
             };
         };
     };
@@ -1356,13 +1656,20 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWorkoutLogDto"];
+            };
+        };
         responses: {
+            /** @description Log de treino registrado */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["WorkoutLogResponseDto"];
+                };
             };
         };
     };
@@ -1375,11 +1682,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Historico de treinos do usuario */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["WorkoutLogResponseDto"][];
+                };
             };
         };
     };
@@ -1390,13 +1700,20 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LogWorkoutDto"];
+            };
+        };
         responses: {
+            /** @description Treino concluido (kcal, moedas e XP) */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["LogWorkoutSessionResponseDto"];
+                };
             };
         };
     };
@@ -1411,11 +1728,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Evolucao de carga de um exercicio */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ProgressionResponseDto"];
+                };
             };
         };
     };

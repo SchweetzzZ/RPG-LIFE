@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { UserProfile, UserProfileDocument, ActivityLevel, PrimaryGoal } from './schema/profile.schema';
+import { UserProfile, UserProfileDocument, ActivityLevel, BiologicalSex, PrimaryGoal } from './schema/profile.schema';
 import { UpdateProfileDto, CalculateNutritionInput, CalculateNutritionUpdate } from './dto/profile-dto';
 import { resolveTimezone } from '../common/utils/user-date';
 
@@ -43,15 +43,30 @@ export class ProfileService {
         return updated;
     }
 
-    private calculateBMR(weightKg: number, heightCm: number, age: number, biologicalSex: string): number {
+    // Mifflin-St Jeor: a formula so tem versao masculina e feminina
+    private calculateBMR(weightKg: number, heightCm: number, age: number, biologicalSex: BiologicalSex): number {
         const base = 10 * weightKg + 6.25 * heightCm - 5 * age
-        if (biologicalSex.toLowerCase() === "male") {
-            return base + 5
+        return biologicalSex === BiologicalSex.MALE ? base + 5 : base - 161
+    }
+
+    // Garante que o perfil fisico tem tudo o que a conta precisa; senao, 400 com a lista do que falta
+    private requireNutritionInput(profile: UserProfile): CalculateNutritionInput {
+        const { weightKg, heightCm, age, activityLevel, primaryGoal } = profile
+        // Valor fora do enum (ex.: um 'other' antigo no banco) conta como nao preenchido
+        const biologicalSex = Object.values(BiologicalSex).find((s) => s === profile.biologicalSex)
+
+        if (
+            weightKg == null || heightCm == null || age == null ||
+            biologicalSex === undefined || activityLevel == null || primaryGoal == null
+        ) {
+            const fields = { weightKg, heightCm, age, biologicalSex, activityLevel, primaryGoal }
+            const missing = Object.entries(fields)
+                .filter(([, value]) => value === null || value === undefined)
+                .map(([field]) => `${field}: obrigatório para calcular as metas`)
+            throw new BadRequestException(missing)
         }
-        if (biologicalSex.toLowerCase() === "female") {
-            return base - 161
-        }
-        throw new BadRequestException("Biological sex is not valid")
+
+        return { weightKg, heightCm, age, biologicalSex, activityLevel, primaryGoal }
     }
 
     async calculateNutritionTargets(data: CalculateNutritionInput) {
@@ -96,14 +111,7 @@ export class ProfileService {
     async calculateNutritionByUser(userId: string, data: CalculateNutritionUpdate) {
         const updatedProfile = await this.updateProfile(userId, data as UpdateProfileDto);
 
-        const targets = await this.calculateNutritionTargets({
-            weightKg: updatedProfile.weightKg,
-            heightCm: updatedProfile.heightCm,
-            age: updatedProfile.age,
-            biologicalSex: updatedProfile.biologicalSex as 'male' | 'female' | 'other',
-            activityLevel: updatedProfile.activityLevel,
-            primaryGoal: updatedProfile.primaryGoal,
-        })
+        const targets = await this.calculateNutritionTargets(this.requireNutritionInput(updatedProfile))
 
         const finalProfile = await this.profileModel.findOneAndUpdate({
             user: userId
