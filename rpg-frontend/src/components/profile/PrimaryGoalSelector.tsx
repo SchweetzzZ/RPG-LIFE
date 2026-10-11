@@ -1,16 +1,15 @@
 import React from 'react';
 import { Target, TrendingDown, TrendingUp, Minus } from 'lucide-react';
-
-export type GoalType = 'lose_weight' | 'gain_muscle' | 'maintain';
+import type { PrimaryGoal } from '../../types/profile';
 
 interface PrimaryGoalSelectorProps {
-  selectedGoal: GoalType;
-  onChange: (goal: GoalType) => void;
+  selectedGoal: PrimaryGoal | null;
+  onChange: (goal: PrimaryGoal) => void;
 }
 
 export function PrimaryGoalSelector({ selectedGoal, onChange }: PrimaryGoalSelectorProps) {
   const options: {
-    id: GoalType;
+    id: PrimaryGoal;
     title: string;
     description: string;
     badge: string;

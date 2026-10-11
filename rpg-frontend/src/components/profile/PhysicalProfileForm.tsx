@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
+import { Link } from '@tanstack/react-router';
 import { Save, LogOut, Check } from 'lucide-react';
-
-// Valores iguais aos da API (UpdateProfileDto). No Lote 3 este tipo passa a vir do schema.ts.
-type BiologicalSex = 'male' | 'female';
-type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'intense' | 'very_intense';
-
-export interface PhysicalProfileData {
-  weightKg: number;
-  heightCm: number;
-  age: number;
-  biologicalSex: BiologicalSex;
-  activityLevel: ActivityLevel;
-}
+import { errorMessage } from '../../services/http';
+import type {
+  ActivityLevel,
+  BiologicalSex,
+  NutritionUpdateResult,
+  PrimaryGoal,
+  ProfileData,
+  UpdateProfileInput,
+} from '../../types/profile';
 
 const SEX_OPTIONS: { value: BiologicalSex; label: string }[] = [
   { value: 'male', label: 'Masculino' },
@@ -19,38 +17,72 @@ const SEX_OPTIONS: { value: BiologicalSex; label: string }[] = [
 ];
 
 const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string }[] = [
-  { value: 'sedentary', label: 'Sedentário (pouco ou nenhum exercício)' },
-  { value: 'light', label: 'Leve (exercício leve 1 a 3 dias na semana)' },
-  { value: 'moderate', label: 'Moderado (treino moderado 3 a 5 dias na semana)' },
-  { value: 'intense', label: 'Intenso (treino pesado 6 a 7 dias na semana)' },
-  { value: 'very_intense', label: 'Muito intenso (treino pesado diário ou trabalho físico)' },
+  { value: 'sedentary', label: 'Trabalho sentado' },
+  { value: 'light', label: 'Em pé ou andando parte do dia' },
+  { value: 'moderate', label: 'Trabalho físico' },
 ];
 
 interface PhysicalProfileFormProps {
-  initialData?: PhysicalProfileData;
-  onSave: (data: PhysicalProfileData) => void;
+  /** Perfil vindo do servidor (GET /profile); campos não preenchidos vêm null. */
+  initialData: ProfileData;
+  /** Objetivo escolhido no seletor da tela. */
+  primaryGoal: PrimaryGoal | null;
+  /** Salva no servidor; deve lançar erro se falhar. */
+  onSave: (data: UpdateProfileInput) => Promise<NutritionUpdateResult>;
   onLogout: () => void;
 }
 
-export function PhysicalProfileForm({
-  initialData = {
-    weightKg: 80,
-    heightCm: 175,
-    age: 28,
-    biologicalSex: 'male',
-    activityLevel: 'moderate',
-  },
-  onSave,
-  onLogout,
-}: PhysicalProfileFormProps) {
-  const [formData, setFormData] = useState<PhysicalProfileData>(initialData);
-  const [savedSuccess, setSavedSuccess] = useState(false);
+function toText(value: number | null): string {
+  return value === null ? '' : String(value);
+}
 
-  const handleSubmit = (e: React.FormEvent) => {
+function toNumber(text: string): number | null {
+  if (text.trim() === '') return null;
+  const value = Number(text.replace(',', '.'));
+  return Number.isFinite(value) ? value : null;
+}
+
+export function PhysicalProfileForm({ initialData, primaryGoal, onSave, onLogout }: PhysicalProfileFormProps) {
+  const [weight, setWeight] = useState(toText(initialData.weightKg));
+  const [height, setHeight] = useState(toText(initialData.heightCm));
+  const [age, setAge] = useState(toText(initialData.age));
+  const [biologicalSex, setBiologicalSex] = useState<BiologicalSex | ''>(initialData.biologicalSex ?? '');
+  const [activityLevel, setActivityLevel] = useState<ActivityLevel | ''>(initialData.activityLevel ?? '');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState<NutritionUpdateResult | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 2500);
+    setSaved(null);
+
+    const weightKg = toNumber(weight);
+    const heightCm = toNumber(height);
+    const ageYears = toNumber(age);
+    if (weightKg === null || weightKg < 30 || weightKg > 300) return setError('Informe um peso entre 30 e 300 kg.');
+    if (heightCm === null || heightCm < 100 || heightCm > 250) return setError('Informe uma altura entre 100 e 250 cm.');
+    if (ageYears === null || ageYears < 13 || ageYears > 100) return setError('Informe uma idade entre 13 e 100 anos.');
+    if (biologicalSex === '') return setError('Escolha o sexo usado no cálculo.');
+    if (activityLevel === '') return setError('Escolha como é sua rotina fora da academia.');
+    if (primaryGoal === null) return setError('Escolha seu objetivo.');
+
+    setError(null);
+    setSaving(true);
+    try {
+      const result = await onSave({
+        weightKg,
+        heightCm,
+        age: ageYears,
+        biologicalSex,
+        activityLevel,
+        primaryGoal,
+      });
+      setSaved(result);
+    } catch (err) {
+      setError(errorMessage(err instanceof Error ? err : null, 'Não foi possível salvar o perfil'));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -74,8 +106,8 @@ export function PhysicalProfileForm({
             type="number"
             inputMode="decimal"
             step="0.1"
-            value={formData.weightKg}
-            onChange={(e) => setFormData({ ...formData, weightKg: Number(e.target.value) })}
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
             className="w-full h-11 rounded-xl border border-white/[0.1] bg-[#08090a] px-3 font-mono text-sm font-bold text-zinc-100 focus:border-amber-400/60 focus:outline-none"
           />
         </div>
@@ -88,8 +120,8 @@ export function PhysicalProfileForm({
           <input
             type="number"
             inputMode="numeric"
-            value={formData.heightCm}
-            onChange={(e) => setFormData({ ...formData, heightCm: Number(e.target.value) })}
+            value={height}
+            onChange={(e) => setHeight(e.target.value)}
             className="w-full h-11 rounded-xl border border-white/[0.1] bg-[#08090a] px-3 font-mono text-sm font-bold text-zinc-100 focus:border-amber-400/60 focus:outline-none"
           />
         </div>
@@ -102,8 +134,8 @@ export function PhysicalProfileForm({
           <input
             type="number"
             inputMode="numeric"
-            value={formData.age}
-            onChange={(e) => setFormData({ ...formData, age: Number(e.target.value) })}
+            value={age}
+            onChange={(e) => setAge(e.target.value)}
             className="w-full h-11 rounded-xl border border-white/[0.1] bg-[#08090a] px-3 font-mono text-sm font-bold text-zinc-100 focus:border-amber-400/60 focus:outline-none"
           />
         </div>
@@ -114,13 +146,14 @@ export function PhysicalProfileForm({
             Sexo usado no cálculo
           </label>
           <select
-            value={formData.biologicalSex}
+            value={biologicalSex}
             onChange={(e) => {
               const option = SEX_OPTIONS.find((o) => o.value === e.target.value);
-              if (option) setFormData({ ...formData, biologicalSex: option.value });
+              setBiologicalSex(option ? option.value : '');
             }}
             className="w-full h-11 rounded-xl border border-white/[0.1] bg-[#08090a] px-3 font-mono text-xs font-semibold text-zinc-100 focus:border-amber-400/60 focus:outline-none"
           >
+            <option value="">Selecione</option>
             {SEX_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
@@ -134,21 +167,34 @@ export function PhysicalProfileForm({
       {/* Nível de Atividade Física */}
       <div className="space-y-1.5">
         <label className="font-mono text-[11px] uppercase tracking-wider text-zinc-400">
-          Nível de Atividade Física Semanal
+          Como é sua rotina fora da academia? (não conte o treino)
         </label>
         <select
-          value={formData.activityLevel}
+          value={activityLevel}
           onChange={(e) => {
             const option = ACTIVITY_OPTIONS.find((o) => o.value === e.target.value);
-            if (option) setFormData({ ...formData, activityLevel: option.value });
+            setActivityLevel(option ? option.value : '');
           }}
           className="w-full h-11 rounded-xl border border-white/[0.1] bg-[#08090a] px-3 text-xs text-zinc-100 focus:border-amber-400/60 focus:outline-none"
         >
+          <option value="">Selecione</option>
           {ACTIVITY_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </select>
       </div>
+
+      {error && (
+        <p role="alert" className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-xs text-rose-300">
+          {error}
+        </p>
+      )}
+      {saved && (
+        <div role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs text-emerald-300">
+          <span>Perfil salvo! Sua meta base ficou em {Math.round(saved.targets.targetCalories)} kcal por dia.</span>
+          <Link to="/" className="font-mono font-semibold underline">Ir para o painel</Link>
+        </div>
+      )}
 
       {/* Botões de Ação */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
@@ -163,9 +209,12 @@ export function PhysicalProfileForm({
 
         <button
           type="submit"
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-6 py-2.5 font-mono text-xs font-bold text-black shadow-lg shadow-amber-400/20 hover:bg-amber-300 active:scale-[0.98] transition-all min-h-[44px]"
+          disabled={saving}
+          className="disabled:opacity-60 w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-6 py-2.5 font-mono text-xs font-bold text-black shadow-lg shadow-amber-400/20 hover:bg-amber-300 active:scale-[0.98] transition-all min-h-[44px]"
         >
-          {savedSuccess ? (
+          {saving ? (
+            <span>Salvando...</span>
+          ) : saved ? (
             <>
               <Check className="h-4 w-4 stroke-[2.5]" />
               <span>Metas Recalculadas!</span>

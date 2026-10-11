@@ -1,31 +1,14 @@
 import { client } from "./api";
-import type { UserMeResponse, EnergyDailySummaryResponse, WeeklyBudgetResponse }
-    from "../types/dashboard";
+import { toApiError } from "./http";
+import type { UserMeResponse } from "../types/dashboard";
 
 export const dashboardService = {
-    // Busca dados do Caçador (GET /user/me)
+    // Dados do usuário logado (GET /user/me): perfil, nível/XP/sequência e saldo de moedas
     async getHunterProfile(): Promise<UserMeResponse> {
-        const { data, error } = await client.GET('/user/me')
-        if (error || !data) {
-            throw new Error('Falha ao buscar perfil do caçador')
+        const { data, error, response } = await client.GET('/user/me')
+        if (!data) {
+            throw toApiError(response, error, 'Falha ao buscar o perfil')
         }
         return data
     },
-
-    async getEnergyDaily(): Promise<EnergyDailySummaryResponse> {
-        const { error, data } = await client.GET('/energy/daily-summary')
-        if (error || !data) {
-            throw new Error('Falha ao buscar resumo calórico diário')
-        }
-        return data
-    },
-
-    async getWeeklyBuget(): Promise<WeeklyBudgetResponse> {
-        const { error, data } = await client.GET('/energy/weekly-budget')
-        if (error || !data) {
-            throw new Error('Falha ao buscar cofre calórico')
-        }
-        return data
-    }
-
 }

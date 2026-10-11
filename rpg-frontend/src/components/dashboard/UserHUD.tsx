@@ -1,13 +1,13 @@
 import React from 'react';
 import { Coins, Target, ShieldCheck, ArrowUpRight } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
 import type { UserMeResponse } from '@/src/types/dashboard';
 
 interface UserHUDProps {
     data: UserMeResponse;
-    onOpenShop?: () => void;
 }
 
-export function UserHUD({ data, onOpenShop }: UserHUDProps) {
+export function UserHUD({ data }: UserHUDProps) {
     const { user, profile, progress, coinBalance } = data;
 
     const getGoalMeta = (goal?: string | null) => {
@@ -77,14 +77,13 @@ export function UserHUD({ data, onOpenShop }: UserHUDProps) {
                         </div>
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={onOpenShop}
+                    <Link
+                        to="/rewards"
                         className="group inline-flex items-center gap-1.5 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3.5 py-2 text-xs font-semibold text-amber-300 transition-all duration-150 hover:border-amber-400/60 hover:bg-amber-400/20 active:scale-[0.98]"
                     >
-                        <span>Acessar Loja</span>
+                        <span>Refeições livres</span>
                         <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                    </button>
+                    </Link>
                 </div>
             </div>
         </header>

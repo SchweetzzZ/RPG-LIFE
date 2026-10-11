@@ -1,26 +1,19 @@
 import React, { useState } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { User, ShieldCheck, Flame, Zap } from 'lucide-react';
-import { PrimaryGoalSelector, type GoalType } from '../components/profile/PrimaryGoalSelector';
-import { PhysicalProfileForm, type PhysicalProfileData } from '../components/profile/PhysicalProfileForm';
+import { PrimaryGoalSelector } from '../components/profile/PrimaryGoalSelector';
+import { PhysicalProfileForm } from '../components/profile/PhysicalProfileForm';
+import { ErrorBlock, LoadingBlock } from '../components/common/StateBlocks';
+import { useResource } from '../hooks/useResource';
+import { profileService } from '../services/profile.service';
+import type { PrimaryGoal, ProfileData, UpdateProfileInput } from '../types/profile';
 
 export const Route = createFileRoute('/profile')({
   component: ProfileRouteComponent,
 });
 
 function ProfileRouteComponent() {
-  const navigate = useNavigate();
-  const [selectedGoal, setSelectedGoal] = useState<GoalType>('lose_weight');
-
-  const handleSavePhysicalProfile = (data: PhysicalProfileData) => {
-    // Simula recálculo de dieta do usuário
-    console.log('Dados biométricos salvos:', data, 'Meta:', selectedGoal);
-  };
-
-  const handleLogout = () => {
-    // Redireciona para o login
-    navigate({ to: '/login' });
-  };
+  const { data, loading, error, reload } = useResource(profileService.getProfile);
 
   return (
     <main className="min-h-screen bg-[#08090a] text-zinc-100 p-4 sm:p-6 flex flex-col items-center">
@@ -42,18 +35,40 @@ function ProfileRouteComponent() {
           </div>
         </header>
 
-        {/* 1. Seletor Tático de Meta Corporal */}
-        <PrimaryGoalSelector
-          selectedGoal={selectedGoal}
-          onChange={setSelectedGoal}
-        />
-
-        {/* 2. Perfil físico & recálculo das metas */}
-        <PhysicalProfileForm
-          onSave={handleSavePhysicalProfile}
-          onLogout={handleLogout}
-        />
+        {loading && !data && <LoadingBlock label="Carregando seu perfil..." />}
+        {error && <ErrorBlock message={error} onRetry={reload} />}
+        {data && <PhysicalProfileSection profile={data} />}
       </div>
     </main>
+  );
+}
+
+function PhysicalProfileSection({ profile }: { profile: ProfileData }) {
+  const navigate = useNavigate();
+  const [selectedGoal, setSelectedGoal] = useState<PrimaryGoal | null>(profile.primaryGoal);
+
+  const handleSavePhysicalProfile = (input: UpdateProfileInput) => profileService.saveNutritionProfile(input);
+
+  const handleLogout = () => {
+    // Redireciona para o login
+    navigate({ to: '/login' });
+  };
+
+  return (
+    <>
+      {/* 1. Seletor Tático de Meta Corporal */}
+      <PrimaryGoalSelector
+        selectedGoal={selectedGoal}
+        onChange={setSelectedGoal}
+      />
+
+      {/* 2. Perfil físico & recálculo das metas */}
+      <PhysicalProfileForm
+        initialData={profile}
+        primaryGoal={selectedGoal}
+        onSave={handleSavePhysicalProfile}
+        onLogout={handleLogout}
+      />
+    </>
   );
 }
