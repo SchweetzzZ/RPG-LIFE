@@ -1,10 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { UserHUD } from '../components/dashboard/UserHUD';
-import { NextFreeMealHero } from '../components/dashboard/NextFreeMealHero';
-import { EnergyBalance } from '../components/dashboard/energyBalance';
-import { CaloricVault } from '../components/dashboard/CaloricVault';
+import { PlayerBar } from '../components/dashboard/PlayerBar';
+import { TodayCard } from '../components/dashboard/TodayCard';
+import { QuestCard } from '../components/dashboard/QuestCard';
 import { ProfileIncompleteCard } from '../components/dashboard/ProfileIncompleteCard';
-import { CloseDayPanel } from '../components/dashboard/CloseDayPanel';
 import { ErrorBlock, LoadingBlock } from '../components/common/StateBlocks';
 import { useHubData } from '../hooks/useHubData';
 
@@ -16,27 +14,20 @@ function IndexRouteComponent() {
   const { data, loading, error, reload } = useHubData();
 
   return (
-    <main className="min-h-screen bg-[#08090a] text-zinc-100 p-4 sm:p-6 flex flex-col items-center">
-      <div className="w-full max-w-4xl space-y-5">
+    <main className="min-h-screen bg-bg p-4 text-zinc-100">
+      <div className="mx-auto w-full max-w-md space-y-4">
         {loading && !data && <LoadingBlock label="Carregando seu painel..." />}
         {error && <ErrorBlock message={error} onRetry={reload} />}
 
         {data && (
           <>
-            <UserHUD data={data.me} />
-            <NextFreeMealHero next={data.next} />
+            <PlayerBar me={data.me} />
             {data.day ? (
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                <EnergyBalance day={data.day} />
-                <CaloricVault vault={data.vault} />
-              </div>
+              <TodayCard day={data.day} onClosed={reload} />
             ) : (
-              <>
-                <ProfileIncompleteCard missing={data.missingProfile} />
-                <CaloricVault vault={data.vault} />
-              </>
+              <ProfileIncompleteCard missing={data.missingProfile} />
             )}
-            {data.day && <CloseDayPanel day={data.day} onClosed={reload} />}
+            <QuestCard next={data.next} vault={data.vault} />
           </>
         )}
       </div>
