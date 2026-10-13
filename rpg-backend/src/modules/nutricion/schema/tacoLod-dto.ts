@@ -8,6 +8,10 @@ export class Taco {
     @Prop({ required: true, index: true })
     description: string;
 
+    /** `description` sem acento e minuscula, para a busca ("feijao" acha "Feijão"). */
+    @Prop({ index: true })
+    searchKey: string;
+
     @Prop({ required: true })
     category: string;
 

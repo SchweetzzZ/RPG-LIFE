@@ -8,6 +8,7 @@ import { CreateFoodLogDto } from "./dto/nutrition-dto"
 import { ProfileService } from "../profile/profile.service";
 import { toUserDate } from "../common/utils/user-date";
 import { NotFoundException } from "@nestjs/common";
+import { escapeRegex, normalizeSearch } from "./search-key";
 
 @Injectable()
 export class NutritionService {
@@ -72,64 +73,87 @@ export class NutritionService {
         return { message: 'Item removido do diário alimentar com sucesso' };
     }
 
+    /** TACO e Open Food Facts em paralelo. Se uma fonte falhar, a outra ainda responde. */
     async searchFoods(query: string): Promise<FoodResultDto[]> {
-        const results: FoodResultDto[] = []
+        const [taco, off] = await Promise.all([this.searchTaco(query), this.searchOpenFoodFacts(query)]);
+        return [...taco, ...off];
+    }
 
-        const tacoItems = await this.tacoModel.find({ description: { $regex: query, $options: "i" } }).limit(10).exec()
+    private async searchTaco(query: string): Promise<FoodResultDto[]> {
+        // Cada palavra precisa aparecer (em qualquer ordem), sem diferenciar acento nem maiuscula
+        const tokens = normalizeSearch(query).split(/\s+/).filter(Boolean);
+        if (tokens.length === 0) return [];
 
-        const formatedTaco: FoodResultDto[] = tacoItems.map((item) => ({
-            id: item._id.toString(),
-            name: item.description,
-            source: 'TACO' as const,
-            servingSizeGrams: 100,
-            nutrientsPer100g: {
-                calories: item.energyKcal,
-                protein: item.protein,
-                carbs: item.carbohydrates,
-                fat: item.lipids,
-                fiber: item.fiber,
-            },
-        }))
+        const items = await this.tacoModel
+            .find({
+                $or: [
+                    { $and: tokens.map((token) => ({ searchKey: { $regex: escapeRegex(token) } })) },
+                    // Documentos antigos, sem searchKey
+                    { searchKey: { $exists: false }, description: { $regex: escapeRegex(query.trim()), $options: 'i' } },
+                ],
+            })
+            .limit(40)
+            .lean()
+            .exec();
 
-        results.push(...formatedTaco)
+        // Nome mais curto primeiro: "Frango, peito, grelhado" antes de "Empada de frango, pre-cozida, assada"
+        return items
+            .sort((a, b) => a.description.length - b.description.length)
+            .slice(0, 10)
+            .map((item) => ({
+                id: String(item._id),
+                name: item.description,
+                source: 'TACO' as const,
+                servingSizeGrams: 100,
+                nutrientsPer100g: {
+                    calories: item.energyKcal,
+                    protein: item.protein,
+                    carbs: item.carbohydrates,
+                    fat: item.lipids,
+                    fiber: item.fiber,
+                },
+            }));
+    }
 
+    private async searchOpenFoodFacts(query: string): Promise<FoodResultDto[]> {
         try {
-            const url = `https://br.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(
-                query,
-            )}&search_simple=1&action=process&json=1&page_size=10`;
-
+            const url =
+                `https://br.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}` +
+                `&search_simple=1&action=process&json=1&page_size=10&fields=code,product_name,brands,nutriments`;
             const response = await fetch(url, {
                 headers: { 'User-Agent': 'LifeRPGApp - Web/Backend - Version 1.0' },
+                signal: AbortSignal.timeout(8000),
             });
+            if (!response.ok) {
+                console.error(`Open Food Facts respondeu ${response.status} na busca por "${query}"`);
+                return [];
+            }
 
             const data: any = await response.json();
+            if (!data || !Array.isArray(data.products)) return [];
 
-            if (data && data.products) {
-                const offItems: FoodResultDto[] = data.products
-                    .filter((p: any) => p.product_name && p.nutriments)
-                    .map((p: any) => ({
-                        id: p.code || p._id,
-                        name: p.product_name,
-                        brand: p.brands,
-                        source: 'OPEN_FOOD_FACTS' as const,
-                        barcode: p.code,
-                        servingSizeGrams: 100,
-                        nutrientsPer100g: {
-                            calories: p.nutriments['energy-kcal_100g'] || p.nutriments['energy-kcal'] || 0,
-                            protein: p.nutriments.proteins_100g || 0,
-                            carbs: p.nutriments.carbohydrates_100g || 0,
-                            fat: p.nutriments.fat_100g || 0,
-                            fiber: p.nutriments.fiber_100g || 0,
-                        },
-                    }));
-
-                results.push(...offItems);
-            }
+            return data.products
+                .filter((p: any) => p.product_name && p.nutriments)
+                .map((p: any) => ({
+                    id: p.code || p._id,
+                    name: p.product_name,
+                    brand: p.brands,
+                    source: 'OPEN_FOOD_FACTS' as const,
+                    barcode: p.code,
+                    servingSizeGrams: 100,
+                    nutrientsPer100g: {
+                        calories: p.nutriments['energy-kcal_100g'] || p.nutriments['energy-kcal'] || 0,
+                        protein: p.nutriments.proteins_100g || 0,
+                        carbs: p.nutriments.carbohydrates_100g || 0,
+                        fat: p.nutriments.fat_100g || 0,
+                        fiber: p.nutriments.fiber_100g || 0,
+                    },
+                }))
+                .filter((f: FoodResultDto) => f.nutrientsPer100g.calories > 0);
         } catch (error: any) {
             console.error('Erro ao consultar Open Food Facts:', error.message);
+            return [];
         }
-
-        return results;
     }
 
     async searchByBarcode(barcode: string): Promise<FoodResultDto | null> {
