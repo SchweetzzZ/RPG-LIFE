@@ -1,6 +1,7 @@
-import { Coins, ShieldCheck, Sparkles } from 'lucide-react';
+import { Info } from 'lucide-react';
 import type { NextFreeMeals } from '@/src/types/free-meal';
 import { formatDay, formatNumber, pluralize } from '@/src/lib/format';
+import { Card } from '../ui/Card';
 
 interface VaultBalanceSummaryProps {
   next: NextFreeMeals;
@@ -10,44 +11,28 @@ export function VaultBalanceSummary({ next }: VaultBalanceSummaryProps) {
   const { cycle, vaultBalanceKcal, coinBalance } = next;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-amber-500/20 bg-gradient-to-r from-amber-950/20 via-[#0e1117] to-[#0c0e12] p-4 sm:p-6 shadow-2xl space-y-4">
-      <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-amber-500/5 blur-3xl" />
+    <Card label="Refeições livres" aside={`${formatDay(cycle.startDate)} a ${formatDay(cycle.endDate)}`}>
+      <div className="space-y-3">
+        <p className="text-sm text-ink">Planeje, guarde e coma sem culpa. A refeição só é liberada com cofre e moedas.</p>
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <span className="inline-flex items-center gap-1 rounded border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-amber-400">
-            <Sparkles className="h-3 w-3" />
-            Refeições livres
-          </span>
-          <h2 className="text-lg sm:text-xl font-bold tracking-tight text-zinc-100">Planeje, guarde e coma sem culpa</h2>
-          <p className="text-xs text-zinc-400">
-            O cofre diz quanto dá para comer; as moedas dizem que você mereceu. A refeição só é liberada com as duas.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-4 border-t border-white/[0.06] pt-3 sm:border-t-0 sm:pt-0">
-          <div className="space-y-0.5">
-            <span className="block font-mono text-[10px] uppercase tracking-wider text-zinc-500">Moedas</span>
-            <div className="flex items-center gap-1.5">
-              <Coins className="h-5 w-5 text-amber-400 stroke-[1.75]" />
-              <span className="font-mono text-2xl font-black text-amber-300 tabular-nums">{formatNumber(coinBalance)}</span>
-            </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-lg border-2 border-line bg-raised p-2.5">
+            <p className="text-xs text-ink-faint">Moedas</p>
+            <p className="font-pixel text-2xl font-bold leading-tight tabular-nums text-coin">{formatNumber(coinBalance)}</p>
           </div>
-          <div className="space-y-0.5 pl-4 border-l border-white/[0.08]">
-            <span className="block font-mono text-[10px] uppercase tracking-wider text-cyan-400 font-semibold">Cofre</span>
-            <div className="flex items-center gap-1.5">
-              <ShieldCheck className="h-5 w-5 text-cyan-400 stroke-[1.75]" />
-              <span className="font-mono text-2xl font-black text-cyan-300 tabular-nums">{formatNumber(vaultBalanceKcal)}</span>
-              <span className="font-mono text-[10px] text-zinc-500">kcal</span>
-            </div>
+          <div className="rounded-lg border-2 border-line bg-raised p-2.5">
+            <p className="text-xs text-ink-faint">Cofre</p>
+            <p className="font-pixel text-2xl font-bold leading-tight tabular-nums text-kcal">
+              {formatNumber(vaultBalanceKcal)} <span className="text-base">kcal</span>
+            </p>
           </div>
         </div>
+
+        <p className="flex items-start gap-2 text-xs text-ink-faint">
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          {cycle.daysLeft > 0 ? pluralize(cycle.daysLeft, 'dia restante', 'dias restantes') : 'Último dia'}. Cofre e moedas zeram na virada para segunda.
+        </p>
       </div>
-
-      <p className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-2.5 font-mono text-xs text-zinc-400">
-        Semana de {formatDay(cycle.startDate)} a {formatDay(cycle.endDate)} •{' '}
-        {cycle.daysLeft > 0 ? pluralize(cycle.daysLeft, 'dia restante', 'dias restantes') : 'último dia'}. Cofre e moedas zeram na virada para segunda.
-      </p>
-    </div>
+    </Card>
   );
 }

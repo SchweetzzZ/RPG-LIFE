@@ -33,7 +33,7 @@ export function CustomItemForm({ onAdd }: CustomItemFormProps) {
   }
 
   const inputClass =
-    'h-11 w-full rounded-xl border border-white/[0.1] bg-[#08090a] px-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-amber-400/60 focus:outline-none';
+    'h-12 w-full rounded-lg border-2 border-line bg-raised px-3 text-base text-ink placeholder:text-ink-faint focus:border-action focus:outline-none';
 
   return (
     <div className="space-y-2">
@@ -64,7 +64,7 @@ export function CustomItemForm({ onAdd }: CustomItemFormProps) {
         type="button"
         onClick={handleAdd}
         disabled={!valid}
-        className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-white/[0.1] px-3 font-mono text-xs font-semibold text-zinc-200 hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-40"
+        className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border-2 border-line bg-raised px-3 text-sm font-semibold text-ink hover:border-ink-faint disabled:cursor-not-allowed disabled:opacity-40"
       >
         <Plus className="h-3.5 w-3.5" />
         Adicionar item

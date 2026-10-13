@@ -1,5 +1,6 @@
-import React from 'react';
-import { Target, TrendingDown, TrendingUp, Minus } from 'lucide-react';
+import type { ElementType } from 'react';
+import { TrendingDown, TrendingUp, Minus } from 'lucide-react';
+import { Card } from '../ui/Card';
 import type { PrimaryGoal } from '../../types/profile';
 
 interface PrimaryGoalSelectorProps {
@@ -7,56 +8,41 @@ interface PrimaryGoalSelectorProps {
   onChange: (goal: PrimaryGoal) => void;
 }
 
+const OPTIONS: {
+  id: PrimaryGoal;
+  title: string;
+  description: string;
+  badge: string;
+  icon: ElementType;
+}[] = [
+  {
+    id: 'lose_weight',
+    title: 'Queima de gordura',
+    description: 'Déficit calórico ativo com alta saciedade.',
+    badge: '-400 kcal',
+    icon: TrendingDown,
+  },
+  {
+    id: 'gain_muscle',
+    title: 'Ganho de massa',
+    description: 'Superávit controlado para ganhar músculo limpo.',
+    badge: '+300 kcal',
+    icon: TrendingUp,
+  },
+  {
+    id: 'maintain',
+    title: 'Manutenção',
+    description: 'Dieta normocalórica para manter o peso e render nos treinos.',
+    badge: 'Normocalórica',
+    icon: Minus,
+  },
+];
+
 export function PrimaryGoalSelector({ selectedGoal, onChange }: PrimaryGoalSelectorProps) {
-  const options: {
-    id: PrimaryGoal;
-    title: string;
-    description: string;
-    badge: string;
-    icon: React.ElementType;
-    color: string;
-    borderColor: string;
-  }[] = [
-    {
-      id: 'lose_weight',
-      title: 'Queima de Gordura',
-      description: 'Déficit calórico ativo (-400 kcal/dia) com alta saciedade e queima contínua.',
-      badge: '-400 kcal',
-      icon: TrendingDown,
-      color: 'text-amber-400',
-      borderColor: 'border-amber-400/40 bg-amber-400/10',
-    },
-    {
-      id: 'gain_muscle',
-      title: 'Hipertrofia / Ganho de Massa',
-      description: 'Superávit calórico controlado (+300 kcal/dia) para suporte a ganho muscular limpo.',
-      badge: '+300 kcal',
-      icon: TrendingUp,
-      color: 'text-emerald-400',
-      borderColor: 'border-emerald-400/40 bg-emerald-400/10',
-    },
-    {
-      id: 'maintain',
-      title: 'Manutenção / Performance',
-      description: 'Dieta normocalórica para manter o peso corporal e maximizar o rendimento nos treinos.',
-      badge: 'Normocalórica',
-      icon: Minus,
-      color: 'text-cyan-400',
-      borderColor: 'border-cyan-400/40 bg-cyan-400/10',
-    },
-  ];
-
   return (
-    <div className="space-y-2.5">
-      <div className="flex items-center gap-2">
-        <Target className="h-4 w-4 text-zinc-400 stroke-[2]" />
-        <h3 className="font-mono text-xs font-semibold uppercase tracking-wider text-zinc-300">
-          Meta Corporal Primária
-        </h3>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-        {options.map((option) => {
+    <Card label="Seu objetivo">
+      <div role="radiogroup" aria-label="Objetivo corporal" className="space-y-2">
+        {OPTIONS.map((option) => {
           const Icon = option.icon;
           const isSelected = selectedGoal === option.id;
 
@@ -64,36 +50,31 @@ export function PrimaryGoalSelector({ selectedGoal, onChange }: PrimaryGoalSelec
             <button
               key={option.id}
               type="button"
+              role="radio"
+              aria-checked={isSelected}
               onClick={() => onChange(option.id)}
-              className={`flex flex-col justify-between rounded-2xl border p-3.5 text-left transition-all duration-150 active:scale-[0.98] min-h-[96px] ${
-                isSelected
-                  ? `${option.borderColor} shadow-lg`
-                  : 'border-white/[0.08] bg-[#0c0e12] hover:border-white/[0.15]'
+              className={`flex min-h-[44px] w-full items-center gap-3 rounded-lg border-2 p-2.5 text-left transition-colors ${
+                isSelected ? 'border-action bg-raised' : 'border-line bg-raised hover:border-ink-faint'
               }`}
             >
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-2">
-                  <Icon className={`h-4 w-4 ${option.color}`} />
-                  <span className="text-xs sm:text-sm font-bold text-zinc-100">
-                    {option.title}
-                  </span>
-                </div>
-                <span
-                  className={`rounded px-1.5 py-0.5 font-mono text-[9px] font-bold ${
-                    isSelected ? 'bg-white/10 text-zinc-100' : 'text-zinc-500'
-                  }`}
-                >
-                  {option.badge}
-                </span>
-              </div>
-
-              <p className="mt-2 text-[11px] text-zinc-400 leading-snug line-clamp-2">
-                {option.description}
-              </p>
+              <span
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border-2 bg-raised ${
+                  isSelected ? 'border-action text-action' : 'border-line text-ink-dim'
+                }`}
+              >
+                <Icon className="h-5 w-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold text-ink">{option.title}</span>
+                <span className="block text-xs text-ink-faint">{option.description}</span>
+              </span>
+              <span className={`shrink-0 font-pixel text-base ${isSelected ? 'text-kcal' : 'text-ink-faint'}`}>
+                {option.badge}
+              </span>
             </button>
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 }

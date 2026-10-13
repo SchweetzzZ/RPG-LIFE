@@ -17,17 +17,17 @@ export function QuantityStepper({ label, value, step, onChange, min = 0 }: Quant
         aria-label={`Diminuir ${label}`}
         disabled={value <= min}
         onClick={() => onChange(Math.max(min, roundQty(value - step)))}
-        className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/[0.1] text-zinc-300 hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-30"
+        className="flex h-11 w-11 items-center justify-center rounded-lg border-2 border-line bg-raised text-ink hover:border-ink-faint disabled:cursor-not-allowed disabled:opacity-30"
       >
         <Minus className="h-4 w-4" />
       </button>
-      <span className="w-10 text-center font-mono text-sm font-bold tabular-nums text-zinc-100">{value}</span>
+      <span className="w-10 text-center font-pixel text-base tabular-nums text-ink">{value}</span>
       <button
         type="button"
         aria-label={`Aumentar ${label}`}
         disabled={value >= MAX_ITEM_QTY}
         onClick={() => onChange(Math.min(MAX_ITEM_QTY, roundQty(value + step)))}
-        className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/[0.1] text-zinc-300 hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-30"
+        className="flex h-11 w-11 items-center justify-center rounded-lg border-2 border-line bg-raised text-ink hover:border-ink-faint disabled:cursor-not-allowed disabled:opacity-30"
       >
         <Plus className="h-4 w-4" />
       </button>

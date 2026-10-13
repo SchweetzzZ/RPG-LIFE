@@ -1,98 +1,71 @@
-import React from 'react';
-import { Dumbbell, Flame, Coins, Clock, ChevronRight, Play } from 'lucide-react';
-
-export interface WorkoutRoutine {
-  id: string;
-  name: string;
-  description?: string;
-  muscleGroups: string[];
-  estimatedMinutes: number;
-  estimatedCalories: number;
-  coinsReward: number;
-  exercisesCount: number;
-}
+import { Link } from '@tanstack/react-router';
+import { Dumbbell, Clock, ChevronRight, Play, NotebookPen } from 'lucide-react';
+import { Button } from '../ui/Button';
+import type { Routine } from '../../types/workout';
+import { WEEK_DAYS } from '../../types/workout';
 
 interface RoutineCardProps {
-  routine: WorkoutRoutine;
-  isToday?: boolean;
-  onStart: (routine: WorkoutRoutine) => void;
+  routine: Routine;
+  isToday: boolean;
+  onLog: (routine: Routine) => void;
+  onStartTimer: (routine: Routine) => void;
 }
 
-export function RoutineCard({ routine, isToday = false, onStart }: RoutineCardProps) {
+const formatDate = (iso: string) => iso.split('-').reverse().join('/');
+
+export function RoutineCard({ routine, isToday, onLog, onStartTimer }: RoutineCardProps) {
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl border p-4 sm:p-5 transition-all duration-200 ${
-        isToday
-          ? 'border-rose-500/30 bg-gradient-to-b from-rose-950/15 via-[#0c0e12] to-[#0c0e12] shadow-xl'
-          : 'border-white/[0.08] bg-[#0c0e12] hover:border-white/[0.15]'
+      className={`rounded-lg border-2 bg-surface p-4 shadow-[0_4px_0_0_#0c0a08] ${
+        isToday ? 'border-action' : 'border-line'
       }`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="space-y-1.5">
-          <div className="flex flex-wrap items-center gap-2">
+      <Link
+        to="/workouts/$id"
+        params={{ id: routine.id }}
+        className="flex min-h-[44px] items-start justify-between gap-3"
+        aria-label={`Abrir ${routine.title}`}
+      >
+        <div className="min-w-0 space-y-1.5">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-ink-faint">
             {isToday && (
-              <span className="inline-flex items-center gap-1 rounded border border-rose-400/30 bg-rose-400/10 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-rose-400">
-                Treino do Dia
+              <span className="rounded border-2 border-action px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-action">
+                Treino do dia
               </span>
             )}
-            <span className="font-mono text-[11px] text-zinc-500">
-              {routine.exercisesCount} exercícios
-            </span>
+            <span>{routine.exercises.length} exercícios</span>
+            {routine.scheduledDays.length > 0 && (
+              <span>{[...routine.scheduledDays].sort().map((d) => WEEK_DAYS[d]).join(' ')}</span>
+            )}
           </div>
-
-          <h3 className="text-base sm:text-lg font-bold tracking-tight text-zinc-100">
-            {routine.name}
-          </h3>
-
-          {routine.description && (
-            <p className="text-xs text-zinc-400 line-clamp-1">
-              {routine.description}
-            </p>
-          )}
-
-          {/* Tags de Grupos Musculares */}
-          <div className="flex flex-wrap gap-1.5 pt-1">
-            {routine.muscleGroups.map((group) => (
-              <span
-                key={group}
-                className="rounded-md border border-white/[0.06] bg-white/[0.03] px-2 py-0.5 font-mono text-[10px] text-zinc-400"
-              >
-                {group}
-              </span>
-            ))}
-          </div>
+          <h3 className="truncate font-pixel text-lg text-ink">{routine.title}</h3>
         </div>
+        <ChevronRight className="mt-1 h-5 w-5 shrink-0 text-ink-faint" />
+      </Link>
 
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-rose-400/20 bg-rose-500/10 text-rose-400">
-          <Dumbbell className="h-5 w-5 stroke-[1.75]" />
-        </div>
-      </div>
-
-      {/* Métricas e Botão de Ação */}
-      <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-white/[0.06] pt-3">
-        <div className="flex items-center gap-4 text-xs font-mono text-zinc-400">
+      <div className="mt-3 flex flex-col gap-3 border-t-2 border-line pt-3">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-dim">
           <span className="flex items-center gap-1">
-            <Clock className="h-3.5 w-3.5 text-zinc-500" />
+            <Clock className="h-4 w-4 text-ink-faint" />
             {routine.estimatedMinutes} min
           </span>
-          <span className="flex items-center gap-1 text-rose-400/90 font-semibold">
-            <Flame className="h-3.5 w-3.5 text-rose-400" />
-            +{routine.estimatedCalories} kcal
+          <span className="flex items-center gap-1">
+            <Dumbbell className="h-4 w-4 text-ink-faint" />
+            {routine.completionCount}x feito
           </span>
-          <span className="flex items-center gap-1 text-amber-400/90 font-semibold">
-            <Coins className="h-3.5 w-3.5 text-amber-400" />
-            +{routine.coinsReward} moedas
-          </span>
+          {routine.lastCompletedDate && <span>último: {formatDate(routine.lastCompletedDate)}</span>}
         </div>
 
-        <button
-          type="button"
-          onClick={() => onStart(routine)}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-rose-500 px-4 py-2.5 font-mono text-xs font-bold text-black shadow-lg shadow-rose-500/20 hover:bg-rose-400 active:scale-[0.98] transition-all min-h-[44px]"
-        >
-          <Play className="h-3.5 w-3.5 fill-black" />
-          <span>Iniciar Treino</span>
-        </button>
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="secondary" onClick={() => onLog(routine)}>
+            <NotebookPen className="h-4 w-4" />
+            <span>Registrar</span>
+          </Button>
+          <Button variant={isToday ? 'primary' : 'secondary'} onClick={() => onStartTimer(routine)}>
+            <Play className="h-4 w-4" />
+            <span>Com cronômetro</span>
+          </Button>
+        </div>
       </div>
     </div>
   );

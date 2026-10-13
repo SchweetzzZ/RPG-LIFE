@@ -17,16 +17,27 @@ input:-webkit-autofill:active {
     /* Mantém a borda neutral-800 perfeitamente selada */
     transition: background-color 5000s ease-in-out 0s;
 }
-/* Tokens do Hub: uma cor, um significado (ver PLANO_HUB_REDESIGN.md) */
+/* Tokens do Hub: uma cor, um significado. Paleta quente (tinta e pergaminho), sem neon. */
 @theme {
-    --color-bg: #08090a;
-    --color-surface: #0f1115;
-    --color-raised: #161a20;
-    --color-line: #262a31;
-    --color-action: #4ade80;
-    --color-coin: #fbbf24;
-    --color-kcal: #38bdf8;
-    --color-xp: #a78bfa;
-    --color-danger: #fb7185;
+    --color-bg: #16120e;
+    --color-surface: #1f1a15;
+    --color-raised: #2a231c;
+    --color-line: #3d3328;
+    --color-ink: #f1e7d3;
+    --color-ink-dim: #bdb09a;
+    --color-ink-faint: #998c77;
+    --color-action: #93b64f;
+    --color-coin: #e6b84d;
+    --color-kcal: #72a9b9;
+    --color-xp: #d27c5c;
+    --color-danger: #e0644f;
     --font-pixel: "Pixelify Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Fonte pixel legível: o peso 700 fecha os vazios dos dígitos (o 2 vira "S"). Fica no 500, com respiro entre letras. */
+.font-pixel {
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    font-variant-numeric: normal;
+    -webkit-font-smoothing: antialiased;
 }

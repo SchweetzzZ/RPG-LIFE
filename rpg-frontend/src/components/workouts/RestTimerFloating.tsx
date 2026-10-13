@@ -1,11 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Timer, Plus, SkipForward, Play, Pause } from 'lucide-react';
+import { SegmentedBar } from '../ui/SegmentedBar';
 
 interface RestTimerFloatingProps {
   initialSeconds?: number;
   onFinish?: () => void;
   onClose?: () => void;
 }
+
+const ghostBtn =
+  'inline-flex h-11 min-w-[44px] items-center justify-center gap-1 rounded-lg border-2 border-line bg-raised px-2.5 text-sm font-semibold text-ink hover:border-ink-faint active:translate-y-[1px]';
 
 export function RestTimerFloating({
   initialSeconds = 90,
@@ -16,7 +20,7 @@ export function RestTimerFloating({
   const [isActive, setIsActive] = useState(true);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
+    let interval: ReturnType<typeof setInterval> | null = null;
 
     if (isActive && seconds > 0) {
       interval = setInterval(() => {
@@ -42,58 +46,41 @@ export function RestTimerFloating({
     return `${String(mins).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
   };
 
-  const progressPercent = Math.min(100, Math.max(0, (seconds / initialSeconds) * 100));
-
   return (
-    <div className="fixed bottom-24 left-4 right-4 z-40 mx-auto max-w-sm rounded-2xl border border-rose-500/30 bg-[#0f1117]/95 p-3.5 shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom-4 duration-200">
-      {/* Barra de progresso do descanso */}
-      <div className="absolute top-0 left-0 right-0 h-1 overflow-hidden rounded-t-2xl bg-zinc-800">
-        <div
-          className="h-full bg-gradient-to-r from-rose-500 to-rose-400 transition-all duration-1000"
-          style={{ width: `${progressPercent}%` }}
-        />
-      </div>
+    <div
+      role="timer"
+      className="fixed bottom-4 left-3 right-3 z-40 mx-auto max-w-sm space-y-2 rounded-lg border-2 border-line bg-surface p-3 shadow-[0_4px_0_0_#0c0a08]"
+    >
+      <SegmentedBar value={seconds} max={Math.max(initialSeconds, seconds)} tone="xp" label="Descanso restante" />
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-rose-400/20 bg-rose-500/10 text-rose-400">
-            <Timer className="h-4 w-4 stroke-[2]" />
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border-2 border-line bg-raised text-xp">
+            <Timer className="h-5 w-5" />
           </div>
-          <div>
-            <span className="block font-mono text-[10px] uppercase tracking-wider text-zinc-500">
-              Descanso entre Séries
-            </span>
-            <span className="font-mono text-2xl font-black tracking-tight text-rose-400 tabular-nums">
-              {formatTime(seconds)}
-            </span>
+          <div className="min-w-0">
+            <span className="block text-xs text-ink-faint">Descanso entre séries</span>
+            <span className="font-pixel text-3xl leading-none text-xp">{formatTime(seconds)}</span>
           </div>
         </div>
 
         <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => addTime(30)}
-            className="inline-flex h-9 items-center gap-1 rounded-lg border border-white/[0.1] bg-white/[0.05] px-2.5 font-mono text-xs font-semibold text-zinc-200 hover:bg-white/[0.1] active:scale-95 transition-all"
-          >
-            <Plus className="h-3 w-3" />
+          <button type="button" onClick={() => addTime(30)} className={ghostBtn}>
+            <Plus className="h-4 w-4" />
             <span>30s</span>
           </button>
 
           <button
             type="button"
             onClick={() => setIsActive(!isActive)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/[0.1] bg-white/[0.05] text-zinc-300 hover:bg-white/[0.1] active:scale-95 transition-all"
+            className={ghostBtn}
+            aria-label={isActive ? 'Pausar descanso' : 'Retomar descanso'}
           >
             {isActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </button>
 
           {onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-rose-500/20 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 active:scale-95 transition-all"
-              title="Pular descanso"
-            >
+            <button type="button" onClick={onClose} className={ghostBtn} title="Pular descanso" aria-label="Pular descanso">
               <SkipForward className="h-4 w-4" />
             </button>
           )}

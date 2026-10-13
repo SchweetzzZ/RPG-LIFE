@@ -1,135 +1,177 @@
-import React, { useState } from 'react';
-import { Search, Barcode, X, Plus, Sparkles } from 'lucide-react';
-import type { FoodItem } from './MealSection';
+import { useEffect, useState } from 'react';
+import { Barcode, Loader2, Search, X } from 'lucide-react';
+import type { FoodResult } from '@/src/types/free-meal';
+import { foodSearchService } from '@/src/services/free-meal.service';
+import { nutritionService } from '@/src/services/nutrition.service';
+import { errorMessage } from '@/src/services/http';
+import { formatNumber } from '@/src/lib/format';
+import { Button } from '../ui/Button';
 
 interface FoodSearchModalProps {
   mealTitle: string;
-  onSelectFood: (food: FoodItem) => void;
+  saving: boolean;
+  onConfirm: (food: FoodResult, grams: number) => void;
   onClose: () => void;
 }
 
-const mockCommonFoods: FoodItem[] = [
-  { id: 'f1', name: 'Peito de Frango Grelhado', serving: '150g', calories: 240, protein: 46, carbs: 0, fat: 5 },
-  { id: 'f2', name: 'Arroz Branco Cozido', serving: '150g', calories: 195, protein: 4, carbs: 42, fat: 0.5 },
-  { id: 'f3', name: 'Ovo Inteiro Cozido (2 un)', serving: '100g', calories: 155, protein: 13, carbs: 1, fat: 11 },
-  { id: 'f4', name: 'Whey Protein Isolado', serving: '30g', calories: 120, protein: 25, carbs: 2, fat: 1 },
-  { id: 'f5', name: 'Banana Prata', serving: '100g', calories: 89, protein: 1, carbs: 23, fat: 0.3 },
-  { id: 'f6', name: 'Azeite de Oliva Extra Virgem', serving: '10ml', calories: 88, protein: 0, carbs: 0, fat: 10 },
-];
+const BARCODE = /^\d{8,14}$/;
 
-export function FoodSearchModal({ mealTitle, onSelectFood, onClose }: FoodSearchModalProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isScanning, setIsScanning] = useState(false);
+export function FoodSearchModal({ mealTitle, saving, onConfirm, onClose }: FoodSearchModalProps) {
+  const [term, setTerm] = useState('');
+  const [results, setResults] = useState<FoodResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [picked, setPicked] = useState<FoodResult | null>(null);
+  const [grams, setGrams] = useState('100');
 
-  const filteredFoods = mockCommonFoods.filter((f) =>
-    f.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Busca com atraso para não chamar a API a cada tecla. Só dígitos (8–14) = código de barras.
+  useEffect(() => {
+    const query = term.trim();
+    if (query.length < 2) {
+      setResults([]);
+      setError(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      setError(null);
+      try {
+        const found = BARCODE.test(query) ? [await nutritionService.barcode(query)] : await foodSearchService.search(query);
+        if (!cancelled) setResults(found);
+      } catch (err) {
+        if (!cancelled) {
+          setResults([]);
+          setError(errorMessage(err instanceof Error ? err : null, 'Falha ao buscar alimentos'));
+        }
+      } finally {
+        if (!cancelled) setSearching(false);
+      }
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [term]);
+
+  function pick(food: FoodResult) {
+    setPicked(food);
+    setGrams(String(food.servingSizeGrams));
+  }
+
+  const amount = Number(grams);
+  const valid = Number.isFinite(amount) && amount > 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-0 sm:p-4 animate-in fade-in duration-150">
-      {/* Container Bottom Sheet no Mobile */}
-      <div className="w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl border border-white/[0.1] bg-[#0c0e12] p-5 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
-        {/* Barra de Arraste Mobile */}
-        <div className="mx-auto h-1.5 w-12 rounded-full bg-zinc-700 sm:hidden" />
-
-        {/* Header */}
-        <div className="flex items-center justify-between">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/80 sm:items-center sm:p-4">
+      <div className="flex max-h-[85dvh] w-full flex-col gap-4 rounded-t-xl border-2 border-line bg-surface p-4 sm:max-w-lg sm:rounded-lg">
+        <div className="flex items-start justify-between gap-3">
           <div>
-            <span className="font-mono text-[10px] uppercase tracking-wider text-emerald-400 font-bold">
-              Registrar Alimento
-            </span>
-            <h3 className="text-base font-bold text-zinc-100">Adicionar a {mealTitle}</h3>
+            <p className="text-xs font-semibold uppercase tracking-wider text-ink-faint">Registrar alimento</p>
+            <h3 className="text-base font-bold text-ink">Adicionar a {mealTitle}</h3>
           </div>
-
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.08] text-zinc-400 hover:text-zinc-100"
+            aria-label="Fechar"
+            className="flex h-11 w-11 items-center justify-center rounded-lg border-2 border-line text-ink-dim hover:text-ink"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Input de Busca com Botão de Código de Barras */}
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-            <input
-              type="text"
-              autoFocus
-              placeholder="Buscar alimento (ex: Frango, Arroz)..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-11 rounded-xl border border-white/[0.1] bg-[#08090a] pl-9 pr-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-emerald-400/60 focus:outline-none"
-            />
+        {picked ? (
+          <div className="space-y-4">
+            <div>
+              <p className="text-base font-semibold text-ink">{picked.name}</p>
+              {picked.brand && <p className="text-xs text-ink-faint">{picked.brand}</p>}
+            </div>
+            <label className="block space-y-1">
+              <span className="text-sm text-ink-dim">Quantidade (g)</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                min={1}
+                value={grams}
+                onChange={(e) => setGrams(e.target.value)}
+                className="h-12 w-full rounded-lg border-2 border-line bg-raised px-3 text-base text-ink focus:border-action focus:outline-none"
+              />
+            </label>
+            {valid && (
+              <p className="text-sm text-ink-dim">
+                <span className="font-pixel text-lg font-bold text-kcal">
+                  {formatNumber((picked.nutrientsPer100g.calories * amount) / 100)}
+                </span>{' '}
+                kcal · P {formatNumber((picked.nutrientsPer100g.protein * amount) / 100)} · C{' '}
+                {formatNumber((picked.nutrientsPer100g.carbs * amount) / 100)} · G{' '}
+                {formatNumber((picked.nutrientsPer100g.fat * amount) / 100)}
+              </p>
+            )}
+            <div className="space-y-2">
+              <Button disabled={!valid || saving} onClick={() => onConfirm(picked, amount)}>
+                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                Registrar
+              </Button>
+              <Button variant="link" onClick={() => setPicked(null)}>
+                Escolher outro
+              </Button>
+            </div>
           </div>
+        ) : (
+          <>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
+              <input
+                type="text"
+                autoFocus
+                value={term}
+                onChange={(e) => setTerm(e.target.value)}
+                placeholder="Buscar alimento ou código de barras"
+                className="h-12 w-full rounded-lg border-2 border-line bg-raised pl-9 pr-3 text-base text-ink placeholder:text-ink-faint focus:border-action focus:outline-none"
+              />
+            </div>
 
-          <button
-            type="button"
-            onClick={() => setIsScanning(!isScanning)}
-            className={`flex h-11 w-11 items-center justify-center rounded-xl border transition-all active:scale-95 ${
-              isScanning
-                ? 'border-emerald-400 bg-emerald-400/20 text-emerald-300'
-                : 'border-white/[0.1] bg-white/[0.03] text-zinc-300 hover:bg-white/[0.08]'
-            }`}
-            title="Escanear Código de Barras (EAN)"
-          >
-            <Barcode className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* Notificação se Scanner simulado estiver ativo */}
-        {isScanning && (
-          <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-3 text-xs font-mono text-emerald-300 flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <Sparkles className="h-3.5 w-3.5" />
-              Scanner de Câmera Ativo (Aponte para o código)
-            </span>
-            <button
-              type="button"
-              onClick={() => setIsScanning(false)}
-              className="text-[10px] text-zinc-400 underline"
-            >
-              Cancelar
-            </button>
-          </div>
-        )}
-
-        {/* Lista de Resultados */}
-        <div className="overflow-y-auto space-y-2 flex-1 pr-1">
-          {filteredFoods.length === 0 ? (
-            <p className="py-6 text-center font-mono text-xs text-zinc-500">
-              Nenhum alimento encontrado para "{searchTerm}".
-            </p>
-          ) : (
-            filteredFoods.map((food) => (
-              <button
-                key={food.id}
-                type="button"
-                onClick={() => onSelectFood(food)}
-                className="w-full flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-left hover:border-emerald-500/30 hover:bg-white/[0.04] transition-all group"
-              >
-                <div>
-                  <h4 className="text-sm font-semibold text-zinc-200 group-hover:text-emerald-300 transition-colors">
-                    {food.name}
-                  </h4>
-                  <p className="font-mono text-[11px] text-zinc-500">
-                    {food.serving} • P: {food.protein}g | C: {food.carbs}g | G: {food.fat}g
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-sm font-bold text-zinc-100 tabular-nums">
-                    {food.calories} kcal
+            <div className="flex-1 space-y-2 overflow-y-auto">
+              {searching && (
+                <p className="flex items-center gap-2 py-3 text-sm text-ink-dim">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Buscando...
+                </p>
+              )}
+              {error && (
+                <p role="alert" className="py-3 text-sm text-danger">
+                  {error}
+                </p>
+              )}
+              {!searching && !error && term.trim().length < 2 && (
+                <p className="flex items-center gap-2 py-3 text-sm text-ink-faint">
+                  <Barcode className="h-4 w-4" /> Digite pelo menos 2 letras ou um código de barras.
+                </p>
+              )}
+              {!searching && !error && term.trim().length >= 2 && results.length === 0 && (
+                <p className="py-3 text-sm text-ink-faint">Nenhum alimento encontrado.</p>
+              )}
+              {results.map((food) => (
+                <button
+                  key={`${food.source}-${food.id}`}
+                  type="button"
+                  onClick={() => pick(food)}
+                  className="flex min-h-[44px] w-full items-center justify-between gap-3 rounded-lg border-2 border-line bg-raised p-3 text-left hover:border-ink-faint"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-semibold text-ink">{food.name}</span>
+                    <span className="block text-xs text-ink-faint">
+                      {food.brand ? `${food.brand} · ` : ''}por 100 g · P {formatNumber(food.nutrientsPer100g.protein)} · C{' '}
+                      {formatNumber(food.nutrientsPer100g.carbs)} · G {formatNumber(food.nutrientsPer100g.fat)}
+                    </span>
                   </span>
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.03] text-zinc-400 group-hover:border-emerald-400/40 group-hover:text-emerald-300">
-                    <Plus className="h-4 w-4" />
-                  </div>
-                </div>
-              </button>
-            ))
-          )}
-        </div>
+                  <span className="shrink-0 font-pixel text-base font-bold tabular-nums text-kcal">
+                    {formatNumber(food.nutrientsPer100g.calories)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

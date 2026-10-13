@@ -8,11 +8,11 @@ const BASE = 'inline-flex min-h-[44px] items-center justify-center gap-2 rounded
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    'w-full border-2 border-black bg-action text-black shadow-[0_4px_0_0_#000] hover:brightness-110 active:translate-y-[2px] active:shadow-[0_2px_0_0_#000] disabled:cursor-not-allowed disabled:opacity-50',
+    'w-full border-2 border-[#0c0a08] bg-action text-[#0c0a08] shadow-[0_4px_0_0_#0c0a08] hover:brightness-110 active:translate-y-[2px] active:shadow-[0_2px_0_0_#0c0a08] disabled:cursor-not-allowed disabled:opacity-50',
   secondary:
-    'w-full border-2 border-line bg-raised text-zinc-100 hover:border-zinc-500 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50',
+    'w-full border-2 border-line bg-raised text-ink hover:border-ink-faint active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50',
   coin: 'w-full border-2 border-coin/60 bg-raised text-coin hover:border-coin active:translate-y-[1px]',
-  link: 'min-h-[44px] px-2 font-medium text-zinc-400 underline underline-offset-2 hover:text-zinc-200',
+  link: 'min-h-[44px] px-2 font-medium text-ink-dim underline underline-offset-2 hover:text-ink',
 };
 
 interface CommonProps {

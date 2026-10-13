@@ -22,10 +22,10 @@ export function ExtraItemsEditor({ items, onChange }: ExtraItemsEditorProps) {
       {items.length > 0 && (
         <ul className="space-y-2">
           {items.map((item) => (
-            <li key={item.id} className="flex items-center justify-between gap-2 rounded-xl border border-white/[0.06] p-2.5">
+            <li key={item.id} className="flex items-center justify-between gap-2 rounded-lg border-2 border-line bg-raised p-2.5">
               <div className="min-w-0">
-                <p className="truncate text-xs font-semibold text-zinc-200">{item.name}</p>
-                <p className="font-mono text-[10px] text-zinc-500">
+                <p className="truncate text-sm font-semibold text-ink">{item.name}</p>
+                <p className="text-xs text-ink-faint">
                   {item.unit} • {formatNumber(item.kcalPerUnit)} kcal cada
                 </p>
               </div>
@@ -41,7 +41,7 @@ export function ExtraItemsEditor({ items, onChange }: ExtraItemsEditorProps) {
                   type="button"
                   aria-label={`Remover ${item.name}`}
                   onClick={() => onChange(items.filter((i) => i.id !== item.id))}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-500 hover:text-rose-400"
+                  className="flex h-11 w-11 items-center justify-center rounded-lg text-ink-faint hover:text-danger"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -51,13 +51,13 @@ export function ExtraItemsEditor({ items, onChange }: ExtraItemsEditorProps) {
         </ul>
       )}
 
-      <div className="grid grid-cols-2 rounded-xl border border-white/[0.08] bg-[#08090a] p-1 text-xs font-semibold">
+      <div className="grid grid-cols-2 rounded-lg border-2 border-line bg-raised p-1 text-xs font-semibold">
         {(['search', 'custom'] as const).map((value) => (
           <button
             key={value}
             type="button"
             onClick={() => setMode(value)}
-            className={`min-h-[36px] rounded-lg ${mode === value ? 'bg-[#14171d] text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+            className={`min-h-[44px] rounded-lg ${mode === value ? 'bg-surface text-ink' : 'text-ink-faint hover:text-ink'}`}
           >
             {value === 'search' ? 'Buscar alimento' : 'Digitar kcal'}
           </button>

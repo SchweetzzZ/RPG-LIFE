@@ -325,6 +325,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workout/exercises": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["WorkoutController_getExerciseCatalog"];
+        put?: never;
+        post?: never;
+        delete: operations["WorkoutController_deleteExercise"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workout/all": {
         parameters: {
             query?: never;
@@ -383,6 +399,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["WorkoutController_logWorkoutSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workout/exercises/rename": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["WorkoutController_renameExercise"];
+        trace?: never;
+    };
+    "/workout/last-performance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["WorkoutController_getLastPerformance"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -819,14 +867,12 @@ export interface components {
                     weightKg: number;
                     /** @default 0 */
                     reps: number;
-                    /** @default false */
-                    completed: boolean;
                     rpe?: number;
                     /**
                      * @default normal
                      * @enum {string}
                      */
-                    technique: "normal" | "back_off_set" | "cluster_set" | "drop_set";
+                    technique: "normal" | "warmup" | "failure" | "drop_set" | "back_off_set" | "cluster_set";
                     /** @default 60 */
                     restSeconds: number;
                 }[];
@@ -853,10 +899,9 @@ export interface components {
                     setNumber: number;
                     weightKg: number;
                     reps: number;
-                    completed: boolean;
                     rpe?: number;
                     /** @enum {string} */
-                    technique: "normal" | "back_off_set" | "cluster_set" | "drop_set";
+                    technique: "normal" | "warmup" | "failure" | "drop_set" | "back_off_set" | "cluster_set";
                     restSeconds: number;
                 }[];
                 notes?: string;
@@ -899,14 +944,12 @@ export interface components {
                     weightKg: number;
                     /** @default 0 */
                     reps: number;
-                    /** @default false */
-                    completed: boolean;
                     rpe?: number;
                     /**
                      * @default normal
                      * @enum {string}
                      */
-                    technique: "normal" | "back_off_set" | "cluster_set" | "drop_set";
+                    technique: "normal" | "warmup" | "failure" | "drop_set" | "back_off_set" | "cluster_set";
                     /** @default 60 */
                     restSeconds: number;
                 }[];
@@ -915,6 +958,11 @@ export interface components {
             /** @default 0 */
             completionCount: number;
             lastCompletedDate?: string | null;
+        };
+        ExerciseDeletedResponseDto: {
+            message: string;
+            routinesUpdated: number;
+            logsUpdated: number;
         };
         WorkoutDeletedResponseDto: {
             message: string;
@@ -971,8 +1019,7 @@ export interface components {
         LogWorkoutDto: {
             routineId?: string;
             routineName: string;
-            /** @default 45 */
-            durationMinutes: number;
+            durationMinutes?: number;
             /**
              * @default moderate
              * @enum {string}
@@ -992,7 +1039,7 @@ export interface components {
                      * @default normal
                      * @enum {string}
                      */
-                    technique: "normal" | "back_off_set" | "cluster_set" | "drop_set";
+                    technique: "normal" | "warmup" | "failure" | "drop_set" | "back_off_set" | "cluster_set";
                     /** @default 60 */
                     restSeconds: number;
                 }[];
@@ -1031,14 +1078,53 @@ export interface components {
             xpEarned: number;
             leveledUp: boolean;
         };
+        ExerciseCatalogItemResponseDto: {
+            name: string;
+            category: string | null;
+            timesLogged: number;
+            lastDate: string | null;
+            lastSets: {
+                setNumber: number;
+                weightKg: number;
+                reps: number;
+                technique?: string;
+                restSeconds?: number;
+            }[];
+            personalBestKg: number;
+        };
+        RenameExerciseDto: {
+            from: string;
+            to: string;
+        };
+        ExerciseRenamedResponseDto: {
+            name: string;
+            routinesUpdated: number;
+            logsUpdated: number;
+        };
+        ExercisePerformanceResponseDto: {
+            exerciseName: string;
+            date: string;
+            sets: {
+                setNumber: number;
+                weightKg: number;
+                reps: number;
+                technique?: string;
+                restSeconds?: number;
+            }[];
+            maxWeightKg: number;
+            estimated1RmKg: number;
+            personalBestKg: number;
+        };
         ProgressionResponseDto: {
             exerciseName: string;
             totalSessions: number;
+            bestEstimated1RmKg: number;
             history: {
                 date: string;
                 maxWeightKg: number;
                 completedSetsCount: number;
                 totalVolumeKg: number;
+                estimated1RmKg: number;
                 sets: {
                     setNumber: number;
                     weightKg: number;
@@ -2160,6 +2246,49 @@ export interface operations {
             };
         };
     };
+    WorkoutController_getExerciseCatalog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Catalogo de exercicios (rotinas + registros) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExerciseCatalogItemResponseDto"][];
+                };
+            };
+        };
+    };
+    WorkoutController_deleteExercise: {
+        parameters: {
+            query: {
+                /** @description Nome do exercicio */
+                name: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Exercicio apagado das rotinas e do historico */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExerciseDeletedResponseDto"];
+                };
+            };
+        };
+    };
     WorkoutController_getAllWorkouts: {
         parameters: {
             query?: never;
@@ -2244,6 +2373,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LogWorkoutSessionResponseDto"];
+                };
+            };
+        };
+    };
+    WorkoutController_renameExercise: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenameExerciseDto"];
+            };
+        };
+        responses: {
+            /** @description Exercicio renomeado nas rotinas e no historico (409 se o nome ja existe) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExerciseRenamedResponseDto"];
+                };
+            };
+        };
+    };
+    WorkoutController_getLastPerformance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ultima carga de cada exercicio */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExercisePerformanceResponseDto"][];
                 };
             };
         };

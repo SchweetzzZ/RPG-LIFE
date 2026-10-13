@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { Link } from '@tanstack/react-router';
-import { Save, LogOut, Check } from 'lucide-react';
+import { useState, type FormEvent } from 'react';
+import { Save, LogOut, Check, Info } from 'lucide-react';
+import { Card } from '../ui/Card';
+import { Button } from '../ui/Button';
+import { formatNumber } from '../../lib/format';
 import { errorMessage } from '../../services/http';
 import type {
   ActivityLevel,
@@ -52,7 +54,7 @@ export function PhysicalProfileForm({ initialData, primaryGoal, onSave, onLogout
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<NutritionUpdateResult | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSaved(null);
 
@@ -85,148 +87,103 @@ export function PhysicalProfileForm({ initialData, primaryGoal, onSave, onLogout
     }
   };
 
+  const input =
+    'h-12 w-full rounded-lg border-2 border-line bg-raised px-3 text-base text-ink focus:border-action focus:outline-none';
+  const label = 'text-sm text-ink-dim';
+
   return (
-    <form onSubmit={handleSubmit} className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0c0e12] p-4 sm:p-5 shadow-xl space-y-4">
-      <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
-        <h3 className="font-mono text-xs font-semibold uppercase tracking-wider text-zinc-300">
-          Perfil físico
-        </h3>
-        <span className="font-mono text-[10px] text-zinc-500">
-          Fórmula Mifflin-St Jeor
-        </span>
-      </div>
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <Card label="Perfil físico" aside="Fórmula Mifflin-St Jeor">
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-3">
+            <label className="block space-y-1">
+              <span className={label}>Peso (kg)</span>
+              <input type="number" inputMode="decimal" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} className={input} />
+            </label>
+            <label className="block space-y-1">
+              <span className={label}>Altura (cm)</span>
+              <input type="number" inputMode="numeric" value={height} onChange={(e) => setHeight(e.target.value)} className={input} />
+            </label>
+            <label className="block space-y-1">
+              <span className={label}>Idade</span>
+              <input type="number" inputMode="numeric" value={age} onChange={(e) => setAge(e.target.value)} className={input} />
+            </label>
+          </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {/* Peso */}
-        <div className="space-y-1.5">
-          <label className="font-mono text-[11px] uppercase tracking-wider text-zinc-400">
-            Peso Atual (kg)
+          <label className="block space-y-1">
+            <span className={label}>Sexo usado no cálculo</span>
+            <select
+              value={biologicalSex}
+              onChange={(e) => {
+                const option = SEX_OPTIONS.find((o) => o.value === e.target.value);
+                setBiologicalSex(option ? option.value : '');
+              }}
+              className={input}
+            >
+              <option value="">Selecione</option>
+              {SEX_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            <span className="flex items-start gap-1.5 text-xs text-ink-faint">
+              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              A fórmula de gasto calórico tem uma versão para cada sexo. Escolha a que mais se aproxima do seu corpo.
+            </span>
           </label>
-          <input
-            type="number"
-            inputMode="decimal"
-            step="0.1"
-            value={weight}
-            onChange={(e) => setWeight(e.target.value)}
-            className="w-full h-11 rounded-xl border border-white/[0.1] bg-[#08090a] px-3 font-mono text-sm font-bold text-zinc-100 focus:border-amber-400/60 focus:outline-none"
-          />
-        </div>
 
-        {/* Altura */}
-        <div className="space-y-1.5">
-          <label className="font-mono text-[11px] uppercase tracking-wider text-zinc-400">
-            Altura (cm)
+          <label className="block space-y-1">
+            <span className={label}>Como é sua rotina fora da academia? (não conte o treino)</span>
+            <select
+              value={activityLevel}
+              onChange={(e) => {
+                const option = ACTIVITY_OPTIONS.find((o) => o.value === e.target.value);
+                setActivityLevel(option ? option.value : '');
+              }}
+              className={input}
+            >
+              <option value="">Selecione</option>
+              {ACTIVITY_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
           </label>
-          <input
-            type="number"
-            inputMode="numeric"
-            value={height}
-            onChange={(e) => setHeight(e.target.value)}
-            className="w-full h-11 rounded-xl border border-white/[0.1] bg-[#08090a] px-3 font-mono text-sm font-bold text-zinc-100 focus:border-amber-400/60 focus:outline-none"
-          />
         </div>
-
-        {/* Idade */}
-        <div className="space-y-1.5">
-          <label className="font-mono text-[11px] uppercase tracking-wider text-zinc-400">
-            Idade
-          </label>
-          <input
-            type="number"
-            inputMode="numeric"
-            value={age}
-            onChange={(e) => setAge(e.target.value)}
-            className="w-full h-11 rounded-xl border border-white/[0.1] bg-[#08090a] px-3 font-mono text-sm font-bold text-zinc-100 focus:border-amber-400/60 focus:outline-none"
-          />
-        </div>
-
-        {/* Sexo usado no cálculo (não é identidade de gênero) */}
-        <div className="space-y-1.5">
-          <label className="font-mono text-[11px] uppercase tracking-wider text-zinc-400">
-            Sexo usado no cálculo
-          </label>
-          <select
-            value={biologicalSex}
-            onChange={(e) => {
-              const option = SEX_OPTIONS.find((o) => o.value === e.target.value);
-              setBiologicalSex(option ? option.value : '');
-            }}
-            className="w-full h-11 rounded-xl border border-white/[0.1] bg-[#08090a] px-3 font-mono text-xs font-semibold text-zinc-100 focus:border-amber-400/60 focus:outline-none"
-          >
-            <option value="">Selecione</option>
-            {SEX_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-          <p className="text-[10px] leading-snug text-zinc-500">
-            A fórmula de gasto calórico tem uma versão para cada sexo. Escolha a que mais se aproxima do seu corpo.
-          </p>
-        </div>
-      </div>
-
-      {/* Nível de Atividade Física */}
-      <div className="space-y-1.5">
-        <label className="font-mono text-[11px] uppercase tracking-wider text-zinc-400">
-          Como é sua rotina fora da academia? (não conte o treino)
-        </label>
-        <select
-          value={activityLevel}
-          onChange={(e) => {
-            const option = ACTIVITY_OPTIONS.find((o) => o.value === e.target.value);
-            setActivityLevel(option ? option.value : '');
-          }}
-          className="w-full h-11 rounded-xl border border-white/[0.1] bg-[#08090a] px-3 text-xs text-zinc-100 focus:border-amber-400/60 focus:outline-none"
-        >
-          <option value="">Selecione</option>
-          {ACTIVITY_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
-      </div>
+      </Card>
 
       {error && (
-        <p role="alert" className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-xs text-rose-300">
+        <p role="alert" className="rounded-lg border-2 border-danger/60 bg-surface p-3 text-sm text-danger">
           {error}
         </p>
       )}
       {saved && (
-        <div role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs text-emerald-300">
-          <span>Perfil salvo! Sua meta base ficou em {Math.round(saved.targets.targetCalories)} kcal por dia.</span>
-          <Link to="/" className="font-mono font-semibold underline">Ir para o painel</Link>
+        <div role="status" className="space-y-1 rounded-lg border-2 border-action/60 bg-surface p-3 text-sm text-ink">
+          <p>
+            Perfil salvo. Sua meta base ficou em{' '}
+            <span className="font-pixel text-lg text-kcal">{formatNumber(Math.round(saved.targets.targetCalories))}</span> kcal por dia.
+          </p>
+          <Button to="/" variant="link" className="!min-h-[44px] !px-0">Ir para o painel</Button>
         </div>
       )}
 
-      {/* Botões de Ação */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-        <button
-          type="button"
-          onClick={onLogout}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-2.5 font-mono text-xs font-semibold text-rose-300 hover:bg-rose-500/20 transition-all min-h-[44px]"
-        >
-          <LogOut className="h-3.5 w-3.5" />
-          <span>Encerrar Sessão</span>
-        </button>
-
-        <button
-          type="submit"
-          disabled={saving}
-          className="disabled:opacity-60 w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-6 py-2.5 font-mono text-xs font-bold text-black shadow-lg shadow-amber-400/20 hover:bg-amber-300 active:scale-[0.98] transition-all min-h-[44px]"
-        >
-          {saving ? (
-            <span>Salvando...</span>
-          ) : saved ? (
-            <>
-              <Check className="h-4 w-4 stroke-[2.5]" />
-              <span>Metas Recalculadas!</span>
-            </>
-          ) : (
-            <>
-              <Save className="h-4 w-4 stroke-[2]" />
-              <span>Salvar e Recalcular Dieta</span>
-            </>
-          )}
-        </button>
-      </div>
+      <Button type="submit" disabled={saving}>
+        {saving ? (
+          'Salvando...'
+        ) : saved ? (
+          <>
+            <Check className="h-4 w-4" />
+            Metas recalculadas
+          </>
+        ) : (
+          <>
+            <Save className="h-4 w-4" />
+            Salvar e recalcular dieta
+          </>
+        )}
+      </Button>
+      <Button variant="secondary" onClick={onLogout}>
+        <LogOut className="h-4 w-4" />
+        Encerrar sessão
+      </Button>
     </form>
   );
 }

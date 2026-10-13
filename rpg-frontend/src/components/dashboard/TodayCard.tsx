@@ -43,25 +43,25 @@ export function TodayCard({ day, onClosed }: TodayCardProps) {
           <p className="font-pixel text-4xl font-bold leading-none tabular-nums text-kcal">
             {over ? `+${formatNumber(day.consumedKcal - day.targetKcal)}` : formatNumber(day.remainingKcal)}
           </p>
-          <p className="text-sm text-zinc-400">{over ? 'kcal acima da meta' : 'kcal restantes'}</p>
+          <p className="text-sm text-ink-dim">{over ? 'kcal acima da meta' : 'kcal restantes'}</p>
         </div>
 
         <div className="space-y-1.5">
           <SegmentedBar value={day.consumedKcal} max={day.targetKcal} segments={20} tone="kcal" label="Calorias consumidas" />
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-ink-faint">
             {formatNumber(day.consumedKcal)} consumidas • {day.foodLogsCount} {day.foodLogsCount === 1 ? 'registro' : 'registros'}
           </p>
         </div>
 
-        <div className="space-y-1 text-xs text-zinc-500">
-          <p>
-            Meta {formatNumber(day.targetKcal)} = base {formatNumber(day.baseKcal)} + treino {formatNumber(day.workoutKcal)} + passos{' '}
-            {formatNumber(day.stepsKcal)}
-          </p>
-          <p>
-            {isClosed ? 'Guardado no cofre' : 'Sobra prevista para o cofre'}: {formatNumber(day.savedKcal)} kcal
-          </p>
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <Tile label="Base" value={day.baseKcal} />
+          <Tile label="Treino" value={day.workoutKcal} plus />
+          <Tile label="Passos" value={day.stepsKcal} plus />
         </div>
+
+        <p className="text-xs text-ink-faint">
+          {isClosed ? 'Guardado no cofre' : 'Sobra prevista para o cofre'}: {formatNumber(day.savedKcal)} kcal
+        </p>
 
         {error && (
           <p role="alert" className="text-xs text-danger">
@@ -83,7 +83,7 @@ export function TodayCard({ day, onClosed }: TodayCardProps) {
               <Utensils className="h-4 w-4" />
               Registrar refeição
             </Button>
-            {day.closeBlockedReason && <p className="text-xs text-zinc-500">{day.closeBlockedReason}</p>}
+            {day.closeBlockedReason && <p className="text-xs text-ink-faint">{day.closeBlockedReason}</p>}
           </div>
         ) : day.foodLogsCount === 0 ? (
           <div className="space-y-2">
@@ -91,7 +91,7 @@ export function TodayCard({ day, onClosed }: TodayCardProps) {
               <Utensils className="h-4 w-4" />
               Registrar refeição
             </Button>
-            <p className="flex items-start gap-2 text-xs text-zinc-500">
+            <p className="flex items-start gap-2 text-xs text-ink-faint">
               <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               Fechar sem refeições não guarda kcal, não rende moedas e interrompe a sequência.
             </p>
@@ -118,12 +118,24 @@ export function TodayCard({ day, onClosed }: TodayCardProps) {
   );
 }
 
+function Tile({ label, value, plus = false }: { label: string; value: number; plus?: boolean }) {
+  return (
+    <div className="rounded-lg border-2 border-line bg-raised px-2 py-2">
+      <p className="text-xs text-ink-faint">{label}</p>
+      <p className="font-pixel text-lg font-bold leading-tight tabular-nums text-ink">
+        {plus ? '+' : ''}
+        {formatNumber(value)}
+      </p>
+    </div>
+  );
+}
+
 /** O momento mais "jogo" do app: a recompensa recebida ao fechar o dia. */
 function RewardSummary({ result }: { result: DayCloseResult }) {
   return (
     <div className="space-y-2 rounded-lg border-2 border-line bg-raised p-3 text-sm">
       {result.alreadyClosed ? (
-        <p className="text-zinc-300">Esse dia já estava fechado.</p>
+        <p className="text-ink">Esse dia já estava fechado.</p>
       ) : (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-semibold">
           <span className="inline-flex items-center gap-1 text-coin">
@@ -143,12 +155,12 @@ function RewardSummary({ result }: { result: DayCloseResult }) {
         </p>
       )}
       {result.alert && (
-        <p className="flex items-start gap-2 text-xs text-zinc-400">
+        <p className="flex items-start gap-2 text-xs text-ink-dim">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           {result.alert}
         </p>
       )}
-      {result.notice && <p className="text-xs text-zinc-500">{result.notice}</p>}
+      {result.notice && <p className="text-xs text-ink-faint">{result.notice}</p>}
     </div>
   );
 }

@@ -39,20 +39,20 @@ export function FoodSearchPicker({ onPick }: FoodSearchPickerProps) {
           value={term}
           onChange={(e) => setTerm(e.target.value)}
           placeholder="Buscar alimento (ex: brigadeiro)"
-          className="h-11 min-w-0 flex-1 rounded-xl border border-white/[0.1] bg-[#08090a] px-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-amber-400/60 focus:outline-none"
+          className="h-12 min-w-0 flex-1 rounded-lg border-2 border-line bg-raised px-3 text-base text-ink placeholder:text-ink-faint focus:border-action focus:outline-none"
         />
         <button
           type="submit"
           disabled={loading || !term.trim()}
-          className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/[0.1] text-zinc-200 hover:bg-white/[0.06] disabled:opacity-40"
+          className="flex h-12 w-12 items-center justify-center rounded-lg border-2 border-line bg-raised text-ink hover:border-ink-faint disabled:opacity-40"
           aria-label="Buscar"
         >
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
         </button>
       </form>
 
-      {error && <p className="text-xs text-rose-400">{error}</p>}
-      {results && results.length === 0 && <p className="text-xs text-zinc-500">Nada encontrado.</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
+      {results && results.length === 0 && <p className="text-xs text-ink-faint">Nada encontrado.</p>}
 
       {results && results.length > 0 && (
         <ul className="max-h-48 space-y-1 overflow-y-auto">
@@ -64,15 +64,15 @@ export function FoodSearchPicker({ onPick }: FoodSearchPickerProps) {
                   type="button"
                   disabled={!draft}
                   onClick={() => draft && onPick(draft)}
-                  className="flex w-full items-center justify-between gap-3 rounded-lg border border-white/[0.06] px-3 py-2 text-left hover:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="flex w-full items-center justify-between gap-3 min-h-[44px] rounded-lg border-2 border-line bg-raised px-3 py-2 text-left hover:border-ink-faint disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <span className="min-w-0">
-                    <span className="block truncate text-xs font-semibold text-zinc-200">{food.name}</span>
-                    <span className="font-mono text-[10px] text-zinc-500">
+                    <span className="block truncate text-sm font-semibold text-ink">{food.name}</span>
+                    <span className="text-xs text-ink-faint">
                       {food.source === 'TACO' ? 'TACO' : 'Open Food Facts'} • {Math.round(food.nutrientsPer100g.calories)} kcal/100 g
                     </span>
                   </span>
-                  <Plus className="h-4 w-4 shrink-0 text-amber-400" />
+                  <Plus className="h-4 w-4 shrink-0 text-action" />
                 </button>
               </li>
             );
