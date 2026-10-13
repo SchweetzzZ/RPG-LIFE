@@ -14,13 +14,10 @@ export class ExerciseSet {
     @Prop({ required: true, default: 0 })
     reps: number;
 
-    @Prop({ default: false })
-    completed: boolean;
-
     @Prop({ required: false })
     rpe?: number;
 
-    @Prop({ type: String, enum: ['normal', 'back_off_set', 'cluster_set', 'drop_set'], default: 'normal' })
+    @Prop({ type: String, enum: ['normal', 'warmup', 'failure', 'drop_set', 'back_off_set', 'cluster_set'], default: 'normal' })
     technique: string;
 
     @Prop({ default: 60 })

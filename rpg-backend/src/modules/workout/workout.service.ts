@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Workout, workoutDocument } from "./schemas/workout-schema";
-import { WorkoutLog, WorkoutLogDocument } from "./schemas/workout-log";
+import { PerformedSet, WorkoutLog, WorkoutLogDocument } from "./schemas/workout-log";
 import { Model, Types } from "mongoose";
 import { CreateWorkoutDto, UpdateWorkoutDto, LogWorkoutDto, CreateWorkoutLogInput } from "./dto/workout-dto";
 import { RewardService, RewardResult } from "../economy/reward.service";
@@ -10,6 +10,11 @@ import { VaultService } from "../vault/vault.service";
 import { calculateWorkoutNetKcal } from "../energy/energy-math";
 import { ProfileService } from "../profile/profile.service";
 import { toUserDate } from "../common/utils/user-date";
+import { buildCatalog, removeFromList, renameInList } from "./exercise-catalog";
+import { best1Rm, estimateDurationMinutes, exerciseKey, maxWeight, volumeKg } from "./workout-math";
+
+// Quantos treinos recentes entram no "ultimo desempenho" de cada exercicio
+const RECENT_LOGS_FOR_PERFORMANCE = 60;
 
 @Injectable()
 export class WorkoutService {
@@ -109,38 +114,38 @@ export class WorkoutService {
     }
 
     async logWorkoutSession(userId: string, data: LogWorkoutDto) {
+        // Registrar o treino ja conta: o app nao tem como provar que a serie foi feita,
+        // entao basta ter ao menos 1 exercicio com ao menos 1 serie anotada.
+        const registered = (data.exercises ?? []).filter((ex) => (ex.sets?.length ?? 0) > 0);
+        if (registered.length === 0) {
+            throw new BadRequestException('Registre ao menos um exercício com uma série para salvar o treino');
+        }
+
         let weightKg = 70;
         try {
             const profile = await this.profileService.getProfile(userId);
             if (profile?.weightKg) weightKg = profile.weightKg;
         } catch { }
 
-        // Kcal liquidas: (MET - 1) x peso x horas (o basal ja esta na Base do dia)
-        const duration = data.durationMinutes || 45;
-        const caloriesBurned = calculateWorkoutNetKcal(data.intensity, weightKg, duration);
-
         let totalVolumeKg = 0;
         let totalSets = 0;
 
-        const exercises = (data.exercises || []).map((ex) => {
-            let maxWeight = ex.maxWeightKg || 0;
-            const completedSets = ex.sets?.length || ex.completedSetsCount || 0;
-            totalSets += completedSets;
-
-            if (ex.sets) {
-                ex.sets.forEach((s) => {
-                    totalVolumeKg += (s.weightKg || 0) * (s.reps || 0);
-                    if (s.weightKg > maxWeight) maxWeight = s.weightKg;
-                });
-            }
-
+        const exercises = registered.map((ex) => {
+            const sets = ex.sets ?? [];
+            totalSets += sets.length;
+            totalVolumeKg += volumeKg(sets);
             return {
-                exerciseName: ex.exerciseName,
-                maxWeightKg: maxWeight,
-                completedSetsCount: completedSets,
-                sets: ex.sets,
+                exerciseName: ex.exerciseName.trim(),
+                maxWeightKg: maxWeight(sets),
+                completedSetsCount: sets.length,
+                sets,
             };
         });
+
+        // Sem cronometro a duracao vem estimada pelas series
+        const duration = data.durationMinutes ?? estimateDurationMinutes(totalSets);
+        // Kcal liquidas: (MET - 1) x peso x horas (o basal ja esta na Base do dia)
+        const caloriesBurned = calculateWorkoutNetKcal(data.intensity, weightKg, duration);
 
         const today = toUserDate(await this.profileService.getTimezone(userId));
         const targetDate = data.date || today;
@@ -191,44 +196,169 @@ export class WorkoutService {
         };
     }
 
+    /** Evolucao de um exercicio (nome comparado sem acento e sem diferenca de caixa). */
     async getProgression(userId: string, exerciseName: string) {
         const timezone = await this.profileService.getTimezone(userId);
-        // Escapa o nome para nao ser interpretado como expressao regular
-        const escapedName = exerciseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const key = exerciseKey(exerciseName);
         const logs = await this.workoutLogModel
-            .find({
-                user: new Types.ObjectId(userId),
-                'exercises.exerciseName': { $regex: new RegExp(`^${escapedName}$`, 'i') },
-            })
+            .find({ user: new Types.ObjectId(userId) })
             .sort({ completedAt: 1 })
             .lean()
             .exec();
 
-        const history = logs.map((log) => {
-            const exercise = log.exercises?.find(
-                (e) => e.exerciseName?.toLowerCase() === exerciseName.toLowerCase()
-            );
-
-            let exerciseVolume = 0;
-            if (exercise?.sets) {
-                exercise.sets.forEach((s) => {
-                    exerciseVolume += (s.weightKg || 0) * (s.reps || 0);
-                });
-            }
-
-            return {
+        const history = logs.flatMap((log) => {
+            const exercise = log.exercises?.find((e) => exerciseKey(e.exerciseName ?? '') === key);
+            if (!exercise) return [];
+            const sets = exercise.sets ?? [];
+            return [{
                 date: log.date || (log.completedAt ? toUserDate(timezone, new Date(log.completedAt)) : ''),
-                maxWeightKg: exercise?.maxWeightKg || 0,
-                completedSetsCount: exercise?.completedSetsCount || 0,
-                totalVolumeKg: exerciseVolume,
-                sets: exercise?.sets || [],
-            };
+                maxWeightKg: sets.length ? maxWeight(sets) : exercise.maxWeightKg ?? 0,
+                completedSetsCount: exercise.completedSetsCount ?? sets.length,
+                totalVolumeKg: volumeKg(sets),
+                estimated1RmKg: best1Rm(sets),
+                sets,
+            }];
         });
 
         return {
             exerciseName,
             totalSessions: history.length,
+            bestEstimated1RmKg: history.reduce((best, h) => Math.max(best, h.estimated1RmKg), 0),
             history,
+        };
+    }
+
+    /** Ultimo desempenho de cada exercicio (treinos recentes), para pre-preencher as cargas. */
+    async getLastPerformance(userId: string) {
+        const logs = await this.workoutLogModel
+            .find({ user: new Types.ObjectId(userId) })
+            .sort({ completedAt: -1 })
+            .limit(RECENT_LOGS_FOR_PERFORMANCE)
+            .lean()
+            .exec();
+
+        const byExercise = new Map<string, {
+            exerciseName: string;
+            date: string;
+            sets: PerformedSet[];
+            personalBestKg: number;
+        }>();
+
+        // Do mais recente para o mais antigo: a 1a ocorrencia e a "ultima vez"
+        for (const log of logs) {
+            for (const ex of log.exercises ?? []) {
+                const sets = ex.sets ?? [];
+                if (!ex.exerciseName || sets.length === 0) continue;
+                const key = exerciseKey(ex.exerciseName);
+                const entry = byExercise.get(key);
+                const best = maxWeight(sets);
+                if (!entry) {
+                    byExercise.set(key, { exerciseName: ex.exerciseName, date: log.date, sets, personalBestKg: best });
+                } else {
+                    entry.personalBestKg = Math.max(entry.personalBestKg, best);
+                }
+            }
+        }
+
+        return [...byExercise.values()].map((e) => ({
+            exerciseName: e.exerciseName,
+            date: e.date,
+            sets: e.sets.map((s) => ({ ...s })),
+            maxWeightKg: maxWeight(e.sets),
+            estimated1RmKg: best1Rm(e.sets),
+            personalBestKg: e.personalBestKg,
+        }));
+    }
+
+    // ── Catalogo de exercicios ───────────────────────────────────────────────
+
+    /** Exercicios do usuario: rotinas + registros, sem duplicar pela exerciseKey. */
+    async getExerciseCatalog(userId: string) {
+        const user = new Types.ObjectId(userId);
+        const [routines, logs] = await Promise.all([
+            this.workoutModel.find({ user }).select('exercises.name exercises.category createdAt').lean().exec(),
+            this.workoutLogModel.find({ user }).select('date completedAt exercises').lean().exec(),
+        ]);
+        return buildCatalog(routines, logs);
+    }
+
+    /**
+     * Renomeia o exercicio nas rotinas e em todo o historico (continua sendo o mesmo exercicio).
+     * Bloqueia (409) se o novo nome ja for outro exercicio do catalogo. Sem replica set nao ha
+     * transacao: o historico e atualizado primeiro e as rotinas depois.
+     */
+    async renameExercise(userId: string, from: string, to: string) {
+        const newName = to.trim();
+        const fromKey = exerciseKey(from);
+        const toKey = exerciseKey(newName);
+        const catalog = await this.getExerciseCatalog(userId);
+
+        if (!catalog.some((c) => exerciseKey(c.name) === fromKey)) {
+            throw new NotFoundException('Exercício não encontrado');
+        }
+        if (toKey !== fromKey && catalog.some((c) => exerciseKey(c.name) === toKey)) {
+            throw new ConflictException('Já existe um exercício com esse nome');
+        }
+
+        const user = new Types.ObjectId(userId);
+        const logs = await this.workoutLogModel.find({ user }).select('exercises').lean().exec();
+        const logOps = logs.flatMap((log) => {
+            const exercises = renameInList(
+                log.exercises, from, newName, (e) => e.exerciseName, (e, name) => ({ ...e, exerciseName: name }),
+            );
+            return exercises ? [{ updateOne: { filter: { _id: log._id }, update: { $set: { exercises } } } }] : [];
+        });
+        if (logOps.length > 0) await this.workoutLogModel.bulkWrite(logOps);
+
+        const routines = await this.workoutModel.find({ user }).select('exercises').lean().exec();
+        const routineOps = routines.flatMap((routine) => {
+            const exercises = renameInList(
+                routine.exercises, from, newName, (e) => e.name, (e, name) => ({ ...e, name }),
+            );
+            return exercises ? [{ updateOne: { filter: { _id: routine._id }, update: { $set: { exercises } } } }] : [];
+        });
+        if (routineOps.length > 0) await this.workoutModel.bulkWrite(routineOps);
+
+        return { name: newName, routinesUpdated: routineOps.length, logsUpdated: logOps.length };
+    }
+
+    /**
+     * Apaga o exercicio de todas as rotinas e do historico. Os treinos ficam (as kcal do dia
+     * dependem deles), mas sem o exercicio; volume e series sao recalculados.
+     */
+    async deleteExercise(userId: string, name: string) {
+        const key = exerciseKey(name);
+        const catalog = await this.getExerciseCatalog(userId);
+        if (!catalog.some((c) => exerciseKey(c.name) === key)) {
+            throw new NotFoundException('Exercício não encontrado');
+        }
+
+        const user = new Types.ObjectId(userId);
+        const logs = await this.workoutLogModel.find({ user }).select('exercises').lean().exec();
+        const logOps = logs.flatMap((log) => {
+            const exercises = removeFromList(log.exercises, name, (e) => e.exerciseName);
+            if (!exercises) return [];
+            const sets = exercises.flatMap((e) => e.sets ?? []);
+            return [{
+                updateOne: {
+                    filter: { _id: log._id },
+                    update: { $set: { exercises, totalSets: sets.length, totalVolumeKg: volumeKg(sets) } },
+                },
+            }];
+        });
+        if (logOps.length > 0) await this.workoutLogModel.bulkWrite(logOps);
+
+        const routines = await this.workoutModel.find({ user }).select('exercises').lean().exec();
+        const routineOps = routines.flatMap((routine) => {
+            const exercises = removeFromList(routine.exercises, name, (e) => e.name);
+            return exercises ? [{ updateOne: { filter: { _id: routine._id }, update: { $set: { exercises } } } }] : [];
+        });
+        if (routineOps.length > 0) await this.workoutModel.bulkWrite(routineOps);
+
+        return {
+            message: 'Exercício e histórico removidos',
+            routinesUpdated: routineOps.length,
+            logsUpdated: logOps.length,
         };
     }
 }

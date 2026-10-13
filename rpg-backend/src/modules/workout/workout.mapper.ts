@@ -1,6 +1,6 @@
 import { Workout } from "./schemas/workout-schema";
 import { WorkoutLog } from "./schemas/workout-log";
-import { WorkoutLogResponse, WorkoutResponse } from "./dto/workout-dto";
+import { SET_TECHNIQUES, WorkoutLogResponse, WorkoutResponse } from "./dto/workout-dto";
 
 // Converte documentos do Mongo no formato publico da API (sem `user`, `_id` vira `id`, datas em ISO)
 
@@ -15,7 +15,7 @@ type Intensity = WorkoutResponse['intensity'];
 type SetTechnique = WorkoutResponse['exercises'][number]['sets'][number]['technique'];
 
 const INTENSITIES: readonly Intensity[] = ['moderate', 'intense', 'cycling_running'];
-const TECHNIQUES: readonly SetTechnique[] = ['normal', 'back_off_set', 'cluster_set', 'drop_set'];
+const TECHNIQUES: readonly SetTechnique[] = SET_TECHNIQUES;
 
 const toIntensity = (value: string | undefined): Intensity =>
     INTENSITIES.find((i) => i === value) ?? 'moderate';
@@ -40,7 +40,6 @@ export function toWorkoutResponse(doc: WithMeta<Workout>): WorkoutResponse {
                 setNumber: s.setNumber,
                 weightKg: s.weightKg,
                 reps: s.reps,
-                completed: s.completed ?? false,
                 ...(s.rpe != null ? { rpe: s.rpe } : {}),
                 technique: toTechnique(s.technique),
                 restSeconds: s.restSeconds ?? 60,

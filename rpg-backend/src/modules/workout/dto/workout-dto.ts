@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { createZodDto } from "nestjs-zod";
 
+// Tecnica da serie. 'warmup' (aquecimento) nao entra no volume nem no 1RM
+export const SET_TECHNIQUES = ['normal', 'warmup', 'failure', 'drop_set', 'back_off_set', 'cluster_set'] as const;
+
 // ── Sub-schemas (mirror frontend types.ts) ──────────────────────────────────
 
 export const exerciseSetSchema = z.object({
@@ -8,9 +11,8 @@ export const exerciseSetSchema = z.object({
     setNumber: z.number().int().min(1).default(1),
     weightKg: z.number().min(0).default(0),
     reps: z.number().int().min(0).default(0),
-    completed: z.boolean().default(false),
     rpe: z.number().min(1).max(10).optional(),
-    technique: z.enum(['normal', 'back_off_set', 'cluster_set', 'drop_set']).default('normal'),
+    technique: z.enum(SET_TECHNIQUES).default('normal'),
     restSeconds: z.number().int().min(0).default(60),
 });
 
@@ -45,7 +47,8 @@ export const updateWorkoutSchema = createWorkoutSchema.partial();
 export const logWorkoutSchema = z.object({
     routineId: z.string().optional(),
     routineName: z.string().min(1, "Routine name is required"),
-    durationMinutes: z.number().min(1).default(45),
+    // Sem cronometro a duracao e opcional: o servidor estima pelas series
+    durationMinutes: z.number().min(1).optional(),
     intensity: z.enum(['moderate', 'intense', 'cycling_running']).default('moderate'),
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato deve ser YYYY-MM-DD').optional(),
     exercises: z.array(z.object({
@@ -56,7 +59,7 @@ export const logWorkoutSchema = z.object({
             setNumber: z.number().int().min(1),
             weightKg: z.number().min(0),
             reps: z.number().int().min(0),
-            technique: z.enum(['normal', 'back_off_set', 'cluster_set', 'drop_set']).default('normal'),
+            technique: z.enum(SET_TECHNIQUES).default('normal'),
             restSeconds: z.number().int().min(0).default(60),
         })).optional(),
     })).default([]),
@@ -98,14 +101,13 @@ export class CreateWorkoutLogDto extends createZodDto(createWorkoutLogSchema) {}
 
 // ── Response DTOs ────────────────────────────────────────────────────────────
 
-const setTechniqueSchema = z.enum(['normal', 'back_off_set', 'cluster_set', 'drop_set']);
+const setTechniqueSchema = z.enum(SET_TECHNIQUES);
 const intensitySchema = z.enum(['moderate', 'intense', 'cycling_running']);
 
 export const ExerciseSetResponseSchema = z.object({
     setNumber: z.number(),
     weightKg: z.number(),
     reps: z.number(),
-    completed: z.boolean(),
     rpe: z.number().optional(),
     technique: setTechniqueSchema,
     restSeconds: z.number(),
@@ -176,13 +178,56 @@ export const LogWorkoutSessionResponseSchema = z.object({
 export const ProgressionResponseSchema = z.object({
     exerciseName: z.string(),
     totalSessions: z.number(),
+    /** Maior 1RM estimado (Epley) ja registrado; 0 se nao ha series validas */
+    bestEstimated1RmKg: z.number(),
     history: z.array(z.object({
         date: z.string(),
         maxWeightKg: z.number(),
         completedSetsCount: z.number(),
         totalVolumeKg: z.number(),
+        estimated1RmKg: z.number(),
         sets: z.array(PerformedSetResponseSchema),
     })),
+});
+
+// Ultimo desempenho de cada exercicio, para pre-preencher o proximo treino
+export const ExercisePerformanceResponseSchema = z.object({
+    exerciseName: z.string(),
+    /** Data da ultima vez que o exercicio foi registrado */
+    date: z.string(),
+    sets: z.array(PerformedSetResponseSchema),
+    maxWeightKg: z.number(),
+    estimated1RmKg: z.number(),
+    /** Maior carga (sem aquecimento) ja registrada nos treinos recentes */
+    personalBestKg: z.number(),
+});
+
+// Catalogo: exercicios das rotinas e dos registros, sem duplicar pelo nome
+export const ExerciseCatalogItemResponseSchema = z.object({
+    name: z.string(),
+    category: z.string().nullable(),
+    timesLogged: z.number(),
+    lastDate: z.string().nullable(),
+    lastSets: z.array(PerformedSetResponseSchema),
+    /** Maior carga (sem aquecimento) ja registrada */
+    personalBestKg: z.number(),
+});
+
+export const renameExerciseSchema = z.object({
+    from: z.string().trim().min(1, 'Nome atual é obrigatório'),
+    to: z.string().trim().min(1, 'Novo nome é obrigatório').max(80),
+});
+
+export const ExerciseRenamedResponseSchema = z.object({
+    name: z.string(),
+    routinesUpdated: z.number(),
+    logsUpdated: z.number(),
+});
+
+export const ExerciseDeletedResponseSchema = z.object({
+    message: z.string(),
+    routinesUpdated: z.number(),
+    logsUpdated: z.number(),
 });
 
 export const WorkoutDeletedResponseSchema = z.object({
@@ -196,4 +241,10 @@ export class WorkoutResponseDto extends createZodDto(WorkoutResponseSchema) {}
 export class WorkoutLogResponseDto extends createZodDto(WorkoutLogResponseSchema) {}
 export class LogWorkoutSessionResponseDto extends createZodDto(LogWorkoutSessionResponseSchema) {}
 export class ProgressionResponseDto extends createZodDto(ProgressionResponseSchema) {}
+export class ExercisePerformanceResponseDto extends createZodDto(ExercisePerformanceResponseSchema) {}
 export class WorkoutDeletedResponseDto extends createZodDto(WorkoutDeletedResponseSchema) {}
+
+export class ExerciseCatalogItemResponseDto extends createZodDto(ExerciseCatalogItemResponseSchema) {}
+export class RenameExerciseDto extends createZodDto(renameExerciseSchema) {}
+export class ExerciseRenamedResponseDto extends createZodDto(ExerciseRenamedResponseSchema) {}
+export class ExerciseDeletedResponseDto extends createZodDto(ExerciseDeletedResponseSchema) {}

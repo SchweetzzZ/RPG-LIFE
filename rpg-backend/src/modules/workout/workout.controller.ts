@@ -1,5 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from "@nestjs/common";
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from "@nestjs/swagger";
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from "@nestjs/common";
+import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { WorkoutService } from "./workout.service";
 import {
     CreateWorkoutDtoClass,
@@ -10,7 +10,12 @@ import {
     WorkoutLogResponseDto,
     LogWorkoutSessionResponseDto,
     ProgressionResponseDto,
+    ExercisePerformanceResponseDto,
     WorkoutDeletedResponseDto,
+    ExerciseCatalogItemResponseDto,
+    RenameExerciseDto,
+    ExerciseRenamedResponseDto,
+    ExerciseDeletedResponseDto,
 } from "./dto/workout-dto";
 import { toWorkoutLogResponse, toWorkoutResponse } from "./workout.mapper";
 import { JwtAuthGuard } from "../common/guards/jwt-guard";
@@ -47,6 +52,18 @@ export class WorkoutController {
     ): Promise<WorkoutResponseDto> {
         const workout = await this.workoutService.updateWorkout(userId, workoutId, dto);
         return toWorkoutResponse(workout);
+    }
+
+    // NOTE: 'exercises' DELETE precisa vir antes de ':id'
+    @Delete('exercises')
+    @ApiQuery({ name: 'name', required: true, description: 'Nome do exercicio' })
+    @ApiOkResponse({ type: ExerciseDeletedResponseDto, description: 'Exercicio apagado das rotinas e do historico' })
+    async deleteExercise(
+        @CurrentUser('sub') userId: string,
+        @Query('name') name: string,
+    ): Promise<ExerciseDeletedResponseDto> {
+        if (!name?.trim()) throw new BadRequestException('Informe o nome do exercício');
+        return this.workoutService.deleteExercise(userId, name);
     }
 
     @Delete(':id')
@@ -105,6 +122,27 @@ export class WorkoutController {
             ...result,
             workoutLog: toWorkoutLogResponse(result.workoutLog),
         };
+    }
+
+    @Get('exercises')
+    @ApiOkResponse({ type: ExerciseCatalogItemResponseDto, isArray: true, description: 'Catalogo de exercicios (rotinas + registros)' })
+    async getExerciseCatalog(@CurrentUser('sub') userId: string): Promise<ExerciseCatalogItemResponseDto[]> {
+        return this.workoutService.getExerciseCatalog(userId);
+    }
+
+    @Patch('exercises/rename')
+    @ApiOkResponse({ type: ExerciseRenamedResponseDto, description: 'Exercicio renomeado nas rotinas e no historico (409 se o nome ja existe)' })
+    async renameExercise(
+        @CurrentUser('sub') userId: string,
+        @Body() dto: RenameExerciseDto,
+    ): Promise<ExerciseRenamedResponseDto> {
+        return this.workoutService.renameExercise(userId, dto.from, dto.to);
+    }
+
+    @Get('last-performance')
+    @ApiOkResponse({ type: ExercisePerformanceResponseDto, isArray: true, description: 'Ultima carga de cada exercicio' })
+    async getLastPerformance(@CurrentUser('sub') userId: string): Promise<ExercisePerformanceResponseDto[]> {
+        return this.workoutService.getLastPerformance(userId);
     }
 
     @Get('progression/:exerciseName')
