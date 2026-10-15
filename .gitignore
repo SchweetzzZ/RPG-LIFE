@@ -1,0 +1,8 @@
+# Planos de trabalho (ficam só na máquina)
+PLANO_*.md
+
+# Prints de referência e lixo local
+/*.jpg
+/*.png
+_to_delete/
+.claude/

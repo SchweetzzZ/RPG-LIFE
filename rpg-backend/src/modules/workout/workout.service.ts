@@ -121,6 +121,9 @@ export class WorkoutService {
             throw new BadRequestException('Registre ao menos um exercício com uma série para salvar o treino');
         }
 
+        // A rotina precisa existir e ser do usuario (404 senao)
+        const routine = await this.getWorkoutById(userId, data.routineId);
+
         let weightKg = 70;
         try {
             const profile = await this.profileService.getProfile(userId);
@@ -147,13 +150,13 @@ export class WorkoutService {
         // Kcal liquidas: (MET - 1) x peso x horas (o basal ja esta na Base do dia)
         const caloriesBurned = calculateWorkoutNetKcal(data.intensity, weightKg, duration);
 
+        // O registro e sempre do dia de hoje do usuario
         const today = toUserDate(await this.profileService.getTimezone(userId));
-        const targetDate = data.date || today;
 
         const log = await this.workoutLogModel.create({
             user: new Types.ObjectId(userId),
             routineId: data.routineId,
-            routineName: data.routineName,
+            routineName: routine.title,
             durationMinutes: duration,
             intensity: data.intensity,
             caloriesBurned,
@@ -161,25 +164,23 @@ export class WorkoutService {
             totalSets,
             xpGained: 0,
             coinsGained: 0,
-            date: targetDate,
+            date: today,
             exercises,
         });
 
-        // Atualiza a rotina vinculada, se houver
-        if (data.routineId && Types.ObjectId.isValid(data.routineId)) {
-            await this.workoutModel.updateOne(
-                { _id: new Types.ObjectId(data.routineId), user: new Types.ObjectId(userId) },
-                {
-                    $inc: { completionCount: 1 },
-                    $set: { lastCompletedDate: targetDate },
-                }
-            );
-        }
+        // Atualiza a rotina vinculada
+        await this.workoutModel.updateOne(
+            { _id: new Types.ObjectId(data.routineId), user: new Types.ObjectId(userId) },
+            {
+                $inc: { completionCount: 1 },
+                $set: { lastCompletedDate: today },
+            }
+        );
 
         // +20 moedas (e XP) so no 1o treino do dia, e so se o dia e do ciclo aberto
         let reward: RewardResult = { granted: false, coins: 0, xp: 0, leveledUp: false };
-        if (await this.vaultService.canEarnOn(userId, targetDate, today)) {
-            reward = await this.rewardService.grant(userId, CoinReason.WORKOUT, targetDate);
+        if (await this.vaultService.canEarnOn(userId, today, today)) {
+            reward = await this.rewardService.grant(userId, CoinReason.WORKOUT, today);
         }
         if (reward.granted) {
             log.coinsGained = reward.coins;

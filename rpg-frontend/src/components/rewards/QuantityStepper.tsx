@@ -21,7 +21,7 @@ export function QuantityStepper({ label, value, step, onChange, min = 0 }: Quant
       >
         <Minus className="h-4 w-4" />
       </button>
-      <span className="w-10 text-center font-pixel text-base tabular-nums text-ink">{value}</span>
+      <span className="w-10 text-center font-num text-base tabular-nums text-ink">{value}</span>
       <button
         type="button"
         aria-label={`Aumentar ${label}`}

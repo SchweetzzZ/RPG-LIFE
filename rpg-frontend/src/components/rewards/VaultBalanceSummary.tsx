@@ -18,11 +18,11 @@ export function VaultBalanceSummary({ next }: VaultBalanceSummaryProps) {
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-lg border-2 border-line bg-raised p-2.5">
             <p className="text-xs text-ink-faint">Moedas</p>
-            <p className="font-pixel text-2xl font-bold leading-tight tabular-nums text-coin">{formatNumber(coinBalance)}</p>
+            <p className="font-num text-2xl leading-tight tabular-nums text-coin">{formatNumber(coinBalance)}</p>
           </div>
           <div className="rounded-lg border-2 border-line bg-raised p-2.5">
             <p className="text-xs text-ink-faint">Cofre</p>
-            <p className="font-pixel text-2xl font-bold leading-tight tabular-nums text-kcal">
+            <p className="font-num text-2xl leading-tight tabular-nums text-kcal">
               {formatNumber(vaultBalanceKcal)} <span className="text-base">kcal</span>
             </p>
           </div>

@@ -1,4 +1,6 @@
+import { toCategory } from '../../types/workout';
 import type {
+  ExerciseCategory,
   ExercisePerformance,
   LogSessionInput,
   Routine,
@@ -22,6 +24,7 @@ export interface SessionExercise {
   name: string;
   /** Nome com que o exercício já existe no catálogo; null = criado agora. Se o nome mudar, vira renomeação ao salvar. */
   originalName: string | null;
+  category: ExerciseCategory;
   sets: SessionSet[];
 }
 
@@ -58,6 +61,7 @@ function buildExercise(ex: RoutineExercise, performance: ExercisePerformance[]):
       key: uid(),
       name: ex.name,
       originalName: ex.name,
+      category: toCategory(ex.category),
       sets: last.sets.map((s) => ({
         key: uid(),
         technique: toTechnique(s.technique),
@@ -73,6 +77,7 @@ function buildExercise(ex: RoutineExercise, performance: ExercisePerformance[]):
     key: uid(),
     name: ex.name,
     originalName: ex.name,
+    category: toCategory(ex.category),
     sets: prescribed.length > 0
       ? prescribed.map((s) => ({
           key: uid(),
@@ -92,16 +97,32 @@ export function toTechnique(value: string | undefined): SetTechnique {
   return TECHNIQUE_VALUES.find((t) => t === value) ?? 'normal';
 }
 
-export function buildSessionExercises(routine: Routine | null, performance: ExercisePerformance[]): SessionExercise[] {
-  return (routine?.exercises ?? []).map((ex) => buildExercise(ex, performance));
+export function buildSessionExercises(routine: Routine, performance: ExercisePerformance[]): SessionExercise[] {
+  return routine.exercises.map((ex) => buildExercise(ex, performance));
 }
 
-/** Monta o corpo do POST /workout/session. Séries zeradas (0 kg e 0 reps) são descartadas. */
+/**
+ * Assinatura do que está na tela (nomes, categorias, séries), sem chaves nem o ✓ de feito.
+ * Serve para saber se há mudanças não salvas.
+ */
+export function sessionSignature(exercises: SessionExercise[]): string {
+  return JSON.stringify(
+    exercises.map((ex) => [
+      ex.name.trim(),
+      ex.category,
+      ex.sets.map((s) => [s.technique, s.weightKg, s.reps]),
+    ]),
+  );
+}
+
+/**
+ * Monta o corpo do POST /workout/session. Séries zeradas (0 kg e 0 reps) são descartadas.
+ * A data é sempre o hoje do usuário (o servidor decide) e o nome vem da rotina no servidor.
+ */
 export function buildLogInput(args: {
-  routine: Routine | null;
+  routine: Routine;
   exercises: SessionExercise[];
   durationMinutes?: number;
-  date?: string;
 }): LogSessionInput {
   const exercises = args.exercises
     .map((ex) => ({
@@ -119,11 +140,9 @@ export function buildLogInput(args: {
     .filter((ex) => ex.exerciseName !== '' && ex.sets.length > 0);
 
   return {
-    ...(args.routine ? { routineId: args.routine.id } : {}),
-    routineName: args.routine?.title ?? 'Treino avulso',
-    intensity: args.routine?.intensity ?? 'moderate',
+    routineId: args.routine.id,
+    intensity: args.routine.intensity,
     ...(args.durationMinutes != null ? { durationMinutes: args.durationMinutes } : {}),
-    ...(args.date ? { date: args.date } : {}),
     exercises,
   };
 }

@@ -4,8 +4,8 @@ export type ProgressionMetric = 'estimated1Rm' | 'maxWeight' | 'volume';
 export type ProgressionPeriod = 30 | 90 | 'all';
 
 export const METRICS: { value: ProgressionMetric; label: string }[] = [
-  { value: 'estimated1Rm', label: '1RM estimado' },
   { value: 'maxWeight', label: 'Carga máxima' },
+  { value: 'estimated1Rm', label: '1RM estimado' },
   { value: 'volume', label: 'Volume' },
 ];
 
@@ -19,9 +19,18 @@ export interface SeriesPoint {
   /** Dia da sessão, 'YYYY-MM-DD'. */
   date: string;
   value: number;
+  /** Só na carga máxima: repetições da melhor série com essa carga (mostra o progresso de reps). */
+  reps?: number;
 }
 
 type HistoryEntry = Progression['history'][number];
+
+/** Mais repetições feitas com `weightKg` nas séries válidas (aquecimento não conta). */
+function repsAtWeight(entry: HistoryEntry, weightKg: number): number {
+  return entry.sets
+    .filter((s) => s.technique !== 'warmup' && s.weightKg === weightKg)
+    .reduce((best, s) => Math.max(best, s.reps), 0);
+}
 
 function metricValue(entry: HistoryEntry, metric: ProgressionMetric): number {
   if (metric === 'estimated1Rm') return entry.estimated1RmKg;
@@ -45,15 +54,17 @@ export function buildSeries(
   metric: ProgressionMetric,
   period: ProgressionPeriod,
 ): SeriesPoint[] {
-  const bestByDay = new Map<string, number>();
+  const bestByDay = new Map<string, SeriesPoint>();
   for (const entry of history) {
     const value = metricValue(entry, metric);
+    const reps = metric === 'maxWeight' ? repsAtWeight(entry, value) : undefined;
     const current = bestByDay.get(entry.date);
-    if (current === undefined || value > current) bestByDay.set(entry.date, value);
+    // Mesma carga no mesmo dia: vale a sessão com mais repetições
+    const better =
+      current === undefined || value > current.value || (value === current.value && (reps ?? 0) > (current.reps ?? 0));
+    if (better) bestByDay.set(entry.date, { date: entry.date, value, reps });
   }
-  const all = [...bestByDay.entries()]
-    .map(([date, value]) => ({ date, value }))
-    .sort((a, b) => a.date.localeCompare(b.date));
+  const all = [...bestByDay.values()].sort((a, b) => a.date.localeCompare(b.date));
   if (period === 'all' || all.length === 0) return all;
   const latest = all[all.length - 1].date;
   return all.filter((p) => daysBetween(p.date, latest) < period);

@@ -27,7 +27,7 @@ function Legend({ dot, label, value }: { dot: string; label: string; value: stri
         <span className={`h-2.5 w-2.5 shrink-0 rounded-[2px] ${dot}`} />
         {label}
       </p>
-      <p className="font-pixel text-lg font-bold leading-tight tabular-nums text-ink">{value}</p>
+      <p className="font-num text-lg leading-tight tabular-nums text-ink">{value}</p>
     </div>
   );
 }

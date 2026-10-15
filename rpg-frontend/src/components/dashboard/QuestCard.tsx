@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { CalendarPlus, ChevronDown, Coins, Info, Lock, ShieldCheck, Unlock } from 'lucide-react';
+import { CalendarPlus, Coins, Info, Lock, ShieldCheck, Unlock } from 'lucide-react';
 import type { FreeMealPlan, NextFreeMeals } from '@/src/types/free-meal';
 import type { Vault } from '@/src/types/vault';
 import { formatDay, formatNumber } from '@/src/lib/format';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { SegmentedBar } from '../ui/SegmentedBar';
+import { Select } from '../ui/Select';
 
 interface QuestCardProps {
   next: NextFreeMeals;
@@ -78,22 +79,18 @@ function Quest({ plans, next, vault, label }: QuestProps) {
     <Card label={label} aside={isDay ? 'hoje' : formatDay(meal.scheduledFor)}>
       <div className="space-y-4">
         {plans.length > 1 && (
-          <label className="relative block">
-            <span className="sr-only">Trocar a refeição exibida</span>
-            <select
-              value={plan.meal.id}
-              onChange={(e) => setPickedId(e.target.value)}
-              className="h-9 w-full appearance-none rounded-lg border-2 border-line bg-raised pl-3 pr-9 text-xs text-ink-dim focus:border-action focus:outline-none"
-            >
-              {plans.map((p, index) => (
-                <option key={p.meal.id} value={p.meal.id}>
-                  {index + 1}/{plans.length} · {p.meal.title}
-                  {p.meal.scope === 'week' ? ` · ${formatDay(p.meal.scheduledFor)}` : ''}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
-          </label>
+          <Select
+            size="sm"
+            aria-label="Trocar a refeição exibida"
+            value={plan.meal.id}
+            onChange={setPickedId}
+            options={plans.map((p, index) => ({
+              value: p.meal.id,
+              label: p.meal.title,
+              badge: `${index + 1}/${plans.length}`,
+              hint: p.meal.scope === 'week' ? formatDay(p.meal.scheduledFor) : undefined,
+            }))}
+          />
         )}
 
         <div className="flex items-start gap-3">

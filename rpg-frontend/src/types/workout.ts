@@ -46,3 +46,10 @@ export const WEEK_DAYS = ["D", "S", "T", "Q", "Q", "S", "S"]
 export function toCategory(value: string | undefined): ExerciseCategory {
   return EXERCISE_CATEGORIES.find((c) => c === value) ?? "Peito"
 }
+
+// Estado da navegacao: resultado do treino salvo, mostrado na lista ao voltar
+declare module "@tanstack/history" {
+  interface HistoryState {
+    workoutResult?: LogSessionResult
+  }
+}

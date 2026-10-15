@@ -16,7 +16,7 @@ export function EnergyHeader({ consumedKcal, day }: EnergyHeaderProps) {
     return (
       <Card label="Hoje">
         <div className="space-y-3">
-          <p className="font-pixel text-4xl font-bold leading-none tabular-nums text-kcal">{formatNumber(consumedKcal)}</p>
+          <p className="font-num text-4xl leading-none tabular-nums text-kcal">{formatNumber(consumedKcal)}</p>
           <p className="text-sm text-ink-dim">kcal consumidas</p>
           <p className="flex items-start gap-2 text-xs text-ink-faint">
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -35,7 +35,7 @@ export function EnergyHeader({ consumedKcal, day }: EnergyHeaderProps) {
     <Card label="Hoje" aside={`Meta ${formatNumber(day.targetKcal)} kcal`}>
       <div className="space-y-3">
         <div className="space-y-1">
-          <p className="font-pixel text-4xl font-bold leading-none tabular-nums text-kcal">
+          <p className="font-num text-4xl leading-none tabular-nums text-kcal">
             {over ? `+${formatNumber(consumedKcal - day.targetKcal)}` : formatNumber(day.targetKcal - consumedKcal)}
           </p>
           <p className="text-sm text-ink-dim">{over ? 'kcal acima da meta' : 'kcal restantes'}</p>

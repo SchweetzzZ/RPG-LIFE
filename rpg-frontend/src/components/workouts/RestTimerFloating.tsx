@@ -49,7 +49,7 @@ export function RestTimerFloating({
   return (
     <div
       role="timer"
-      className="fixed bottom-4 left-3 right-3 z-40 mx-auto max-w-sm space-y-2 rounded-lg border-2 border-line bg-surface p-3 shadow-[0_4px_0_0_#0c0a08]"
+      className="fixed bottom-24 left-3 right-3 z-[55] mx-auto max-w-sm space-y-2 rounded-lg border-2 border-line bg-surface p-3 shadow-[0_4px_0_0_#0c0a08]"
     >
       <SegmentedBar value={seconds} max={Math.max(initialSeconds, seconds)} tone="xp" label="Descanso restante" />
 
@@ -60,7 +60,7 @@ export function RestTimerFloating({
           </div>
           <div className="min-w-0">
             <span className="block text-xs text-ink-faint">Descanso entre séries</span>
-            <span className="font-pixel text-3xl leading-none text-xp">{formatTime(seconds)}</span>
+            <span className="font-num text-3xl leading-none text-xp">{formatTime(seconds)}</span>
           </div>
         </div>
 

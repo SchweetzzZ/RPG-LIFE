@@ -8,7 +8,7 @@ export const Route = createRootRoute({
 
 function RootLayout() {
     return (
-        <div className="min-h-screen bg-[#08090a] text-zinc-100 selection:bg-amber-400/20 selection:text-amber-300">
+        <div className="min-h-screen bg-bg text-ink selection:bg-coin/20 selection:text-coin">
             {/* O Outlet renderiza o conteúdo da rota atual com padding inferior para a BottomNav */}
             <div className="pb-24">
                 <Outlet />

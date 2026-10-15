@@ -5,6 +5,11 @@
     color-scheme: dark;
 }
 
+/* Fundo do tema também no body: sem faixa de outra cor no overscroll e atrás da BottomNav. */
+body {
+    background-color: var(--color-bg);
+}
+
 /* 2. Padrão de mercado: anula o fundo claro e o vazamento de borda do autofill */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
@@ -32,6 +37,7 @@ input:-webkit-autofill:active {
     --color-xp: #d27c5c;
     --color-danger: #e0644f;
     --font-pixel: "Pixelify Sans", ui-sans-serif, system-ui, sans-serif;
+    --font-num: "Jersey 10", ui-monospace, monospace;
 }
 
 /* Fonte pixel legível: o peso 700 fecha os vazios dos dígitos (o 2 vira "S"). Fica no 500, com respiro entre letras. */
@@ -39,5 +45,17 @@ input:-webkit-autofill:active {
     font-weight: 500;
     letter-spacing: 0.04em;
     font-variant-numeric: normal;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Fonte dos numeros (Jersey 10, peso unico 400: nada de bold). Ela e alta e estreita e parece ~1,25x menor no mesmo tamanho;
+   o font-size-adjust fixa a altura dos digitos em 0.67em, entao text-base, text-lg e text-4xl mantem o tamanho visual sem mexer no layout.
+   Tem algarismos tabulares (tnum): numeros em coluna alinham. */
+.font-num {
+    font-family: var(--font-num);
+    font-weight: 400;
+    font-size-adjust: cap-height 0.67;
+    letter-spacing: 0.03em;
+    font-variant-numeric: tabular-nums;
     -webkit-font-smoothing: antialiased;
 }

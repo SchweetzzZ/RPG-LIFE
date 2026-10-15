@@ -12,7 +12,7 @@ export function HistoryList({ logs }: { logs: WorkoutLog[] }) {
         <li key={log.id} className="rounded-lg border-2 border-line bg-raised p-2.5">
           <div className="flex items-center justify-between gap-2">
             <span className="truncate text-sm font-semibold text-ink">{log.routineName}</span>
-            <span className="shrink-0 font-pixel text-base text-ink-dim">{formatDate(log.date)}</span>
+            <span className="shrink-0 font-num text-base text-ink-dim">{formatDate(log.date)}</span>
           </div>
           <p className="mt-1 text-xs text-ink-faint">
             {log.exercises.length} exercícios · {log.totalSets} séries · {Math.round(log.totalVolumeKg)} kg ·{' '}

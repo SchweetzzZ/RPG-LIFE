@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { Dumbbell, Clock, ChevronRight, Play, NotebookPen } from 'lucide-react';
 import { Button } from '../ui/Button';
 import type { Routine } from '../../types/workout';
@@ -7,13 +7,13 @@ import { WEEK_DAYS } from '../../types/workout';
 interface RoutineCardProps {
   routine: Routine;
   isToday: boolean;
-  onLog: (routine: Routine) => void;
-  onStartTimer: (routine: Routine) => void;
 }
 
 const formatDate = (iso: string) => iso.split('-').reverse().join('/');
 
-export function RoutineCard({ routine, isToday, onLog, onStartTimer }: RoutineCardProps) {
+/** Card da rotina: tudo leva para a mesma tela (/workouts/$id); "Com cronômetro" abre com ele ligado. */
+export function RoutineCard({ routine, isToday }: RoutineCardProps) {
+  const navigate = useNavigate();
   return (
     <div
       className={`rounded-lg border-2 bg-surface p-4 shadow-[0_4px_0_0_#0c0a08] ${
@@ -57,11 +57,11 @@ export function RoutineCard({ routine, isToday, onLog, onStartTimer }: RoutineCa
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          <Button variant="secondary" onClick={() => onLog(routine)}>
+          <Button variant="secondary" onClick={() => navigate({ to: '/workouts/$id', params: { id: routine.id } })}>
             <NotebookPen className="h-4 w-4" />
             <span>Registrar</span>
           </Button>
-          <Button variant={isToday ? 'primary' : 'secondary'} onClick={() => onStartTimer(routine)}>
+          <Button variant={isToday ? 'primary' : 'secondary'} onClick={() => navigate({ to: '/workouts/$id', params: { id: routine.id }, search: { timer: 1 } })}>
             <Play className="h-4 w-4" />
             <span>Com cronômetro</span>
           </Button>

@@ -93,7 +93,7 @@ function RewardsRouteComponent() {
   return (
     <main className="min-h-screen bg-bg px-3 pb-28 pt-3 text-ink sm:p-4 sm:pb-28">
       <div className="mx-auto w-full max-w-md space-y-3">
-        <h1 className="px-1 font-pixel text-2xl font-bold text-ink">Loja</h1>
+        <h1 className="px-1 font-pixel text-2xl text-ink">Loja</h1>
         {loading && !data && <LoadingBlock label="Carregando suas refeições livres..." />}
         {error && <ErrorBlock message={error} onRetry={reload} />}
 
@@ -103,10 +103,10 @@ function RewardsRouteComponent() {
               <Card label={redeemResult.alreadyRedeemed ? 'Já estava resgatada' : 'Refeição livre liberada!'} aside={redeemResult.meal.title}>
                 <div className="space-y-3">
                   <p className="text-sm text-ink">
-                    -<span className="font-pixel text-lg text-coin">{formatNumber(redeemResult.coinsDebited)}</span> moedas
+                    -<span className="font-num text-lg text-coin">{formatNumber(redeemResult.coinsDebited)}</span> moedas
                     {redeemResult.vaultDebitKcal > 0 ? (
                       <>
-                        {' '}e -<span className="font-pixel text-lg text-kcal">{formatNumber(redeemResult.vaultDebitKcal)}</span> kcal do cofre
+                        {' '}e -<span className="font-num text-lg text-kcal">{formatNumber(redeemResult.vaultDebitKcal)}</span> kcal do cofre
                       </>
                     ) : null}
                     .

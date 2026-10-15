@@ -99,7 +99,7 @@ export function FoodSearchModal({ mealTitle, saving, onConfirm, onClose }: FoodS
             </label>
             {valid && (
               <p className="text-sm text-ink-dim">
-                <span className="font-pixel text-lg font-bold text-kcal">
+                <span className="font-num text-lg text-kcal">
                   {formatNumber((picked.nutrientsPer100g.calories * amount) / 100)}
                 </span>{' '}
                 kcal · P {formatNumber((picked.nutrientsPer100g.protein * amount) / 100)} · C{' '}
@@ -164,7 +164,7 @@ export function FoodSearchModal({ mealTitle, saving, onConfirm, onClose }: FoodS
                       {formatNumber(food.nutrientsPer100g.carbs)} · G {formatNumber(food.nutrientsPer100g.fat)}
                     </span>
                   </span>
-                  <span className="shrink-0 font-pixel text-base font-bold tabular-nums text-kcal">
+                  <span className="shrink-0 font-num text-base tabular-nums text-kcal">
                     {formatNumber(food.nutrientsPer100g.calories)}
                   </span>
                 </button>

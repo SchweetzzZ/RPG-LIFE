@@ -1,6 +1,6 @@
 services:
   mongodb:
-    image: mongo:latest
+    image: mongo:8.0 # versao fixa: 'latest' muda de major sozinho e o volume antigo nao abre (exit 62)
     container_name: rpg-mongodb
     ports:
       - "27017:27017"

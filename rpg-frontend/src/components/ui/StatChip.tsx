@@ -19,7 +19,7 @@ export function StatChip({ icon: Icon, value, tone, label }: StatChipProps) {
   return (
     <span className={`inline-flex items-center gap-1 ${TONES[tone]}`} aria-label={`${label}: ${value}`} title={label}>
       <Icon className="h-4 w-4" aria-hidden />
-      <span className="font-pixel text-lg font-bold leading-none tabular-nums">{value}</span>
+      <span className="font-num text-lg leading-none tabular-nums">{value}</span>
     </span>
   );
 }

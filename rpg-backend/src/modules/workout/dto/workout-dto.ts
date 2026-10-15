@@ -26,31 +26,45 @@ export const exerciseSchema = z.object({
 
 // ── Create DTO ───────────────────────────────────────────────────────────────
 
-export const createWorkoutSchema = z.object({
+// Campos sem default: o update parcial nao pode preencher o que nao veio no corpo
+const workoutFields = {
     title: z.string().min(1, "Title is required"),
-    description: z.string().default(""),
-    estimatedMinutes: z.number().int().min(1).default(45),
-    targetMuscleGroups: z.array(z.string()).default([]),
-    scheduledDays: z.array(z.number().int().min(0).max(6)).default([]),
-    intensity: z.enum(['moderate', 'intense', 'cycling_running']).default('moderate'),
-    exercises: z.array(exerciseSchema).default([]),
-    completionCount: z.number().int().min(0).default(0),
+    description: z.string(),
+    estimatedMinutes: z.number().int().min(1),
+    targetMuscleGroups: z.array(z.string()),
+    scheduledDays: z.array(z.number().int().min(0).max(6)),
+    intensity: z.enum(['moderate', 'intense', 'cycling_running']),
+    exercises: z.array(exerciseSchema),
+    completionCount: z.number().int().min(0),
     lastCompletedDate: z.string().nullable().optional(),
+};
+
+export const createWorkoutSchema = z.object({
+    ...workoutFields,
+    description: workoutFields.description.default(""),
+    estimatedMinutes: workoutFields.estimatedMinutes.default(45),
+    targetMuscleGroups: workoutFields.targetMuscleGroups.default([]),
+    scheduledDays: workoutFields.scheduledDays.default([]),
+    intensity: workoutFields.intensity.default('moderate'),
+    exercises: workoutFields.exercises.default([]),
+    completionCount: workoutFields.completionCount.default(0),
 });
 
 // ── Update DTO (all fields optional) ────────────────────────────────────────
 
-export const updateWorkoutSchema = createWorkoutSchema.partial();
+// Sem defaults (o .partial() do Zod 4 aplicaria os defaults e zeraria campos nao enviados,
+// ex.: completionCount e description ao salvar so os exercicios da rotina)
+export const updateWorkoutSchema = z.object(workoutFields).partial();
 
 // ── Log Workout DTO ──────────────────────────────────────────────────────────
 
+// Todo treino pertence a uma rotina; o nome vem da rotina no banco.
+// A data e sempre o "hoje" do usuario (campos extras como `date` sao descartados).
 export const logWorkoutSchema = z.object({
-    routineId: z.string().optional(),
-    routineName: z.string().min(1, "Routine name is required"),
+    routineId: z.string().min(1, "Rotina é obrigatória"),
     // Sem cronometro a duracao e opcional: o servidor estima pelas series
     durationMinutes: z.number().min(1).optional(),
     intensity: z.enum(['moderate', 'intense', 'cycling_running']).default('moderate'),
-    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato deve ser YYYY-MM-DD').optional(),
     exercises: z.array(z.object({
         exerciseName: z.string().min(1),
         maxWeightKg: z.number().min(0).optional(),

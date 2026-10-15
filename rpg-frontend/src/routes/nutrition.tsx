@@ -74,7 +74,7 @@ function NutritionRouteComponent() {
   return (
     <main className="min-h-screen bg-bg px-3 pb-28 pt-3 text-ink sm:p-4 sm:pb-28">
       <div className="mx-auto w-full max-w-md space-y-3">
-        <h1 className="px-1 font-pixel text-2xl font-bold text-ink">Diário</h1>
+        <h1 className="px-1 font-pixel text-2xl text-ink">Diário</h1>
 
         {loading && !data && <LoadingBlock label="Carregando seu diário..." />}
         {error && <ErrorBlock message={error} onRetry={reload} />}

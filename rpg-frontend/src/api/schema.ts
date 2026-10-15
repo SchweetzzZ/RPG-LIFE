@@ -913,21 +913,13 @@ export interface components {
         };
         UpdateWorkoutDtoClass: {
             title?: string;
-            /** @default  */
-            description: string;
-            /** @default 45 */
-            estimatedMinutes: number;
-            /** @default [] */
-            targetMuscleGroups: string[];
-            /** @default [] */
-            scheduledDays: number[];
-            /**
-             * @default moderate
-             * @enum {string}
-             */
-            intensity: "moderate" | "intense" | "cycling_running";
-            /** @default [] */
-            exercises: {
+            description?: string;
+            estimatedMinutes?: number;
+            targetMuscleGroups?: string[];
+            scheduledDays?: number[];
+            /** @enum {string} */
+            intensity?: "moderate" | "intense" | "cycling_running";
+            exercises?: {
                 id?: string;
                 name: string;
                 /**
@@ -955,8 +947,7 @@ export interface components {
                 }[];
                 notes?: string;
             }[];
-            /** @default 0 */
-            completionCount: number;
+            completionCount?: number;
             lastCompletedDate?: string | null;
         };
         ExerciseDeletedResponseDto: {
@@ -1017,15 +1008,13 @@ export interface components {
             completedAt: string;
         };
         LogWorkoutDto: {
-            routineId?: string;
-            routineName: string;
+            routineId: string;
             durationMinutes?: number;
             /**
              * @default moderate
              * @enum {string}
              */
             intensity: "moderate" | "intense" | "cycling_running";
-            date?: string;
             /** @default [] */
             exercises: {
                 exerciseName: string;

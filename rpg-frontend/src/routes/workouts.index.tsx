@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, useNavigate, useRouterState } from '@tanstack/react-router';
 import { Dumbbell, Plus, History, NotebookPen } from 'lucide-react';
 import { RoutineCard } from '../components/workouts/RoutineCard';
-import { WorkoutSession } from '../components/workouts/WorkoutSession';
+import { PickRoutineSheet } from '../components/workouts/PickRoutineSheet';
 import { SessionResultBanner } from '../components/workouts/SessionResultBanner';
 import { ProgressionCard } from '../components/workouts/ProgressionCard';
 import { ExerciseHistoryView } from '../components/workouts/ExerciseHistoryView';
@@ -13,7 +13,6 @@ import { ErrorBlock, LoadingBlock } from '../components/common/StateBlocks';
 import { useWorkoutsData } from '../hooks/useWorkoutsData';
 import { workoutService } from '../services/workout.service';
 import { errorMessage } from '../services/http';
-import type { LogSessionResult, Routine } from '../types/workout';
 
 export const Route = createFileRoute('/workouts/')({
   component: WorkoutsRouteComponent,
@@ -24,16 +23,12 @@ const HISTORY_VIEWS: { value: 'exercise' | 'workout'; label: string }[] = [
   { value: 'workout', label: 'Por treino' },
 ];
 
-interface ActiveSession {
-  routine: Routine | null;
-  withTimer: boolean;
-}
-
 function WorkoutsRouteComponent() {
   const navigate = useNavigate();
   const { data, loading, error, reload } = useWorkoutsData();
-  const [session, setSession] = useState<ActiveSession | null>(null);
-  const [result, setResult] = useState<LogSessionResult | null>(null);
+  // Resultado do treino salvo, vindo da tela da rotina pelo estado da navegacao
+  const result = useRouterState({ select: (s) => s.location.state.workoutResult });
+  const [picking, setPicking] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [historyView, setHistoryView] = useState<'exercise' | 'workout'>('workout');
   const [newTitle, setNewTitle] = useState<string | null>(null);
@@ -65,16 +60,14 @@ function WorkoutsRouteComponent() {
     }
   }
 
-  async function handleSaved(saved: LogSessionResult) {
-    setSession(null);
-    setResult(saved);
-    await reload();
+  function closeResult() {
+    navigate({ to: '/workouts', replace: true, state: {} });
   }
 
   return (
     <main className="min-h-screen bg-bg px-3 pb-28 pt-3 text-ink sm:p-4 sm:pb-28">
       <div className="mx-auto w-full max-w-md space-y-3 md:max-w-3xl">
-        {result && <SessionResultBanner result={result} onClose={() => setResult(null)} />}
+        {result && <SessionResultBanner result={result} onClose={closeResult} />}
 
         <header className="space-y-1 px-1">
           <div className="flex items-center gap-2">
@@ -91,7 +84,7 @@ function WorkoutsRouteComponent() {
           </Button>
           <Button
             variant="secondary"
-            onClick={() => setSession({ routine: null, withTimer: false })}
+            onClick={() => setPicking(true)}
             disabled={!data}
           >
             <NotebookPen className="h-4 w-4" />
@@ -180,7 +173,7 @@ function WorkoutsRouteComponent() {
             {data.routines.length === 0 ? (
               <Card>
                 <p className="text-sm text-ink-dim">
-                  Nenhuma rotina ainda. Crie um em "Novo treino" ou use "Registrar exercício" para só anotar cargas.
+                  Nenhuma rotina ainda. Crie uma em "Novo treino" e monte os exercícios dela.
                 </p>
               </Card>
             ) : (
@@ -190,8 +183,6 @@ function WorkoutsRouteComponent() {
                     key={routine.id}
                     routine={routine}
                     isToday={routine.scheduledDays.includes(today)}
-                    onLog={(r) => setSession({ routine: r, withTimer: false })}
-                    onStartTimer={(r) => setSession({ routine: r, withTimer: true })}
                   />
                 ))}
               </div>
@@ -202,16 +193,8 @@ function WorkoutsRouteComponent() {
         )}
       </div>
 
-      {session && data && (
-        <WorkoutSession
-          routine={session.routine}
-          performance={data.performance}
-          catalog={data.catalog}
-          onCatalogChanged={reload}
-          withTimer={session.withTimer}
-          onSaved={(saved) => void handleSaved(saved)}
-          onCancel={() => setSession(null)}
-        />
+      {picking && data && (
+        <PickRoutineSheet routines={data.routines} today={today} onClose={() => setPicking(false)} />
       )}
     </main>
   );

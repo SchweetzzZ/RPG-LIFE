@@ -40,7 +40,7 @@ export function TodayCard({ day, onClosed }: TodayCardProps) {
     <Card label="Hoje">
       <div className="space-y-4">
         <div className="space-y-1">
-          <p className="font-pixel text-4xl font-bold leading-none tabular-nums text-kcal">
+          <p className="font-num text-4xl leading-none tabular-nums text-kcal">
             {over ? `+${formatNumber(day.consumedKcal - day.targetKcal)}` : formatNumber(day.remainingKcal)}
           </p>
           <p className="text-sm text-ink-dim">{over ? 'kcal acima da meta' : 'kcal restantes'}</p>
@@ -122,7 +122,7 @@ function Tile({ label, value, plus = false }: { label: string; value: number; pl
   return (
     <div className="rounded-lg border-2 border-line bg-raised px-2 py-2">
       <p className="text-xs text-ink-faint">{label}</p>
-      <p className="font-pixel text-lg font-bold leading-tight tabular-nums text-ink">
+      <p className="font-num text-lg leading-tight tabular-nums text-ink">
         {plus ? '+' : ''}
         {formatNumber(value)}
       </p>

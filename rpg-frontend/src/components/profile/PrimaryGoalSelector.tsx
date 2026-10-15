@@ -68,7 +68,7 @@ export function PrimaryGoalSelector({ selectedGoal, onChange }: PrimaryGoalSelec
                 <span className="block text-sm font-semibold text-ink">{option.title}</span>
                 <span className="block text-xs text-ink-faint">{option.description}</span>
               </span>
-              <span className={`shrink-0 font-pixel text-base ${isSelected ? 'text-kcal' : 'text-ink-faint'}`}>
+              <span className={`shrink-0 ${/\d/.test(option.badge) ? 'font-num' : 'font-pixel'} text-base ${isSelected ? 'text-kcal' : 'text-ink-faint'}`}>
                 {option.badge}
               </span>
             </button>

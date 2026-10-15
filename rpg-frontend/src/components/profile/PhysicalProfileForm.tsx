@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Save, LogOut, Check, Info } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
+import { ChoiceChips } from '../ui/ChoiceChips';
 import { formatNumber } from '../../lib/format';
 import { errorMessage } from '../../services/http';
 import type {
@@ -88,7 +89,7 @@ export function PhysicalProfileForm({ initialData, primaryGoal, onSave, onLogout
   };
 
   const input =
-    'h-12 w-full rounded-lg border-2 border-line bg-raised px-3 text-base text-ink focus:border-action focus:outline-none';
+    'h-11 w-full rounded-lg border-2 border-line bg-raised px-3 text-base text-ink focus:border-action focus:outline-none';
   const label = 'text-sm text-ink-dim';
 
   return (
@@ -110,43 +111,31 @@ export function PhysicalProfileForm({ initialData, primaryGoal, onSave, onLogout
             </label>
           </div>
 
-          <label className="block space-y-1">
-            <span className={label}>Sexo usado no cálculo</span>
-            <select
+          <div className="space-y-1">
+            <span id="sex-label" className={label}>Sexo usado no cálculo</span>
+            <ChoiceChips
+              layout="fill"
+              aria-labelledby="sex-label"
               value={biologicalSex}
-              onChange={(e) => {
-                const option = SEX_OPTIONS.find((o) => o.value === e.target.value);
-                setBiologicalSex(option ? option.value : '');
-              }}
-              className={input}
-            >
-              <option value="">Selecione</option>
-              {SEX_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
+              options={SEX_OPTIONS}
+              onChange={setBiologicalSex}
+            />
             <span className="flex items-start gap-1.5 text-xs text-ink-faint">
               <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               A fórmula de gasto calórico tem uma versão para cada sexo. Escolha a que mais se aproxima do seu corpo.
             </span>
-          </label>
+          </div>
 
-          <label className="block space-y-1">
-            <span className={label}>Como é sua rotina fora da academia? (não conte o treino)</span>
-            <select
+          <div className="space-y-1">
+            <span id="activity-label" className={label}>Como é sua rotina fora da academia? (não conte o treino)</span>
+            <ChoiceChips
+              layout="stack"
+              aria-labelledby="activity-label"
               value={activityLevel}
-              onChange={(e) => {
-                const option = ACTIVITY_OPTIONS.find((o) => o.value === e.target.value);
-                setActivityLevel(option ? option.value : '');
-              }}
-              className={input}
-            >
-              <option value="">Selecione</option>
-              {ACTIVITY_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-          </label>
+              options={ACTIVITY_OPTIONS}
+              onChange={setActivityLevel}
+            />
+          </div>
         </div>
       </Card>
 
@@ -159,7 +148,7 @@ export function PhysicalProfileForm({ initialData, primaryGoal, onSave, onLogout
         <div role="status" className="space-y-1 rounded-lg border-2 border-action/60 bg-surface p-3 text-sm text-ink">
           <p>
             Perfil salvo. Sua meta base ficou em{' '}
-            <span className="font-pixel text-lg text-kcal">{formatNumber(Math.round(saved.targets.targetCalories))}</span> kcal por dia.
+            <span className="font-num text-lg text-kcal">{formatNumber(Math.round(saved.targets.targetCalories))}</span> kcal por dia.
           </p>
           <Button to="/" variant="link" className="!min-h-[44px] !px-0">Ir para o painel</Button>
         </div>

@@ -16,7 +16,7 @@ export function PlayerBar({ me }: PlayerBarProps) {
   return (
     <Card>
       <div className="flex items-center gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border-2 border-line bg-raised font-pixel text-xl font-bold text-ink">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border-2 border-line bg-raised font-pixel text-xl text-ink">
           {initial}
         </div>
 
@@ -24,8 +24,8 @@ export function PlayerBar({ me }: PlayerBarProps) {
           <div className="flex items-center gap-2">
             <h1 className="truncate text-base font-semibold text-ink">{user.username}</h1>
             {progress && (
-              <span className="shrink-0 rounded border-2 border-xp/50 bg-raised px-1.5 py-0.5 font-pixel text-xs font-bold text-xp">
-                NV {progress.level}
+              <span className="shrink-0 rounded border-2 border-xp/50 bg-raised px-1.5 py-0.5 font-pixel text-xs text-xp">
+                NV <span className="font-num">{progress.level}</span>
               </span>
             )}
           </div>

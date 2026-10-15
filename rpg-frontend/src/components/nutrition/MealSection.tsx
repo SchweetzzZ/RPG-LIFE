@@ -49,7 +49,7 @@ export function MealSection({ meal, logs, busyId, onAdd, onDelete }: MealSection
                   {formatNumber(log.fatGrams)}
                 </p>
               </div>
-              <span className="font-pixel text-base font-bold tabular-nums text-kcal">{formatNumber(log.calories)}</span>
+              <span className="font-num text-base tabular-nums text-kcal">{formatNumber(log.calories)}</span>
               <button
                 type="button"
                 disabled={busyId === log.id}
