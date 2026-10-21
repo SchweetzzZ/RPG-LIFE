@@ -40,7 +40,7 @@ export function RoutineSettingsSheet({ routine, onSaved, onDeleted, onClose }: R
       });
       onSaved(updated);
     } catch (err) {
-      setError(errorMessage(err instanceof Error ? err : null, 'Não foi possível salvar a rotina'));
+      setError(errorMessage(err instanceof Error ? err : null, 'Não foi possível salvar o treino'));
       setBusy(false);
     }
   }
@@ -52,7 +52,7 @@ export function RoutineSettingsSheet({ routine, onSaved, onDeleted, onClose }: R
       await workoutService.deleteRoutine(routine.id);
       onDeleted();
     } catch (err) {
-      setError(errorMessage(err instanceof Error ? err : null, 'Não foi possível remover a rotina'));
+      setError(errorMessage(err instanceof Error ? err : null, 'Não foi possível remover o treino'));
       setBusy(false);
     }
   }
@@ -63,14 +63,14 @@ export function RoutineSettingsSheet({ routine, onSaved, onDeleted, onClose }: R
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label="Editar rotina"
+      aria-label="Editar treino"
     >
       <div
         className="max-h-[85dvh] w-full max-w-md space-y-4 overflow-y-auto rounded-t-xl border-2 border-line bg-surface p-4 sm:rounded-lg"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-2">
-          <h2 className="font-pixel text-lg text-ink">Editar rotina</h2>
+          <h2 className="font-pixel text-lg text-ink">Editar treino</h2>
           <button
             type="button"
             onClick={onClose}
@@ -88,7 +88,7 @@ export function RoutineSettingsSheet({ routine, onSaved, onDeleted, onClose }: R
         )}
 
         <label className="block space-y-1">
-          <span className={labelClass}>Nome da rotina</span>
+          <span className={labelClass}>Nome do treino</span>
           <input value={title} onChange={(e) => setTitle(e.target.value)} className={fieldClass} />
         </label>
 
@@ -132,7 +132,7 @@ export function RoutineSettingsSheet({ routine, onSaved, onDeleted, onClose }: R
         <div className="border-t-2 border-line pt-3">
           {confirmingDelete ? (
             <div role="alertdialog" aria-label="Confirmar remoção" className="space-y-2 rounded-lg border-2 border-danger/60 bg-raised p-3">
-              <p className="text-sm text-ink">Remover esta rotina? O histórico de treinos é mantido.</p>
+              <p className="text-sm text-ink">Remover este treino? O histórico é mantido.</p>
               <div className="grid grid-cols-2 gap-2">
                 <Button variant="secondary" onClick={() => setConfirmingDelete(false)} disabled={busy}>
                   Cancelar
@@ -154,7 +154,7 @@ export function RoutineSettingsSheet({ routine, onSaved, onDeleted, onClose }: R
               className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-1 text-sm font-medium text-ink-dim hover:text-danger"
             >
               <Trash2 className="h-4 w-4" />
-              Remover rotina
+              Remover treino
             </button>
           )}
         </div>

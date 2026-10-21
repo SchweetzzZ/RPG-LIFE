@@ -7,6 +7,7 @@ import { Card } from '../ui/Card';
 import { Select } from '../ui/Select';
 import { ExerciseChartSheet } from './ExerciseChartSheet';
 import { ExerciseMenu } from './ExerciseMenu';
+import { SetNumberInput } from './SetNumberInput';
 import { ExercisePicker, type PickedExercise } from './ExercisePicker';
 import { RoutineSettingsSheet } from './RoutineSettingsSheet';
 import { compareSet, describeDiff } from './set-compare';
@@ -28,7 +29,6 @@ import { errorMessage } from '../../services/http';
 import { SET_TECHNIQUES } from '../../types/workout';
 import type {
   ExerciseCatalogItem,
-  ExerciseCategory,
   ExercisePerformance,
   LogSessionResult,
   Routine,
@@ -161,10 +161,6 @@ export function WorkoutScreen({ routine, performance, catalog, onCatalogChanged,
     });
   }
 
-  function setCategory(exKey: string, category: ExerciseCategory) {
-    updateExercise(exKey, (ex) => ({ ...ex, category }));
-  }
-
   /** Existente entra com a última carga pré-preenchida; nome novo entra com uma série vazia. */
   function addExercise(picked: PickedExercise) {
     const sets =
@@ -183,7 +179,6 @@ export function WorkoutScreen({ routine, performance, catalog, onCatalogChanged,
         key: uid(),
         name: picked.name,
         originalName: picked.existing ? picked.name : null,
-        category: picked.category ?? 'Peito',
         sets,
       },
     ]);
@@ -293,7 +288,7 @@ export function WorkoutScreen({ routine, performance, catalog, onCatalogChanged,
         await workoutService.updateRoutine(synced.routine.id, buildRoutineUpdate(synced.routine, synced.exercises));
       } catch {
         setSavedResult(result);
-        setError('Treino salvo, mas a rotina não foi atualizada.');
+        setError('Treino de hoje registrado, mas os exercícios do treino não foram atualizados.');
         setSaving(false);
         return;
       }
@@ -329,17 +324,17 @@ export function WorkoutScreen({ routine, performance, catalog, onCatalogChanged,
       );
       setBaseline(updated);
       setClean(persisted);
-      setNotice('Rotina salva.');
+      setNotice('Exercícios do treino salvos.');
       await onCatalogChanged();
     } catch (err) {
-      setError(errorMessage(err instanceof Error ? err : null, 'Não foi possível salvar a rotina'));
+      setError(errorMessage(err instanceof Error ? err : null, 'Não foi possível salvar o treino'));
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <div className="min-h-screen bg-bg pb-36 text-ink">
+    <div className="min-h-screen pb-36 text-ink">
       <header className="sticky top-0 z-20 border-b-2 border-line bg-surface px-3 py-2">
         <div className="mx-auto max-w-md space-y-2 md:max-w-2xl">
           <div className="flex items-center gap-2">
@@ -358,7 +353,7 @@ export function WorkoutScreen({ routine, performance, catalog, onCatalogChanged,
                 onClick={() => setHeaderMenu((v) => !v)}
                 aria-expanded={headerMenu}
                 className={squareBtn}
-                aria-label="Mais opções da rotina"
+                aria-label="Mais opções do treino"
               >
                 <MoreHorizontal className="h-5 w-5" />
               </button>
@@ -377,7 +372,7 @@ export function WorkoutScreen({ routine, performance, catalog, onCatalogChanged,
                     className="flex min-h-[44px] w-full items-center gap-2 rounded-lg px-2 text-left text-sm font-medium text-ink hover:bg-raised"
                   >
                     <Settings className="h-4 w-4 text-ink-dim" />
-                    Editar rotina
+                    Editar treino
                   </button>
                 </div>
               )}
@@ -433,7 +428,7 @@ export function WorkoutScreen({ routine, performance, catalog, onCatalogChanged,
             {structureChanged && (
               <Button variant="secondary" onClick={() => void saveRoutineOnly()} disabled={saving}>
                 <Save className="h-4 w-4" />
-                <span>Salvar só a rotina</span>
+                <span>Salvar sem registrar</span>
               </Button>
             )}
             {savedResult === null && (
@@ -461,7 +456,7 @@ export function WorkoutScreen({ routine, performance, catalog, onCatalogChanged,
           <Card>
             <div className="space-y-2">
               <p className="text-sm text-ink-dim">
-                O treino de hoje já foi registrado. Tente "Salvar só a rotina" de novo ou volte sem atualizar a rotina.
+                O treino de hoje já foi registrado. Tente "Salvar sem registrar" de novo ou volte sem atualizar os exercícios do treino.
               </p>
               <Button variant="secondary" onClick={() => leave(savedResult)}>
                 Ir para os treinos
@@ -473,7 +468,7 @@ export function WorkoutScreen({ routine, performance, catalog, onCatalogChanged,
         {exercises.length === 0 && (
           <Card>
             <p className="text-sm text-ink-dim">
-              Rotina vazia. Adicione os exercícios abaixo e use "Salvar só a rotina" para montar sem treinar.
+              Treino vazio. Adicione os exercícios abaixo e use "Salvar sem registrar" para montar sem treinar.
             </p>
           </Card>
         )}
@@ -510,22 +505,21 @@ export function WorkoutScreen({ routine, performance, catalog, onCatalogChanged,
                     name={exercise.name}
                     index={exIndex}
                     count={exercises.length}
-                    category={exercise.category}
                     originalName={exercise.originalName}
                     deleting={deletingKey === exercise.key}
                     onMove={(direction) => moveExercise(exIndex, direction)}
-                    onCategory={(category) => setCategory(exercise.key, category)}
                     onDelete={() => void deleteExercise(exercise)}
                   />
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <p className="min-w-0 text-xs text-ink-faint">
-                    {exercise.category}
-                    {last && last.sets.length > 0 && (
+                    {last && last.sets.length > 0 ? (
                       <>
-                        {' · '}Última vez ({formatDate(last.date)}):{' '}
+                        Última vez ({formatDate(last.date)}):{' '}
                         {last.sets.map((s) => `${s.weightKg}kg×${s.reps}`).join(' · ')}
                       </>
+                    ) : (
+                      'Primeira vez neste exercício'
                     )}
                   </p>
                   <button
@@ -575,15 +569,10 @@ export function WorkoutScreen({ routine, performance, catalog, onCatalogChanged,
                       <div className={`grid items-end gap-2 ${timerOn ? 'grid-cols-[1fr_1fr_auto]' : 'grid-cols-2'}`}>
                         <label className="relative block space-y-0.5">
                           <span className="text-xs text-ink-faint">Kg</span>
-                          <input
-                            type="number"
-                            inputMode="decimal"
-                            step="any"
-                            min={0}
+                          <SetNumberInput
+                            decimal
                             value={set.weightKg}
-                            onChange={(e) =>
-                              updateSet(exercise.key, set.key, { weightKg: Math.max(0, Number(e.target.value)) })
-                            }
+                            onChange={(weightKg) => updateSet(exercise.key, set.key, { weightKg })}
                             className={inputClass}
                           />
                           {isRecord && (
@@ -595,14 +584,9 @@ export function WorkoutScreen({ routine, performance, catalog, onCatalogChanged,
                         </label>
                         <label className="block space-y-0.5">
                           <span className="text-xs text-ink-faint">Reps</span>
-                          <input
-                            type="number"
-                            inputMode="numeric"
-                            min={0}
+                          <SetNumberInput
                             value={set.reps}
-                            onChange={(e) =>
-                              updateSet(exercise.key, set.key, { reps: Math.max(0, Math.round(Number(e.target.value))) })
-                            }
+                            onChange={(reps) => updateSet(exercise.key, set.key, { reps })}
                             className={inputClass}
                           />
                         </label>
@@ -641,7 +625,7 @@ export function WorkoutScreen({ routine, performance, catalog, onCatalogChanged,
         })}
 
         <div className="rounded-lg border-2 border-dashed border-line p-3">
-          <ExercisePicker catalog={catalog} onPick={addExercise} placeholder="Adicionar exercício..." askCategory />
+          <ExercisePicker catalog={catalog} onPick={addExercise} placeholder="Adicionar exercício..." />
         </div>
       </main>
 
@@ -653,7 +637,7 @@ export function WorkoutScreen({ routine, performance, catalog, onCatalogChanged,
           onSaved={(updated) => {
             setBaseline(updated);
             setSettingsOpen(false);
-            setNotice('Rotina salva.');
+            setNotice('Treino atualizado.');
           }}
           onDeleted={() => leave(null)}
           onClose={() => setSettingsOpen(false)}
@@ -662,10 +646,10 @@ export function WorkoutScreen({ routine, performance, catalog, onCatalogChanged,
 
       {askUpdate && (
         <ConfirmSheet
-          title="Atualizar a rotina com essas mudanças?"
-          text="Os exercícios, a ordem e a quantidade de séries de hoje passam a ser a rotina."
+          title="Atualizar o treino com essas mudanças?"
+          text="Os exercícios, a ordem e a quantidade de séries de hoje passam a valer nas próximas vezes."
           confirmLabel="Atualizar e salvar"
-          cancelLabel="Só salvar o treino"
+          cancelLabel="Só registrar hoje"
           onConfirm={() => void saveWorkout(true)}
           onCancel={() => void saveWorkout(false)}
           onDismiss={() => setAskUpdate(false)}

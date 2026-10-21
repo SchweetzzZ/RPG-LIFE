@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Coins, AlertCircle, Loader2, Mail, Lock, User, ShieldCheck } from 'lucide-react';
+import { Coins, AlertCircle, Loader2, Mail, Lock, User } from 'lucide-react';
+import { Button } from '../components/ui/Button';
 import { authService } from '../services/auth.service';
 
 export const Route = createFileRoute('/login')({
@@ -47,161 +48,135 @@ function LoginPage() {
     }
   }
 
+  const inputClass =
+    'h-12 w-full rounded-lg border-2 border-line bg-raised pl-10 pr-3 text-base text-ink placeholder:text-ink-faint transition-colors focus:border-action focus:outline-none';
+  const labelClass = 'block font-pixel text-xs uppercase text-ink-dim';
+  const iconClass = 'pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint';
+
+  function switchMode(next: 'login' | 'register') {
+    setMode(next);
+    setErrorMessage(null);
+  }
+
   return (
-    <div className="flex flex-col items-center justify-center p-4 min-h-screen bg-[#08090a] text-zinc-100">
-      <div className="w-full max-w-sm border border-white/[0.08] bg-[#0c0e12] rounded-3xl p-6 sm:p-7 shadow-2xl backdrop-blur-md space-y-6">
-        {/* Logo / Título Tático */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-amber-400/10 border border-amber-400/20 text-amber-400 shadow-inner">
-            <Coins className="h-6 w-6 stroke-[1.75]" />
+    <div className="flex min-h-screen flex-col items-center justify-center p-4 text-ink">
+      <div className="w-full max-w-sm space-y-5">
+        {/* Logo: moeda em bloco + nome na fonte pixel */}
+        <div className="space-y-3 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-lg border-2 border-[#0c0a08] bg-coin text-[#0c0a08] shadow-[0_4px_0_0_#0c0a08]">
+            <Coins className="h-8 w-8" strokeWidth={2.25} />
           </div>
-          <h1 className="text-xl font-black tracking-tight text-zinc-100">
-            RPG-LIFE
-          </h1>
-          <p className="font-mono text-xs text-zinc-400">
-            Conquiste suas calorias. 0% culpa, 100% mérito.
-          </p>
+          <div>
+            <h1 className="font-pixel text-4xl leading-none text-ink">RPG-LIFE</h1>
+            <p className="mt-2 text-sm text-ink-dim">Conquiste suas calorias. 0% culpa, 100% mérito.</p>
+          </div>
         </div>
 
-        {/* Abas Alternadoras: Entrar vs Criar Conta */}
-        <div className="grid grid-cols-2 p-1 bg-[#08090a] border border-white/[0.08] rounded-xl text-xs font-semibold">
-          <button
-            type="button"
-            onClick={() => {
-              setMode('login');
-              setErrorMessage(null);
-            }}
-            className={`py-2.5 rounded-lg transition-all min-h-[38px] ${mode === 'login'
-                ? 'bg-[#14171d] text-zinc-100 shadow-sm border border-white/[0.08]'
-                : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-          >
-            Entrar
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setMode('register');
-              setErrorMessage(null);
-            }}
-            className={`py-2.5 rounded-lg transition-all min-h-[38px] ${mode === 'register'
-                ? 'bg-[#14171d] text-zinc-100 shadow-sm border border-white/[0.08]'
-                : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-          >
-            Criar Conta
-          </button>
-        </div>
-
-        {/* Mensagem de Erro (se houver) */}
-        {errorMessage && (
-          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2.5 animate-in fade-in duration-200">
-            <AlertCircle className="h-4 w-4 shrink-0 stroke-[2]" />
-            <span>{errorMessage}</span>
+        <div className="space-y-5 rounded-lg border-2 border-line bg-surface p-5 shadow-[0_4px_0_0_#0c0a08]">
+          {/* Abas: Entrar vs Criar Conta */}
+          <div role="tablist" aria-label="Acesso" className="grid grid-cols-2 gap-1.5">
+            {(['login', 'register'] as const).map((tab) => {
+              const on = mode === tab;
+              return (
+                <button
+                  key={tab}
+                  type="button"
+                  role="tab"
+                  aria-selected={on}
+                  onClick={() => switchMode(tab)}
+                  className={`min-h-[44px] rounded-lg border-2 bg-raised text-sm font-semibold transition-colors ${
+                    on ? 'border-action text-action' : 'border-line text-ink-dim hover:border-ink-faint hover:text-ink'
+                  }`}
+                >
+                  {tab === 'login' ? 'Entrar' : 'Criar conta'}
+                </button>
+              );
+            })}
           </div>
-        )}
 
-        {/* Formulário */}
-        <form onSubmit={handleSubmit} className="space-y-3.5">
-          {mode === 'register' && (
-            <div className="space-y-1">
-              <label className="block font-mono text-[11px] uppercase tracking-wider text-zinc-400">
-                Nome de Usuário
+          {errorMessage && (
+            <div role="alert" className="flex items-start gap-2 rounded-lg border-2 border-danger/60 bg-raised p-3 text-sm text-danger">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === 'register' && (
+              <div className="space-y-1.5">
+                <label htmlFor="login-username" className={labelClass}>
+                  Nome de usuário
+                </label>
+                <div className="relative">
+                  <User className={iconClass} />
+                  <input
+                    id="login-username"
+                    type="text"
+                    required
+                    autoComplete="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Seu nickname no RPG"
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <label htmlFor="login-email" className={labelClass}>
+                E-mail
               </label>
               <div className="relative">
-                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                <Mail className={iconClass} />
                 <input
-                  type="text"
+                  id="login-email"
+                  type="email"
                   required
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Seu nickname no RPG"
-                  className="w-full h-12 pl-10 pr-3.5 bg-[#08090a] border border-white/[0.1] rounded-xl text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-amber-400/60 transition-colors"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                  className={inputClass}
                 />
               </div>
             </div>
-          )}
 
-          <div className="space-y-1">
-            <label className="block font-mono text-[11px] uppercase tracking-wider text-zinc-400">
-              E-mail
-            </label>
-            <div className="relative">
-              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu@email.com"
-                className="w-full h-12 pl-10 pr-3.5 bg-[#08090a] border border-white/[0.1] rounded-xl text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-amber-400/60 transition-colors"
-              />
+            <div className="space-y-1.5">
+              <label htmlFor="login-password" className={labelClass}>
+                Senha
+              </label>
+              <div className="relative">
+                <Lock className={iconClass} />
+                <input
+                  id="login-password"
+                  type="password"
+                  required
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className={inputClass}
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-1">
-            <label className="block font-mono text-[11px] uppercase tracking-wider text-zinc-400">
-              Senha
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full h-12 pl-10 pr-3.5 bg-[#08090a] border border-white/[0.1] rounded-xl text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-amber-400/60 transition-colors"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full mt-2 h-12 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-mono font-bold text-xs uppercase tracking-wider shadow-lg shadow-amber-400/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[48px]"
-          >
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin text-black stroke-[2.5]" />
-            ) : mode === 'login' ? (
-              'Acessar Painel do Caçador'
-            ) : (
-              'Criar Personagem'
-            )}
-          </button>
-        </form>
-
-        <div className="text-center font-mono text-xs text-zinc-500 pt-1">
-          {mode === 'login' ? (
-            <p>
-              Não tem uma conta?{' '}
-              <button
-                type="button"
-                onClick={() => {
-                  setMode('register');
-                  setErrorMessage(null);
-                }}
-                className="text-amber-400 hover:underline font-semibold"
-              >
-                Crie sua conta
-              </button>
-            </p>
-          ) : (
-            <p>
-              Já tem uma conta?{' '}
-              <button
-                type="button"
-                onClick={() => {
-                  setMode('login');
-                  setErrorMessage(null);
-                }}
-                className="text-amber-400 hover:underline font-semibold"
-              >
-                Faça login
-              </button>
-            </p>
-          )}
+            <Button type="submit" disabled={loading} className="mt-1 min-h-[48px]">
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : mode === 'login' ? 'Entrar' : 'Criar personagem'}
+            </Button>
+          </form>
         </div>
+
+        <p className="text-center text-sm text-ink-faint">
+          {mode === 'login' ? 'Não tem uma conta? ' : 'Já tem uma conta? '}
+          <button
+            type="button"
+            onClick={() => switchMode(mode === 'login' ? 'register' : 'login')}
+            className="font-semibold text-action underline-offset-2 hover:underline"
+          >
+            {mode === 'login' ? 'Crie sua conta' : 'Faça login'}
+          </button>
+        </p>
       </div>
     </div>
   );

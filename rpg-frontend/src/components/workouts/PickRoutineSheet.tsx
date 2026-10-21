@@ -46,7 +46,6 @@ export function PickRoutineSheet({ routines, today, onClose }: PickRoutineSheetP
         title: name,
         description: '',
         estimatedMinutes: 45,
-        targetMuscleGroups: [],
         scheduledDays: [],
         intensity: 'moderate',
         exercises: [],
@@ -54,7 +53,7 @@ export function PickRoutineSheet({ routines, today, onClose }: PickRoutineSheetP
       });
       open(routine.id);
     } catch (err) {
-      setError(errorMessage(err instanceof Error ? err : null, 'Não foi possível criar a rotina'));
+      setError(errorMessage(err instanceof Error ? err : null, 'Não foi possível criar o treino'));
       setCreating(false);
     }
   }
@@ -92,10 +91,10 @@ export function PickRoutineSheet({ routines, today, onClose }: PickRoutineSheetP
         {ordered.length > 0 ? (
           <>
             <div className="space-y-1">
-              <span id="pick-routine-label" className={labelClass}>Em qual rotina?</span>
+              <span id="pick-routine-label" className={labelClass}>Em qual treino?</span>
               <Select
                 aria-labelledby="pick-routine-label"
-                placeholder="Escolha uma rotina"
+                placeholder="Escolha um treino"
                 value={selectedId}
                 onChange={setSelectedId}
                 options={ordered.map((r) => ({
@@ -111,9 +110,9 @@ export function PickRoutineSheet({ routines, today, onClose }: PickRoutineSheetP
           </>
         ) : (
           <>
-            <p className="text-sm text-ink-dim">Crie uma rotina para registrar o treino.</p>
+            <p className="text-sm text-ink-dim">Crie um treino para registrar seus exercícios.</p>
             <label className="block space-y-1">
-              <span className={labelClass}>Nome da rotina</span>
+              <span className={labelClass}>Nome do treino</span>
               <input
                 autoFocus
                 value={title}
@@ -121,7 +120,7 @@ export function PickRoutineSheet({ routines, today, onClose }: PickRoutineSheetP
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') void handleCreate();
                 }}
-                placeholder="Ex.: Treino A, peito e tríceps"
+                placeholder="Ex.: Peito, Costas e bíceps, Treino A"
                 className={fieldClass}
               />
             </label>

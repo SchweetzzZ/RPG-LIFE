@@ -19,7 +19,6 @@ export const exerciseSetSchema = z.object({
 export const exerciseSchema = z.object({
     id: z.string().optional(),
     name: z.string().min(1, "Exercise name is required"),
-    category: z.enum(['Peito', 'Costas', 'Pernas', 'Ombros', 'Braços', 'Abdômen', 'Cardio']).default('Peito'),
     sets: z.array(exerciseSetSchema).default([]),
     notes: z.string().optional(),
 });
@@ -31,7 +30,6 @@ const workoutFields = {
     title: z.string().min(1, "Title is required"),
     description: z.string(),
     estimatedMinutes: z.number().int().min(1),
-    targetMuscleGroups: z.array(z.string()),
     scheduledDays: z.array(z.number().int().min(0).max(6)),
     intensity: z.enum(['moderate', 'intense', 'cycling_running']),
     exercises: z.array(exerciseSchema),
@@ -43,7 +41,6 @@ export const createWorkoutSchema = z.object({
     ...workoutFields,
     description: workoutFields.description.default(""),
     estimatedMinutes: workoutFields.estimatedMinutes.default(45),
-    targetMuscleGroups: workoutFields.targetMuscleGroups.default([]),
     scheduledDays: workoutFields.scheduledDays.default([]),
     intensity: workoutFields.intensity.default('moderate'),
     exercises: workoutFields.exercises.default([]),
@@ -130,7 +127,6 @@ export const ExerciseSetResponseSchema = z.object({
 export const WorkoutExerciseResponseSchema = z.object({
     id: z.string().optional(),
     name: z.string(),
-    category: z.string().optional(),
     sets: z.array(ExerciseSetResponseSchema),
     notes: z.string().optional(),
 });
@@ -140,7 +136,6 @@ export const WorkoutResponseSchema = z.object({
     title: z.string(),
     description: z.string(),
     estimatedMinutes: z.number(),
-    targetMuscleGroups: z.array(z.string()),
     scheduledDays: z.array(z.number()),
     intensity: intensitySchema,
     exercises: z.array(WorkoutExerciseResponseSchema),
@@ -219,7 +214,8 @@ export const ExercisePerformanceResponseSchema = z.object({
 // Catalogo: exercicios das rotinas e dos registros, sem duplicar pelo nome
 export const ExerciseCatalogItemResponseSchema = z.object({
     name: z.string(),
-    category: z.string().nullable(),
+    /** Treinos (rotinas) em que o exercicio aparece, na ordem em que foram criados */
+    routines: z.array(z.string()),
     timesLogged: z.number(),
     lastDate: z.string().nullable(),
     lastSets: z.array(PerformedSetResponseSchema),

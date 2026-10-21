@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { CheckCircle2, Coins, Loader2, Lock, Trash2 } from 'lucide-react';
-import type { FreeMealPlan } from '@/src/types/free-meal';
+import type { FreeMealPlan, FreeMealTemplate } from '@/src/types/free-meal';
+import { mealMacros } from '@/src/lib/meal-macros';
+import { MacroChips, MissingMacrosNote } from './MealTotalsHud';
 import type { DayState } from '@/src/types/day';
 import { formatDay, formatNumber } from '@/src/lib/format';
 import { Button } from '../ui/Button';
@@ -13,6 +15,8 @@ interface FreeMealCardProps {
   coinBalance: number;
   /** Meta e consumido de hoje (só para a refeição do dia). */
   day: DayState | null;
+  /** Catálogo carregado pela Loja: os macros são calculados na hora a partir do template (não são gravados). */
+  templates: FreeMealTemplate[];
   /** Mais de uma refeição na lista: mostra a diferença entre "pronta sozinha" e "pronta junto com as anteriores". */
   hasEarlierPlans: boolean;
   cancelling: boolean;
@@ -90,9 +94,10 @@ function VaultProgress({ plan }: { plan: FreeMealPlan }) {
   );
 }
 
-export function FreeMealCard({ plan, coinBalance, day, hasEarlierPlans, cancelling, onRedeem, onCancel }: FreeMealCardProps) {
+export function FreeMealCard({ plan, coinBalance, day, templates, hasEarlierPlans, cancelling, onRedeem, onCancel }: FreeMealCardProps) {
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const { meal } = plan;
+  const macros = mealMacros(meal, templates);
   const isDay = meal.scope === 'day';
 
   const statusLabel = plan.canBuy ? 'Pronta para resgatar' : plan.ready ? 'Kcal ok, faltam moedas' : 'Guardando';
@@ -105,7 +110,7 @@ export function FreeMealCard({ plan, coinBalance, day, hasEarlierPlans, cancelli
   const missingCoins = Math.max(0, meal.ticketCost - coinBalance);
 
   return (
-    <Card>
+    <Card highlight={plan.canBuy ? 'coin' : undefined}>
       <div className="space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 space-y-1">
@@ -120,6 +125,11 @@ export function FreeMealCard({ plan, coinBalance, day, hasEarlierPlans, cancelli
               {meal.plannedItems.length} {meal.plannedItems.length === 1 ? 'item' : 'itens'} · ~{formatNumber(meal.estimatedKcal)} kcal
             </p>
           </div>
+        </div>
+
+        <div className="space-y-1">
+          <MacroChips macros={macros} kcal={meal.estimatedKcal} />
+          <MissingMacrosNote count={macros.missing} />
         </div>
 
         {isDay ? <DayBudget plan={plan} day={day} /> : <VaultProgress plan={plan} />}
@@ -161,7 +171,7 @@ export function FreeMealCard({ plan, coinBalance, day, hasEarlierPlans, cancelli
 
         <div className="flex items-center gap-2">
           {plan.canBuy ? (
-            <Button onClick={() => onRedeem(plan)}>
+            <Button variant="coin" onClick={() => onRedeem(plan)}>
               <CheckCircle2 className="h-4 w-4" />
               Resgatar refeição livre
             </Button>

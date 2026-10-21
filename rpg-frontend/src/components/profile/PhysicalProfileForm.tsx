@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Save, LogOut, Check, Info } from 'lucide-react';
+import { Save, LogOut, Check } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { ChoiceChips } from '../ui/ChoiceChips';
@@ -94,7 +94,7 @@ export function PhysicalProfileForm({ initialData, primaryGoal, onSave, onLogout
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <Card label="Perfil físico" aside="Fórmula Mifflin-St Jeor">
+      <Card label="Perfil físico">
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-3">
             <label className="block space-y-1">
@@ -112,7 +112,7 @@ export function PhysicalProfileForm({ initialData, primaryGoal, onSave, onLogout
           </div>
 
           <div className="space-y-1">
-            <span id="sex-label" className={label}>Sexo usado no cálculo</span>
+            <span id="sex-label" className={label}>Sexo</span>
             <ChoiceChips
               layout="fill"
               aria-labelledby="sex-label"
@@ -120,10 +120,6 @@ export function PhysicalProfileForm({ initialData, primaryGoal, onSave, onLogout
               options={SEX_OPTIONS}
               onChange={setBiologicalSex}
             />
-            <span className="flex items-start gap-1.5 text-xs text-ink-faint">
-              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              A fórmula de gasto calórico tem uma versão para cada sexo. Escolha a que mais se aproxima do seu corpo.
-            </span>
           </div>
 
           <div className="space-y-1">

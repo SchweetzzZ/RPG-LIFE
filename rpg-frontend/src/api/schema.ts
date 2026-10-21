@@ -841,8 +841,6 @@ export interface components {
             /** @default 45 */
             estimatedMinutes: number;
             /** @default [] */
-            targetMuscleGroups: string[];
-            /** @default [] */
             scheduledDays: number[];
             /**
              * @default moderate
@@ -853,11 +851,6 @@ export interface components {
             exercises: {
                 id?: string;
                 name: string;
-                /**
-                 * @default Peito
-                 * @enum {string}
-                 */
-                category: "Peito" | "Costas" | "Pernas" | "Ombros" | "Braços" | "Abdômen" | "Cardio";
                 /** @default [] */
                 sets: {
                     id?: string;
@@ -887,14 +880,12 @@ export interface components {
             title: string;
             description: string;
             estimatedMinutes: number;
-            targetMuscleGroups: string[];
             scheduledDays: number[];
             /** @enum {string} */
             intensity: "moderate" | "intense" | "cycling_running";
             exercises: {
                 id?: string;
                 name: string;
-                category?: string;
                 sets: {
                     setNumber: number;
                     weightKg: number;
@@ -915,18 +906,12 @@ export interface components {
             title?: string;
             description?: string;
             estimatedMinutes?: number;
-            targetMuscleGroups?: string[];
             scheduledDays?: number[];
             /** @enum {string} */
             intensity?: "moderate" | "intense" | "cycling_running";
             exercises?: {
                 id?: string;
                 name: string;
-                /**
-                 * @default Peito
-                 * @enum {string}
-                 */
-                category: "Peito" | "Costas" | "Pernas" | "Ombros" | "Braços" | "Abdômen" | "Cardio";
                 /** @default [] */
                 sets: {
                     id?: string;
@@ -1069,7 +1054,8 @@ export interface components {
         };
         ExerciseCatalogItemResponseDto: {
             name: string;
-            category: string | null;
+            /** @description Treinos (rotinas) em que o exercicio aparece, na ordem em que foram criados */
+            routines: string[];
             timesLogged: number;
             lastDate: string | null;
             lastSets: {
@@ -1206,6 +1192,9 @@ export interface components {
                 name: string;
                 unit: string;
                 kcalPerUnit: number;
+                proteinPerUnit: number;
+                carbPerUnit: number;
+                fatPerUnit: number;
                 defaultQty: number;
                 source: {
                     name: string;

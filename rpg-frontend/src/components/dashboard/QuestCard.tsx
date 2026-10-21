@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CalendarPlus, Coins, Info, Lock, ShieldCheck, Unlock } from 'lucide-react';
+import { CalendarPlus, Coins, Info, Lock, ShieldCheck, Swords, Unlock } from 'lucide-react';
 import type { FreeMealPlan, NextFreeMeals } from '@/src/types/free-meal';
 import type { Vault } from '@/src/types/vault';
 import { formatDay, formatNumber } from '@/src/lib/format';
@@ -17,13 +17,10 @@ interface QuestCardProps {
 export function QuestCard({ next, vault }: QuestCardProps) {
   if (next.week.length === 0 && next.day.length === 0) {
     return (
-      <Card label="Missão">
+      <Card label="Missão" icon={Swords}>
         <div className="space-y-3">
           <div className="space-y-1">
             <h3 className="text-base font-bold text-ink">Nenhuma refeição livre agendada</h3>
-            <p className="text-sm text-ink-dim">
-              Escolha o que quer comer e veja quanto guardar por dia para chegar lá sem culpa.
-            </p>
           </div>
           <Button to="/rewards" variant="secondary">
             <CalendarPlus className="h-4 w-4" />
@@ -76,7 +73,7 @@ function Quest({ plans, next, vault, label }: QuestProps) {
   }
 
   return (
-    <Card label={label} aside={isDay ? 'hoje' : formatDay(meal.scheduledFor)}>
+    <Card label={label} icon={Swords} aside={isDay ? 'hoje' : formatDay(meal.scheduledFor)} highlight={plan.canBuy ? 'coin' : undefined}>
       <div className="space-y-4">
         {plans.length > 1 && (
           <Select
@@ -101,7 +98,7 @@ function Quest({ plans, next, vault, label }: QuestProps) {
             <p className="text-sm text-ink">{status}</p>
           </div>
           <div
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border-2 bg-raised ${plan.canBuy ? 'border-coin text-coin' : 'border-line text-ink-faint'}`}
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border-2 ${plan.canBuy ? 'border-[#0c0a08] bg-coin text-[#0c0a08] shadow-[0_3px_0_0_#0c0a08]' : 'border-line bg-raised text-ink-faint'}`}
             title={plan.canBuy ? 'Liberada' : 'Bloqueada'}
           >
             {plan.canBuy ? <Unlock className="h-5 w-5" aria-label="Liberada" /> : <Lock className="h-5 w-5" aria-label="Bloqueada" />}

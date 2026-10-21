@@ -5,18 +5,21 @@ const set = (weightKg: number, reps: number, technique = 'normal') => ({ setNumb
 describe('exercise-catalog', () => {
     it('une rotinas e registros sem duplicar por acento ou caixa', () => {
         const catalog = buildCatalog(
-            [{ createdAt: '2026-01-02', exercises: [{ name: 'supino', category: 'Peito' }, { name: 'Rosca', category: 'Braços' }] }],
+            [
+                { createdAt: '2026-01-02', title: 'Peito', exercises: [{ name: 'supino' }, { name: 'Rosca' }] },
+                { createdAt: '2026-01-03', title: 'Treino A', exercises: [{ name: 'Supino' }] },
+            ],
             [{ date: '2026-01-01', completedAt: '2026-01-01', exercises: [{ exerciseName: 'Supino', sets: [set(60, 10)] }] }],
         );
         expect(catalog.map((c) => c.name)).toEqual(['Rosca', 'Supino']);
         const supino = catalog.find((c) => c.name === 'Supino');
-        expect(supino?.category).toBe('Peito');
+        expect(supino?.routines).toEqual(['Peito', 'Treino A']);
         expect(supino?.timesLogged).toBe(1);
     });
 
     it('exercicio so da rotina entra sem historico', () => {
         const [rosca] = buildCatalog([{ exercises: [{ name: 'Rosca' }] }], []);
-        expect(rosca).toMatchObject({ timesLogged: 0, lastDate: null, lastSets: [], personalBestKg: 0 });
+        expect(rosca).toMatchObject({ routines: [], timesLogged: 0, lastDate: null, lastSets: [], personalBestKg: 0 });
     });
 
     it('ultima carga vem do registro mais recente e o recorde ignora aquecimento', () => {

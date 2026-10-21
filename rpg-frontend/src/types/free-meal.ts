@@ -8,6 +8,8 @@ export type FreeMealPresetName = keyof FreeMealTemplate["presets"]
 
 export type FreeMeal = Schemas["FreeMealResponseDto"]
 export type FreeMealScope = FreeMeal["scope"]
+/** Item gravado na refeição (plannedItems / actualItems). */
+export type FreeMealItem = FreeMeal["plannedItems"][number]
 
 export type NextFreeMeals = Schemas["NextFreeMealResponseDto"]
 /** Uma refeição ativa com a situação dela contra o saldo de agora (item de `week` ou `day`). */

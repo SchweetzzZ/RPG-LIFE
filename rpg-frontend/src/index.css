@@ -15,12 +15,16 @@ input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
-    -webkit-text-fill-color: #f5f5f5 !important;
-    -webkit-box-shadow: 0 0 0px 1000px #0a0a0a inset !important;
-    caret-color: #f5f5f5 !important;
-    border-color: #262626 !important;
-    /* Mantém a borda neutral-800 perfeitamente selada */
+    /* Mesmas cores dos campos do tema (raised / ink / line), em vez do preto do autofill */
+    -webkit-text-fill-color: var(--color-ink) !important;
+    -webkit-box-shadow: 0 0 0px 1000px var(--color-raised) inset !important;
+    caret-color: var(--color-ink) !important;
+    border-color: var(--color-line) !important;
     transition: background-color 5000s ease-in-out 0s;
+}
+/* Campo preenchido pelo navegador continua mostrando a borda verde de foco */
+input:-webkit-autofill:focus {
+    border-color: var(--color-action) !important;
 }
 /* Tokens do Hub: uma cor, um significado. Paleta quente (tinta e pergaminho), sem neon. */
 @theme {
@@ -58,4 +62,66 @@ input:-webkit-autofill:active {
     letter-spacing: 0.03em;
     font-variant-numeric: tabular-nums;
     -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Camada visual de jogo (textura, foco, animações) ---------- */
+
+/* Textura de pergaminho bem sutil: grade de pontos 4px + vinheta. Não compete com o conteúdo. */
+body {
+    background-image:
+        radial-gradient(rgba(241, 231, 211, 0.025) 1px, transparent 1px),
+        radial-gradient(ellipse at 50% 0%, rgba(230, 184, 77, 0.05), transparent 60%);
+    background-size: 4px 4px, 100% 100%;
+    background-attachment: fixed;
+}
+
+/* Foco visível pelo teclado em tudo que é clicável, no tom de ação. */
+:where(a, button, [role="button"], [role="radio"], [role="combobox"], input, textarea):focus-visible {
+    outline: 2px solid var(--color-action);
+    outline-offset: 2px;
+}
+
+/* Bloco de barra entrando: cresce de baixo e acende. */
+@keyframes seg-in {
+    0% { transform: scaleY(0.2); filter: brightness(1.8); }
+    60% { transform: scaleY(1.15); }
+    100% { transform: scaleY(1); filter: brightness(1); }
+}
+.seg-in {
+    animation: seg-in 260ms steps(4, end) both;
+    transform-origin: bottom;
+}
+
+/* Barra cheia: brilho passando da esquerda para a direita, em passos (cara de pixel). */
+@keyframes seg-shine {
+    0%, 70% { filter: brightness(1); }
+    85% { filter: brightness(1.45); }
+    100% { filter: brightness(1); }
+}
+.seg-full {
+    animation: seg-shine 2.4s steps(3, end) infinite;
+}
+
+/* Esqueleto de carregamento: blocos acendendo em onda. */
+@keyframes skel-wave {
+    0%, 100% { opacity: 0.35; }
+    50% { opacity: 1; }
+}
+.skel-wave {
+    animation: skel-wave 1.2s steps(3, end) infinite;
+}
+
+/* Moeda girando de leve (achatando no eixo X), em passos. */
+@keyframes coin-spin {
+    0%, 100% { transform: scaleX(1); }
+    50% { transform: scaleX(0.25); }
+}
+.coin-spin {
+    animation: coin-spin 0.9s steps(4, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .seg-in, .seg-full, .skel-wave, .coin-spin {
+        animation: none !important;
+    }
 }

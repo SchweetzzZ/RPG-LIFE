@@ -12,15 +12,8 @@ interface ProgressionCardProps {
 export function ProgressionCard({ performance }: ProgressionCardProps) {
   const [selected, setSelected] = useState(performance[0]?.exerciseName ?? '');
 
-  if (performance.length === 0) {
-    return (
-      <Card label="Evolução de carga">
-        <p className="text-sm text-ink-dim">
-          Registre um treino para acompanhar a evolução de carga (1RM estimado) de cada exercício.
-        </p>
-      </Card>
-    );
-  }
+  // Sem treino registrado nao ha evolucao para mostrar
+  if (performance.length === 0) return null;
 
   return (
     <Card label="Evolução de carga">

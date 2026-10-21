@@ -1,80 +1,60 @@
-import React, { useState } from 'react';
-import { Footprints, Flame, Coins, Plus } from 'lucide-react';
+import { useState } from 'react';
+import { Coins, Flame, Footprints, Plus } from 'lucide-react';
+import { formatNumber, percent } from '@/src/lib/format';
+import { Card } from '../ui/Card';
+import { SegmentedBar } from '../ui/SegmentedBar';
 
 interface StepsProgressCardProps {
   initialSteps?: number;
   targetSteps?: number;
 }
 
-export function StepsProgressCard({
-  initialSteps = 8450,
-  targetSteps = 10000,
-}: StepsProgressCardProps) {
+export function StepsProgressCard({ initialSteps = 8450, targetSteps = 10000 }: StepsProgressCardProps) {
   const [steps, setSteps] = useState(initialSteps);
 
-  const percent = Math.min(100, Math.round((steps / targetSteps) * 100));
+  const pct = percent(steps, targetSteps);
   // Estimativa: ~0.04 kcal por passo, 1 moeda a cada 1000 passos
   const caloriesBurned = Math.round(steps * 0.04);
   const coinsEarned = Math.floor(steps / 1000);
-
-  const addSteps = (amount: number) => {
-    setSteps((prev) => prev + amount);
-  };
+  const done = steps >= targetSteps;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0c0e12] p-4 sm:p-5 shadow-xl space-y-3.5">
-      <div className="flex items-center justify-between pb-2.5 border-b border-white/[0.06]">
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-amber-400/20 bg-amber-500/10 text-amber-400">
-            <Footprints className="h-4 w-4 stroke-[2]" />
+    <Card label="Passos de hoje" icon={Footprints} aside={done ? 'meta batida!' : `${pct}%`} highlight={done ? 'action' : undefined}>
+      <div className="space-y-4">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="font-num text-4xl leading-none text-action">{formatNumber(steps)}</p>
+            <p className="mt-1 text-sm text-ink-dim">de {formatNumber(targetSteps)} passos</p>
           </div>
-          <h3 className="text-sm font-bold text-zinc-100">Passos & Movimento</h3>
+          <button
+            type="button"
+            onClick={() => setSteps((prev) => prev + 500)}
+            className="inline-flex min-h-[44px] items-center gap-1 rounded-lg border-2 border-line bg-raised px-3 text-sm font-semibold text-ink shadow-[0_3px_0_0_#0c0a08] hover:border-ink-faint active:translate-y-[2px] active:shadow-[0_1px_0_0_#0c0a08]"
+          >
+            <Plus className="h-4 w-4" />
+            500
+          </button>
         </div>
 
-        <button
-          type="button"
-          onClick={() => addSteps(500)}
-          className="inline-flex items-center gap-1 rounded-lg border border-white/[0.08] bg-white/[0.03] px-2 py-1 font-mono text-[11px] text-zinc-300 hover:bg-white/[0.08]"
-        >
-          <Plus className="h-3 w-3" />
-          <span>+500 passos</span>
-        </button>
-      </div>
+        <SegmentedBar value={steps} max={targetSteps} segments={20} size="md" tone="action" label="Passos do dia" />
 
-      <div className="flex items-baseline justify-between">
-        <div>
-          <span className="font-mono text-2xl sm:text-3xl font-black text-zinc-100 tabular-nums">
-            {steps.toLocaleString()}
-          </span>
-          <span className="font-mono text-xs text-zinc-500 ml-1.5">
-            / {targetSteps.toLocaleString()} passos
-          </span>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-lg border-2 border-line bg-raised px-3 py-2">
+            <p className="flex items-center gap-1 text-xs text-ink-faint">
+              <Flame className="h-3.5 w-3.5 text-kcal" />
+              kcal gastas
+            </p>
+            <p className="font-num text-xl leading-tight text-kcal">+{formatNumber(caloriesBurned)}</p>
+          </div>
+          <div className="rounded-lg border-2 border-line bg-raised px-3 py-2">
+            <p className="flex items-center gap-1 text-xs text-ink-faint">
+              <Coins className="h-3.5 w-3.5 text-coin" />
+              moedas
+            </p>
+            <p className="font-num text-xl leading-tight text-coin">+{formatNumber(coinsEarned)}</p>
+          </div>
         </div>
-
-        <span className="font-mono text-xs font-bold text-amber-400">
-          {percent}%
-        </span>
       </div>
-
-      <div className="h-2 w-full rounded-full bg-zinc-800 overflow-hidden">
-        <div
-          className="h-full bg-gradient-to-r from-amber-500 to-amber-300 rounded-full transition-all duration-300"
-          style={{ width: `${percent}%` }}
-        />
-      </div>
-
-      {/* Recompensas de Calorias e Moedas */}
-      <div className="flex items-center justify-between border-t border-white/[0.06] pt-2.5 font-mono text-xs">
-        <span className="flex items-center gap-1.5 text-rose-400 font-semibold">
-          <Flame className="h-3.5 w-3.5" />
-          +{caloriesBurned} kcal gastas
-        </span>
-
-        <span className="flex items-center gap-1.5 text-amber-300 font-semibold">
-          <Coins className="h-3.5 w-3.5" />
-          +{coinsEarned} moedas geradas
-        </span>
-      </div>
-    </div>
+    </Card>
   );
 }

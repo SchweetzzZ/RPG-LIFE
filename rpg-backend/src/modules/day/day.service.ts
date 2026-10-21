@@ -16,6 +16,8 @@ import { ProgressService } from '../progress/progress.service';
 import { streakBonusesCrossed } from '../progress/streak';
 import { toUserDate } from '../common/utils/user-date';
 import { isDuplicateKeyError } from '../common/utils/mongo-errors';
+import { FreeMeal, FreeMealDocument, FreeMealScope, FreeMealStatus } from '../free-meal/schema/free-meal.schema';
+import { redeemedDayUsage } from '../free-meal/free-meal-math';
 
 // Quantos dias fechados ler para recalcular a sequencia
 const STREAK_LOOKBACK = 400;
@@ -26,6 +28,7 @@ const NO_REWARD: RewardResult = { granted: false, coins: 0, xp: 0, leveledUp: fa
 export class DayService {
     constructor(
         @InjectModel(DayClose.name) private readonly dayCloseModel: Model<DayCloseDocument>,
+        @InjectModel(FreeMeal.name) private readonly freeMealModel: Model<FreeMealDocument>,
         private readonly profileService: ProfileService,
         private readonly energyService: EnergyService,
         private readonly vaultService: VaultService,
@@ -41,14 +44,35 @@ export class DayService {
         return this.dayCloseModel.findOne({ user: new Types.ObjectId(userId), date }).exec();
     }
 
+    /**
+     * Kcal da sobra do dia ja usadas por refeicoes livres `day` resgatadas nessa data.
+     * Elas nao entram no diario, mas sao pagas com a sobra: sem descontar, a mesma sobra
+     * pagaria a refeicao e ainda iria para o cofre no fechamento.
+     * Mesma conta do FreeMealService.todaySurplus (min(comido, estimado)).
+     */
+    private async dayFreeMealKcal(userId: string, date: string): Promise<number> {
+        const meals = await this.freeMealModel
+            .find({
+                user: new Types.ObjectId(userId),
+                scope: FreeMealScope.DAY,
+                status: FreeMealStatus.REDEEMED,
+                scheduledFor: date,
+            })
+            .select('estimatedKcal actualKcal')
+            .lean()
+            .exec();
+        return redeemedDayUsage(meals.map((m) => ({ estimatedKcal: m.estimatedKcal, actualKcal: m.actualKcal ?? null })));
+    }
+
     /** GET /day/:date: estado do dia (aberto/fechado, meta, consumido, previsao do cofre). */
     async getDay(userId: string, date: string): Promise<DayStateResponse> {
         const today = await this.today(userId);
         const body = await this.profileService.getNutritionInput(userId);
-        const [energy, closed, cycle] = await Promise.all([
+        const [energy, closed, cycle, freeMealKcal] = await Promise.all([
             this.energyService.computeDay(userId, date, body),
             this.findClose(userId, date),
             this.vaultService.getOpenCycle(userId, today),
+            this.dayFreeMealKcal(userId, date),
         ]);
 
         // Previsao: o que aconteceria com o cofre se o dia fosse fechado agora
@@ -58,7 +82,7 @@ export class DayService {
             closed: true,
             hasFoodLogs: energy.foodLogsCount > 0,
             targetKcal: energy.targetKcal,
-            consumedKcal: energy.consumedKcal,
+            consumedKcal: energy.consumedKcal + freeMealKcal,
             vaultBalanceKcal: balance,
         });
 
@@ -90,7 +114,10 @@ export class DayService {
         }
 
         const body = await this.profileService.getNutritionInput(userId);
-        const energy = await this.energyService.computeDay(userId, date, body);
+        const [energy, freeMealKcal] = await Promise.all([
+            this.energyService.computeDay(userId, date, body),
+            this.dayFreeMealKcal(userId, date),
+        ]);
 
         const blocked = closeBlockedReason({ alreadyClosed: false, date, today });
         if (blocked) {
@@ -110,7 +137,7 @@ export class DayService {
             closed: true,
             hasFoodLogs,
             targetKcal: energy.targetKcal,
-            consumedKcal: energy.consumedKcal,
+            consumedKcal: energy.consumedKcal + freeMealKcal,
             vaultBalanceKcal: balanceBefore,
         });
 

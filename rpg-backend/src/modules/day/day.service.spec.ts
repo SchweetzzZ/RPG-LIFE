@@ -2,6 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import { Model, Types } from 'mongoose';
 import { DayService } from './day.service';
 import { DayCloseDocument } from './schema/day-close.schema';
+import { FreeMealDocument } from '../free-meal/schema/free-meal.schema';
 import { ProfileService } from '../profile/profile.service';
 import { EnergyService, DayEnergy } from '../energy/energy.service';
 import { VaultService } from '../vault/vault.service';
@@ -24,7 +25,7 @@ function energy(overrides: Partial<DayEnergy> = {}): DayEnergy {
 }
 
 /** DayService com dependencias falsas em memoria. */
-function setup(dayEnergy: DayEnergy = energy()) {
+function setup(dayEnergy: DayEnergy = energy(), redeemedDayMeals: { estimatedKcal: number; actualKcal: number | null }[] = []) {
     const today = toUserDate(TZ);
     const closes: Array<Record<string, unknown> & { date: string }> = [];
 
@@ -40,6 +41,10 @@ function setup(dayEnergy: DayEnergy = energy()) {
         find: () => ({
             select: () => ({ sort: () => ({ limit: () => ({ lean: () => ({ exec: () => Promise.resolve(closes.map((c) => ({ date: c.date }))) }) }) }) }),
         }),
+    };
+
+    const freeMealModel = {
+        find: () => ({ select: () => ({ lean: () => ({ exec: () => Promise.resolve(redeemedDayMeals) }) }) }),
     };
 
     const cycle = { _id: new Types.ObjectId(), user: new Types.ObjectId(userId), startDate: today, endDate: '2999-12-31' };
@@ -68,6 +73,7 @@ function setup(dayEnergy: DayEnergy = energy()) {
 
     const service = new DayService(
         dayCloseModel as unknown as Model<DayCloseDocument>,
+        freeMealModel as unknown as Model<FreeMealDocument>,
         profile as unknown as ProfileService,
         energyService as unknown as EnergyService,
         vault as unknown as VaultService,
@@ -78,6 +84,12 @@ function setup(dayEnergy: DayEnergy = energy()) {
 }
 
 describe('DayService.closeDay', () => {
+    it('refeicao livre do dia resgatada sai da sobra antes de ir para o cofre', async () => {
+        const { service } = setup(energy(), [{ estimatedKcal: 400, actualKcal: null }]);
+        const r = await service.closeDay(userId);
+        expect(r.day.savedKcal).toBe(100); // 2000 - 1500 - 400
+    });
+
     it('fecha o dia: guarda a sobra no cofre e paga +10 uma vez', async () => {
         const { service, vault, rewards } = setup();
         const r = await service.closeDay(userId);

@@ -277,7 +277,7 @@ export class WorkoutService {
     async getExerciseCatalog(userId: string) {
         const user = new Types.ObjectId(userId);
         const [routines, logs] = await Promise.all([
-            this.workoutModel.find({ user }).select('exercises.name exercises.category createdAt').lean().exec(),
+            this.workoutModel.find({ user }).select('title exercises.name createdAt').lean().exec(),
             this.workoutLogModel.find({ user }).select('date completedAt exercises').lean().exec(),
         ]);
         return buildCatalog(routines, logs);

@@ -12,6 +12,10 @@ export function toFreeMealTemplateResponse(template: FreeMealTemplateDocument): 
         name: i.name,
         unit: i.unit,
         kcalPerUnit: i.kcalPerUnit,
+        // Templates gravados antes dos macros nao tem os campos: 0 ate rodar o seed de novo
+        proteinPerUnit: i.proteinPerUnit ?? 0,
+        carbPerUnit: i.carbPerUnit ?? 0,
+        fatPerUnit: i.fatPerUnit ?? 0,
         defaultQty: i.defaultQty,
         source: {
             name: i.source.name,

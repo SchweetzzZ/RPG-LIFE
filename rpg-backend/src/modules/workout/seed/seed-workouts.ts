@@ -39,15 +39,13 @@ interface SeedExercise {
 
 interface SeedRoutine {
     title: string;
-    category: 'Peito' | 'Costas' | 'Pernas' | 'Ombros' | 'Braços';
-    muscles: string[];
     weekday: number; // 0 Dom ... 6 Sab
     exercises: SeedExercise[];
 }
 
 const ROUTINES: SeedRoutine[] = [
     {
-        title: 'Peito', category: 'Peito', muscles: ['peitoral'], weekday: 1,
+        title: 'Peito', weekday: 1,
         exercises: [
             { name: 'Supino reto com barra', startKg: 50, stepKg: 2.5, reps: 8, pattern: 'steady' },
             { name: 'Supino inclinado com halteres', startKg: 20, stepKg: 2, reps: 10, pattern: 'deload' },
@@ -55,7 +53,7 @@ const ROUTINES: SeedRoutine[] = [
         ],
     },
     {
-        title: 'Costas', category: 'Costas', muscles: ['costas'], weekday: 2,
+        title: 'Costas', weekday: 2,
         exercises: [
             { name: 'Puxada frontal', startKg: 45, stepKg: 5, reps: 10, pattern: 'steady' },
             { name: 'Remada curvada com barra', startKg: 40, stepKg: 2.5, reps: 8, pattern: 'fast' },
@@ -63,7 +61,7 @@ const ROUTINES: SeedRoutine[] = [
         ],
     },
     {
-        title: 'Perna', category: 'Pernas', muscles: ['perna'], weekday: 3,
+        title: 'Perna', weekday: 3,
         exercises: [
             { name: 'Agachamento livre', startKg: 60, stepKg: 5, reps: 8, pattern: 'steady' },
             { name: 'Leg press 45', startKg: 120, stepKg: 10, reps: 12, pattern: 'fast' },
@@ -72,7 +70,7 @@ const ROUTINES: SeedRoutine[] = [
         ],
     },
     {
-        title: 'Ombro', category: 'Ombros', muscles: ['ombro'], weekday: 4,
+        title: 'Ombro', weekday: 4,
         exercises: [
             { name: 'Desenvolvimento com halteres', startKg: 14, stepKg: 2, reps: 10, pattern: 'steady' },
             { name: 'Elevação lateral', startKg: 8, stepKg: 1, reps: 12, pattern: 'plateau' },
@@ -80,7 +78,7 @@ const ROUTINES: SeedRoutine[] = [
         ],
     },
     {
-        title: 'Bíceps e Tríceps', category: 'Braços', muscles: ['braço'], weekday: 5,
+        title: 'Bíceps e Tríceps', weekday: 5,
         exercises: [
             { name: 'Rosca direta com barra', startKg: 20, stepKg: 2.5, reps: 10, pattern: 'steady' },
             { name: 'Rosca martelo', startKg: 10, stepKg: 2, reps: 10, pattern: 'deload' },
@@ -209,7 +207,6 @@ async function main(): Promise<void> {
                 title: routine.title,
                 description: SEED_TAG,
                 estimatedMinutes: 50,
-                targetMuscleGroups: routine.muscles,
                 scheduledDays: [routine.weekday],
                 intensity: 'moderate',
                 exercises: [],
@@ -252,7 +249,6 @@ async function main(): Promise<void> {
                     lastCompletedDate: dates[dates.length - 1] ?? null,
                     exercises: routine.exercises.map((ex) => ({
                         name: ex.name,
-                        category: routine.category,
                         sets: (lastSets[ex.name] ?? []).map((s) => ({ ...s, technique: s.technique ?? 'normal' })),
                     })),
                 },

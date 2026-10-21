@@ -14,7 +14,7 @@ function IndexRouteComponent() {
   const { data, loading, error, reload } = useHubData();
 
   return (
-    <main className="min-h-screen bg-bg px-3 pb-28 pt-3 text-ink sm:p-4 sm:pb-28">
+    <main className="min-h-screen px-3 pb-28 pt-3 text-ink sm:p-4 sm:pb-28">
       <div className="mx-auto grid w-full max-w-md gap-3 md:max-w-3xl md:grid-cols-2 md:items-start md:gap-4">
         {loading && !data && <LoadingBlock label="Carregando seu painel..." />}
         {error && <ErrorBlock message={error} onRetry={reload} />}

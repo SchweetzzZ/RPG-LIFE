@@ -21,7 +21,6 @@ export type Progression = Schemas["ProgressionResponseDto"]
 
 export type SetTechnique = RoutineSet["technique"]
 export type Intensity = Routine["intensity"]
-export type ExerciseCategory = RoutineExerciseInput["category"]
 
 export const SET_TECHNIQUES: { value: SetTechnique; label: string; short: string }[] = [
   { value: "normal", label: "Normal", short: "N" },
@@ -38,14 +37,8 @@ export const INTENSITIES: { value: Intensity; label: string }[] = [
   { value: "cycling_running", label: "Corrida / bike" },
 ]
 
-export const EXERCISE_CATEGORIES: ExerciseCategory[] = ["Peito", "Costas", "Pernas", "Ombros", "Braços", "Abdômen", "Cardio"]
-
 export const WEEK_DAYS = ["D", "S", "T", "Q", "Q", "S", "S"]
 
-/** A API devolve a categoria como texto livre; só aceita as conhecidas. */
-export function toCategory(value: string | undefined): ExerciseCategory {
-  return EXERCISE_CATEGORIES.find((c) => c === value) ?? "Peito"
-}
 
 // Estado da navegacao: resultado do treino salvo, mostrado na lista ao voltar
 declare module "@tanstack/history" {

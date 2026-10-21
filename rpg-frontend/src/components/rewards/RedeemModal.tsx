@@ -4,13 +4,33 @@ import { freeMealService } from '@/src/services/free-meal.service';
 import { errorMessage } from '@/src/services/http';
 import { ExtraItemsEditor } from './ExtraItemsEditor';
 import { QuantityStepper } from './QuantityStepper';
-import { DIARY_NOTICE, draftToInput, stepFor, sumKcal, type ExtraDraft } from '@/src/lib/meal-draft';
+import { ItemSubtotal } from './ItemSubtotal';
+import { MealTotalsHud } from './MealTotalsHud';
+import {
+  DIARY_NOTICE,
+  draftToInput,
+  gramsLabel,
+  stepFor,
+  sumKcal,
+  sumMacros,
+  type ExtraDraft,
+  type MacroLine,
+} from '@/src/lib/meal-draft';
+import { savedItemMacros } from '@/src/lib/meal-macros';
 import { Button } from '../ui/Button';
 import { formatNumber } from '@/src/lib/format';
-import type { FreeMealItemInput, FreeMealPlan, RedeemFreeMealInput, RedeemFreeMealResult } from '@/src/types/free-meal';
+import type {
+  FreeMealItemInput,
+  FreeMealPlan,
+  FreeMealTemplate,
+  RedeemFreeMealInput,
+  RedeemFreeMealResult,
+} from '@/src/types/free-meal';
 
 interface RedeemModalProps {
   plan: FreeMealPlan;
+  /** Catálogo: macros dos itens que vieram de um template (nada de macro é gravado na refeição). */
+  templates: FreeMealTemplate[];
   onClose: () => void;
   onRedeemed: (result: RedeemFreeMealResult) => Promise<void>;
   /** O resgate falhou (ex.: o saldo mudou): reler do servidor. */
@@ -18,7 +38,7 @@ interface RedeemModalProps {
 }
 
 /** Registro do que foi comido de fato. Sem mexer em nada, resgata exatamente o planejado. */
-export function RedeemModal({ plan, onClose, onRedeemed, onFailed }: RedeemModalProps) {
+export function RedeemModal({ plan, templates, onClose, onRedeemed, onFailed }: RedeemModalProps) {
   const { meal } = plan;
   const [quantities, setQuantities] = useState<number[]>(meal.plannedItems.map((item) => item.qty));
   const [extras, setExtras] = useState<ExtraDraft[]>([]);
@@ -30,6 +50,15 @@ export function RedeemModal({ plan, onClose, onRedeemed, onFailed }: RedeemModal
   const edited = extras.length > 0 || quantities.some((qty, index) => qty !== meal.plannedItems[index].qty);
   const hasItems = plannedAsEaten.some((item) => item.qty > 0) || extras.length > 0;
   const difference = actualKcal - meal.estimatedKcal;
+
+  const template = meal.templateSlug ? templates.find((t) => t.slug === meal.templateSlug) : undefined;
+  const plannedMacros = meal.plannedItems.map((item) => savedItemMacros(item, template));
+  const macroLines: MacroLine[] = [
+    ...plannedAsEaten.map((item, index) => ({ qty: item.qty, macros: plannedMacros[index] ?? null })),
+    ...extras.map((extra) => ({ qty: extra.qty, macros: extra.macrosPerUnit ?? null })),
+  ];
+  const macros = sumMacros(macroLines);
+  const budgetLabel = meal.scope === 'day' ? 'Sobra de hoje' : 'Cofre';
 
   async function handleRedeem() {
     const actualItems: FreeMealItemInput[] = [
@@ -87,11 +116,13 @@ export function RedeemModal({ plan, onClose, onRedeemed, onFailed }: RedeemModal
                   <p className="text-xs text-ink-faint">
                     {item.unit} • planejado: {item.qty}
                   </p>
+                  <ItemSubtotal kcalPerUnit={item.kcalPerUnit} qty={quantities[index] ?? 0} macrosPerUnit={plannedMacros[index] ?? null} />
                 </div>
                 <QuantityStepper
                   label={item.name}
                   value={quantities[index]}
                   step={stepFor(item.unit)}
+                  hint={gramsLabel(item.unit, quantities[index] ?? 0)}
                   onChange={(qty) => setQuantities((prev) => prev.map((value, i) => (i === index ? qty : value)))}
                 />
               </li>
@@ -109,11 +140,9 @@ export function RedeemModal({ plan, onClose, onRedeemed, onFailed }: RedeemModal
           </p>
         </div>
 
-        <div className="space-y-3 border-t border-line p-4">
-          <div className="space-y-0.5 text-xs text-ink-dim">
-            <p>
-              Comido: <span className="font-semibold text-ink">~{formatNumber(actualKcal)} kcal</span> • estimado: ~{formatNumber(meal.estimatedKcal)} kcal
-            </p>
+        <div className="space-y-3 border-t-2 border-line bg-bg/40 p-4">
+          <MealTotalsHud kcal={actualKcal} macros={macros} budget={{ label: budgetLabel, kcal: plan.availableKcal }}>
+            <p>Estimado no agendamento: ~{formatNumber(meal.estimatedKcal)} kcal</p>
             {difference < 0 && edited && (
               <p>Você comeu {formatNumber(-difference)} kcal a menos: a sobra continua no cofre até o fim da semana.</p>
             )}
@@ -121,7 +150,7 @@ export function RedeemModal({ plan, onClose, onRedeemed, onFailed }: RedeemModal
               <p>{formatNumber(difference)} kcal acima do estimado: só registramos, sem perder moeda, XP nem sequência.</p>
             )}
             <p>Ticket: -{formatNumber(meal.ticketCost)} moedas.</p>
-          </div>
+          </MealTotalsHud>
 
           {error && <p className="text-sm text-danger">{error}</p>}
 

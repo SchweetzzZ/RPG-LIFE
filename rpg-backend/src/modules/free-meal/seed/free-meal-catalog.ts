@@ -5,6 +5,10 @@
 //     Consultado no pacote oficial "FoodData_Central_survey_food_csv_2024-10-31.zip" (download em
 //     https://fdc.nal.usda.gov/download-datasets) e na pagina de cada alimento (URL do item).
 //   - TACO 4a edicao (NEPA/UNICAMP, 2011): kcal por 100 g; por isso a unidade desses itens e "100 g".
+// Macros (proteina, carboidrato e gordura em g) seguem a mesma regra da kcal: valor por 100 g da fonte x porcao.
+//   - USDA: nutrientes 1003 (Protein), 1005 (Carbohydrate, by difference) e 1004 (Total lipid (fat)),
+//     consultados na API do FDC (api.nal.usda.gov/fdc/v1/foods, formato abridged) em 2026-10-20.
+//   - TACO: valores do proprio seed TACO do repositorio (modules/nutricion/seed/taco-foods.json).
 // TBCA (USP) NAO e usada (licenca CC BY-NC-ND).
 // Quando o alimento brasileiro nao existe na fonte, usa-se o equivalente mais proximo e isso fica em `note`.
 //
@@ -29,6 +33,12 @@ export interface CatalogItem {
     name: string;
     unit: string;
     kcalPerUnit: number;
+    /** Gramas de proteina por unidade (1 casa decimal). */
+    proteinPerUnit: number;
+    /** Gramas de carboidrato por unidade (1 casa decimal). */
+    carbPerUnit: number;
+    /** Gramas de gordura por unidade (1 casa decimal). */
+    fatPerUnit: number;
     /** Quantidade sugerida ao montar sem atalho (igual ao preset "medium"; 0 = item opcional). */
     defaultQty: number;
     source: CatalogItemSource;
@@ -48,6 +58,16 @@ export interface CatalogMeal {
 
 // ── Construtores de item ──────────────────────────────────────────────────────
 
+/** Macro por porcao: valor por 100 g x gramas, arredondado a 1 casa decimal. */
+function perPortion(per100g: number, grams: number): number {
+    return Math.round(((per100g * grams) / 100) * 10) / 10;
+}
+
+/** Texto padrao dos macros por 100 g, gravado na `reference` do item. */
+function macrosRef(p: number, c: number, f: number): string {
+    return `P ${p} g, C ${c} g, G ${f} g /100 g`;
+}
+
 interface UsdaInput {
     key: string;
     name: string;
@@ -57,6 +77,9 @@ interface UsdaInput {
     portion: string;
     grams: number;
     kcalPer100g: number;
+    proteinPer100g: number;
+    carbPer100g: number;
+    fatPer100g: number;
     note?: string;
 }
 
@@ -66,11 +89,14 @@ function usda(input: UsdaInput): Omit<CatalogItem, 'defaultQty'> {
         name: input.name,
         unit: input.unit,
         kcalPerUnit: Math.round((input.kcalPer100g * input.grams) / 100),
+        proteinPerUnit: perPortion(input.proteinPer100g, input.grams),
+        carbPerUnit: perPortion(input.carbPer100g, input.grams),
+        fatPerUnit: perPortion(input.fatPer100g, input.grams),
         source: {
             name: 'USDA FoodData Central (FNDDS 2021-2023)',
             url: `https://fdc.nal.usda.gov/food-details/${input.fdcId}/nutrients`,
             accessedAt: CATALOG_ACCESSED_AT,
-            reference: `FDC ${input.fdcId} "${input.description}": ${input.kcalPer100g} kcal/100 g x porcao "${input.portion}" (${input.grams} g)`,
+            reference: `FDC ${input.fdcId} "${input.description}": ${input.kcalPer100g} kcal/100 g; ${macrosRef(input.proteinPer100g, input.carbPer100g, input.fatPer100g)} x porcao "${input.portion}" (${input.grams} g)`,
             ...(input.note ? { note: input.note } : {}),
         },
     };
@@ -82,6 +108,9 @@ interface TacoInput {
     number: number;
     description: string;
     kcalPer100g: number;
+    proteinPer100g: number;
+    carbPer100g: number;
+    fatPer100g: number;
     note?: string;
 }
 
@@ -91,11 +120,14 @@ function taco(input: TacoInput): Omit<CatalogItem, 'defaultQty'> {
         name: input.name,
         unit: '100 g',
         kcalPerUnit: input.kcalPer100g,
+        proteinPerUnit: perPortion(input.proteinPer100g, 100),
+        carbPerUnit: perPortion(input.carbPer100g, 100),
+        fatPerUnit: perPortion(input.fatPer100g, 100),
         source: {
             name: 'TACO 4a edicao (NEPA/UNICAMP, 2011)',
             url: TACO_URL,
             accessedAt: CATALOG_ACCESSED_AT,
-            reference: `TACO item ${input.number} "${input.description}": ${input.kcalPer100g} kcal/100 g`,
+            reference: `TACO item ${input.number} "${input.description}": ${input.kcalPer100g} kcal/100 g; ${macrosRef(input.proteinPer100g, input.carbPer100g, input.fatPer100g)}`,
             ...(input.note ? { note: input.note } : {}),
         },
     };
@@ -111,7 +143,7 @@ const REFRI_LATA = usda({
     description: 'Soft drink, cola',
     portion: '1 can (12 fl oz)',
     grams: 372,
-    kcalPer100g: 42,
+    kcalPer100g: 42, proteinPer100g: 0, carbPer100g: 10.4, fatPer100g: 0.25,
     note: 'Lata americana de 12 fl oz (355 ml); a lata brasileira tem 350 ml.',
 });
 
@@ -123,12 +155,12 @@ const CERVEJA_LATA = usda({
     description: 'Beer',
     portion: '1 can or bottle (12 fl oz)',
     grams: 360,
-    kcalPer100g: 43,
+    kcalPer100g: 43, proteinPer100g: 0.46, carbPer100g: 3.55, fatPer100g: 0,
     note: 'Lata americana de 12 fl oz (355 ml); a lata brasileira tem 350 ml.',
 });
 
-const ARROZ = taco({ key: 'arroz', name: 'Arroz branco cozido', number: 3, description: 'Arroz, tipo 1, cozido', kcalPer100g: 128 });
-const FAROFA = taco({ key: 'farofa', name: 'Farofa', number: 131, description: 'Mandioca, farofa, temperada', kcalPer100g: 406 });
+const ARROZ = taco({ key: 'arroz', name: 'Arroz branco cozido', number: 3, description: 'Arroz, tipo 1, cozido', kcalPer100g: 128, proteinPer100g: 2.52, carbPer100g: 28.06, fatPer100g: 0.23 });
+const FAROFA = taco({ key: 'farofa', name: 'Farofa', number: 131, description: 'Mandioca, farofa, temperada', kcalPer100g: 406, proteinPer100g: 2.06, carbPer100g: 80.3, fatPer100g: 9.12 });
 
 const PAO_DE_ALHO = usda({
     key: 'pao-de-alho',
@@ -138,7 +170,7 @@ const PAO_DE_ALHO = usda({
     description: 'Garlic bread, from fast food / restaurant',
     portion: '1 small slice',
     grams: 37,
-    kcalPer100g: 349,
+    kcalPer100g: 349, proteinPer100g: 8.34, carbPer100g: 41.6, fatPer100g: 16.6,
 });
 
 /** Junta o item com a quantidade padrao (= preset medium). */
@@ -161,12 +193,12 @@ export const FREE_MEAL_CATALOG: CatalogMeal[] = [
         category: 'japonesa',
         icon: '🍣',
         items: [
-            usda({ key: 'niguiri-salmao', name: 'Niguiri de salmão', unit: 'peça (35 g)', fdcId: 2708969, description: 'Sushi, topped with salmon', portion: '1 piece', grams: 35, kcalPer100g: 107 }),
-            usda({ key: 'uramaki-salmao', name: 'Uramaki / hossomaki de salmão', unit: 'peça (30 g)', fdcId: 2708963, description: 'Sushi roll, salmon', portion: '1 piece', grams: 30, kcalPer100g: 103 }),
-            usda({ key: 'california', name: 'Califórnia', unit: 'peça (30 g)', fdcId: 2708961, description: 'Sushi roll, California', portion: '1 piece', grams: 30, kcalPer100g: 94 }),
-            taco({ key: 'sashimi-salmao', name: 'Sashimi de salmão', number: 316, description: 'Salmão, sem pele, fresco, cru', kcalPer100g: 170 }),
-            usda({ key: 'harumaki', name: 'Harumaki (rolinho primavera)', unit: 'unidade (64 g)', fdcId: 2708700, description: 'Egg roll, meatless', portion: '1 egg roll', grams: 64, kcalPer100g: 270, note: 'Equivalente: egg roll americano sem carne.' }),
-            usda({ key: 'guioza-frito', name: 'Guioza frito', unit: 'unidade (25 g)', fdcId: 2708705, description: 'Wonton, dumpling or pot sticker, fried', portion: '1 item, any size', grams: 25, kcalPer100g: 192 }),
+            usda({ key: 'niguiri-salmao', name: 'Niguiri de salmão', unit: 'peça (35 g)', fdcId: 2708969, description: 'Sushi, topped with salmon', portion: '1 piece', grams: 35, kcalPer100g: 107, proteinPer100g: 8.92, carbPer100g: 13.4, fatPer100g: 1.74 }),
+            usda({ key: 'uramaki-salmao', name: 'Uramaki / hossomaki de salmão', unit: 'peça (30 g)', fdcId: 2708963, description: 'Sushi roll, salmon', portion: '1 piece', grams: 30, kcalPer100g: 103, proteinPer100g: 6.88, carbPer100g: 15.3, fatPer100g: 1.28 }),
+            usda({ key: 'california', name: 'Califórnia', unit: 'peça (30 g)', fdcId: 2708961, description: 'Sushi roll, California', portion: '1 piece', grams: 30, kcalPer100g: 94, proteinPer100g: 2.92, carbPer100g: 18.4, fatPer100g: 0.67 }),
+            taco({ key: 'sashimi-salmao', name: 'Sashimi de salmão', number: 316, description: 'Salmão, sem pele, fresco, cru', kcalPer100g: 170, proteinPer100g: 19.25, carbPer100g: 0, fatPer100g: 9.71 }),
+            usda({ key: 'harumaki', name: 'Harumaki (rolinho primavera)', unit: 'unidade (64 g)', fdcId: 2708700, description: 'Egg roll, meatless', portion: '1 egg roll', grams: 64, kcalPer100g: 270, proteinPer100g: 5.62, carbPer100g: 30, fatPer100g: 14.1, note: 'Equivalente: egg roll americano sem carne.' }),
+            usda({ key: 'guioza-frito', name: 'Guioza frito', unit: 'unidade (25 g)', fdcId: 2708705, description: 'Wonton, dumpling or pot sticker, fried', portion: '1 item, any size', grams: 25, kcalPer100g: 192, proteinPer100g: 8.76, carbPer100g: 14, fatPer100g: 11.1 }),
         ],
         presets: {
             light: { 'niguiri-salmao': 4, 'uramaki-salmao': 6, california: 5 },
@@ -180,9 +212,9 @@ export const FREE_MEAL_CATALOG: CatalogMeal[] = [
         category: 'pizza',
         icon: '🍕',
         items: [
-            usda({ key: 'pizza-mussarela', name: 'Pizza de mussarela', unit: 'fatia pequena (80 g)', fdcId: 2708616, description: 'Pizza, cheese, from restaurant or fast food, medium crust', portion: '1 piece, small pizza', grams: 80, kcalPer100g: 266 }),
-            usda({ key: 'pizza-calabresa', name: 'Pizza de calabresa', unit: 'fatia pequena (86 g)', fdcId: 2708640, description: 'Pizza with pepperoni, from restaurant or fast food,  medium crust', portion: '1 piece, small pizza', grams: 86, kcalPer100g: 282, note: 'Equivalente: pizza de pepperoni.' }),
-            usda({ key: 'pizza-carne', name: 'Pizza de carne / frango', unit: 'fatia pequena (92 g)', fdcId: 2708651, description: 'Pizza with meat other than pepperoni, from restaurant or fast food, medium crust', portion: '1 piece, small pizza', grams: 92, kcalPer100g: 280 }),
+            usda({ key: 'pizza-mussarela', name: 'Pizza de mussarela', unit: 'fatia pequena (80 g)', fdcId: 2708616, description: 'Pizza, cheese, from restaurant or fast food, medium crust', portion: '1 piece, small pizza', grams: 80, kcalPer100g: 266, proteinPer100g: 11.4, carbPer100g: 33.3, fatPer100g: 9.69 }),
+            usda({ key: 'pizza-calabresa', name: 'Pizza de calabresa', unit: 'fatia pequena (86 g)', fdcId: 2708640, description: 'Pizza with pepperoni, from restaurant or fast food,  medium crust', portion: '1 piece, small pizza', grams: 86, kcalPer100g: 282, proteinPer100g: 11.7, carbPer100g: 32, fatPer100g: 11.9, note: 'Equivalente: pizza de pepperoni.' }),
+            usda({ key: 'pizza-carne', name: 'Pizza de carne / frango', unit: 'fatia pequena (92 g)', fdcId: 2708651, description: 'Pizza with meat other than pepperoni, from restaurant or fast food, medium crust', portion: '1 piece, small pizza', grams: 92, kcalPer100g: 280, proteinPer100g: 11.5, carbPer100g: 30.6, fatPer100g: 12.4 }),
             REFRI_LATA,
         ],
         presets: {
@@ -197,11 +229,11 @@ export const FREE_MEAL_CATALOG: CatalogMeal[] = [
         category: 'lanche',
         icon: '🍔',
         items: [
-            usda({ key: 'burger', name: 'Cheeseburger (1 carne grande)', unit: 'sanduíche (210 g)', fdcId: 2706903, description: 'Cheeseburger, on white bun, 1 large patty', portion: '1 cheeseburger', grams: 210, kcalPer100g: 299 }),
-            usda({ key: 'burger-duplo', name: 'Cheeseburger duplo (2 carnes grandes)', unit: 'sanduíche (330 g)', fdcId: 2706910, description: 'Double cheeseburger, on white bun, 2 large patties', portion: '1 double cheeseburger', grams: 330, kcalPer100g: 299 }),
-            usda({ key: 'fritas', name: 'Batata frita', unit: 'porção média (145 g)', fdcId: 2709462, description: 'Potato, french fries, restaurant', portion: '1 medium fast food order', grams: 145, kcalPer100g: 289 }),
-            usda({ key: 'onion-rings', name: 'Onion rings', unit: 'porção (120 g)', fdcId: 2710055, description: 'Fried onion rings', portion: '1 fast food order', grams: 120, kcalPer100g: 352 }),
-            usda({ key: 'milkshake', name: 'Milkshake de chocolate', unit: 'copo pequeno (405 g)', fdcId: 2705508, description: 'Milk shake, fast food, chocolate', portion: '1 small', grams: 405, kcalPer100g: 150 }),
+            usda({ key: 'burger', name: 'Cheeseburger (1 carne grande)', unit: 'sanduíche (210 g)', fdcId: 2706903, description: 'Cheeseburger, on white bun, 1 large patty', portion: '1 cheeseburger', grams: 210, kcalPer100g: 299, proteinPer100g: 18.7, carbPer100g: 15.3, fatPer100g: 17.6 }),
+            usda({ key: 'burger-duplo', name: 'Cheeseburger duplo (2 carnes grandes)', unit: 'sanduíche (330 g)', fdcId: 2706910, description: 'Double cheeseburger, on white bun, 2 large patties', portion: '1 double cheeseburger', grams: 330, kcalPer100g: 299, proteinPer100g: 20.2, carbPer100g: 9.66, fatPer100g: 19.4 }),
+            usda({ key: 'fritas', name: 'Batata frita', unit: 'porção média (145 g)', fdcId: 2709462, description: 'Potato, french fries, restaurant', portion: '1 medium fast food order', grams: 145, kcalPer100g: 289, proteinPer100g: 3.49, carbPer100g: 37.2, fatPer100g: 14 }),
+            usda({ key: 'onion-rings', name: 'Onion rings', unit: 'porção (120 g)', fdcId: 2710055, description: 'Fried onion rings', portion: '1 fast food order', grams: 120, kcalPer100g: 352, proteinPer100g: 4.19, carbPer100g: 39.9, fatPer100g: 19.8 }),
+            usda({ key: 'milkshake', name: 'Milkshake de chocolate', unit: 'copo pequeno (405 g)', fdcId: 2705508, description: 'Milk shake, fast food, chocolate', portion: '1 small', grams: 405, kcalPer100g: 150, proteinPer100g: 3.7, carbPer100g: 20.4, fatPer100g: 6.66 }),
             REFRI_LATA,
         ],
         presets: {
@@ -216,10 +248,10 @@ export const FREE_MEAL_CATALOG: CatalogMeal[] = [
         category: 'sobremesa',
         icon: '🫐',
         items: [
-            taco({ key: 'acai', name: 'Açaí (polpa com xarope de guaraná)', number: 167, description: 'Açaí, polpa, com xarope de guaraná e glucose', kcalPer100g: 110 }),
-            usda({ key: 'banana', name: 'Banana', unit: 'unidade (126 g)', fdcId: 2709224, description: 'Banana, raw', portion: '1 banana', grams: 126, kcalPer100g: 97 }),
-            usda({ key: 'leite-condensado', name: 'Leite condensado', unit: 'dose de 30 ml (38 g)', fdcId: 2705402, description: 'Milk, condensed, sweetened', portion: '1 fl oz', grams: 38, kcalPer100g: 321 }),
-            usda({ key: 'creme-avela', name: 'Creme de avelã', unit: 'colher de sopa (20 g)', fdcId: 2710289, description: 'Chocolate hazelnut spread', portion: '1 tablespoon', grams: 20, kcalPer100g: 539 }),
+            taco({ key: 'acai', name: 'Açaí (polpa com xarope de guaraná)', number: 167, description: 'Açaí, polpa, com xarope de guaraná e glucose', kcalPer100g: 110, proteinPer100g: 0.72, carbPer100g: 21.46, fatPer100g: 3.66 }),
+            usda({ key: 'banana', name: 'Banana', unit: 'unidade (126 g)', fdcId: 2709224, description: 'Banana, raw', portion: '1 banana', grams: 126, kcalPer100g: 97, proteinPer100g: 0.74, carbPer100g: 22.7, fatPer100g: 0.28 }),
+            usda({ key: 'leite-condensado', name: 'Leite condensado', unit: 'dose de 30 ml (38 g)', fdcId: 2705402, description: 'Milk, condensed, sweetened', portion: '1 fl oz', grams: 38, kcalPer100g: 321, proteinPer100g: 7.91, carbPer100g: 54.4, fatPer100g: 8.7 }),
+            usda({ key: 'creme-avela', name: 'Creme de avelã', unit: 'colher de sopa (20 g)', fdcId: 2710289, description: 'Chocolate hazelnut spread', portion: '1 tablespoon', grams: 20, kcalPer100g: 539, proteinPer100g: 5.41, carbPer100g: 62.4, fatPer100g: 29.7 }),
         ],
         presets: {
             light: { acai: 3, banana: 1 },
@@ -233,13 +265,13 @@ export const FREE_MEAL_CATALOG: CatalogMeal[] = [
         category: 'churrasco',
         icon: '🥩',
         items: [
-            taco({ key: 'picanha', name: 'Picanha com gordura (grelhada)', number: 381, description: 'Carne, bovina, picanha, com gordura, grelhada', kcalPer100g: 289 }),
-            usda({ key: 'linguica', name: 'Linguiça de porco', unit: 'gomo (75 g)', fdcId: 2706191, description: 'Pork sausage', portion: '1 bun-size or griller link', grams: 75, kcalPer100g: 325, note: 'Equivalente: linguiça de porco americana (pork sausage).' }),
-            taco({ key: 'coracao-frango', name: 'Coração de frango (grelhado)', number: 395, description: 'Frango, coração, grelhado', kcalPer100g: 207 }),
+            taco({ key: 'picanha', name: 'Picanha com gordura (grelhada)', number: 381, description: 'Carne, bovina, picanha, com gordura, grelhada', kcalPer100g: 289, proteinPer100g: 26.42, carbPer100g: 0, fatPer100g: 19.51 }),
+            usda({ key: 'linguica', name: 'Linguiça de porco', unit: 'gomo (75 g)', fdcId: 2706191, description: 'Pork sausage', portion: '1 bun-size or griller link', grams: 75, kcalPer100g: 325, proteinPer100g: 18.5, carbPer100g: 1.42, fatPer100g: 27.2, note: 'Equivalente: linguiça de porco americana (pork sausage).' }),
+            taco({ key: 'coracao-frango', name: 'Coração de frango (grelhado)', number: 395, description: 'Frango, coração, grelhado', kcalPer100g: 207, proteinPer100g: 22.44, carbPer100g: 0.61, fatPer100g: 12.1 }),
             PAO_DE_ALHO,
             ARROZ,
             FAROFA,
-            taco({ key: 'maionese', name: 'Salada de maionese', number: 545, description: 'Salada, de legumes, com maionese', kcalPer100g: 96 }),
+            taco({ key: 'maionese', name: 'Salada de maionese', number: 545, description: 'Salada, de legumes, com maionese', kcalPer100g: 96, proteinPer100g: 1.05, carbPer100g: 8.92, fatPer100g: 7.04 }),
             CERVEJA_LATA,
         ],
         presets: {
@@ -254,12 +286,12 @@ export const FREE_MEAL_CATALOG: CatalogMeal[] = [
         category: 'brasileira',
         icon: '🍲',
         items: [
-            taco({ key: 'feijoada', name: 'Feijoada', number: 540, description: 'Feijoada', kcalPer100g: 117 }),
+            taco({ key: 'feijoada', name: 'Feijoada', number: 540, description: 'Feijoada', kcalPer100g: 117, proteinPer100g: 8.67, carbPer100g: 11.64, fatPer100g: 6.48 }),
             ARROZ,
-            taco({ key: 'couve', name: 'Couve refogada', number: 116, description: 'Couve, manteiga, refogada', kcalPer100g: 90 }),
+            taco({ key: 'couve', name: 'Couve refogada', number: 116, description: 'Couve, manteiga, refogada', kcalPer100g: 90, proteinPer100g: 1.67, carbPer100g: 8.71, fatPer100g: 6.59 }),
             FAROFA,
-            taco({ key: 'torresmo', name: 'Torresmo', number: 445, description: 'Toucinho, frito', kcalPer100g: 697, note: 'Equivalente: toucinho frito (a TACO não tem torresmo).' }),
-            taco({ key: 'laranja', name: 'Laranja', number: 214, description: 'Laranja, pêra, crua', kcalPer100g: 37 }),
+            taco({ key: 'torresmo', name: 'Torresmo', number: 445, description: 'Toucinho, frito', kcalPer100g: 697, proteinPer100g: 27.28, carbPer100g: 0, fatPer100g: 64.31, note: 'Equivalente: toucinho frito (a TACO não tem torresmo).' }),
+            taco({ key: 'laranja', name: 'Laranja', number: 214, description: 'Laranja, pêra, crua', kcalPer100g: 37, proteinPer100g: 1.04, carbPer100g: 8.95, fatPer100g: 0.13 }),
             CERVEJA_LATA,
         ],
         presets: {
@@ -274,12 +306,12 @@ export const FREE_MEAL_CATALOG: CatalogMeal[] = [
         category: 'fast-food',
         icon: '🍟',
         items: [
-            usda({ key: 'big-mac', name: 'Big Mac', unit: 'sanduíche (205 g)', fdcId: 2706916, description: 'Big Mac (McDonalds)', portion: "1 McDonald's Big Mac", grams: 205, kcalPer100g: 261, note: 'Receita americana (USDA); a versão brasileira pode variar um pouco.' }),
-            usda({ key: 'quarteirao', name: 'Quarteirão com queijo', unit: 'sanduíche (200 g)', fdcId: 2706900, description: 'Quarter Pounder with cheese (McDonalds)', portion: '1 cheeseburger', grams: 200, kcalPer100g: 269, note: 'Receita americana (USDA); a versão brasileira pode variar um pouco.' }),
-            usda({ key: 'nuggets', name: 'Nuggets de frango', unit: 'unidade (16 g)', fdcId: 2706093, description: 'Chicken nuggets, from fast food', portion: '1 nugget', grams: 16, kcalPer100g: 307 }),
-            usda({ key: 'fritas-media', name: 'Batata frita média', unit: 'porção média (145 g)', fdcId: 2709461, description: 'Potato, french fries, fast food', portion: '1 medium fast food order', grams: 145, kcalPer100g: 312 }),
-            usda({ key: 'refrigerante-medio', name: 'Refrigerante médio (cola)', unit: 'copo médio (~500 ml)', fdcId: 2710541, description: 'Soft drink, cola', portion: '1 medium drink', grams: 512, kcalPer100g: 42 }),
-            usda({ key: 'sundae', name: 'Sundae de chocolate', unit: 'unidade (180 g)', fdcId: 2705661, description: 'Ice cream sundae, hot fudge topping', portion: '1 sundae', grams: 180, kcalPer100g: 243 }),
+            usda({ key: 'big-mac', name: 'Big Mac', unit: 'sanduíche (205 g)', fdcId: 2706916, description: 'Big Mac (McDonalds)', portion: "1 McDonald's Big Mac", grams: 205, kcalPer100g: 261, proteinPer100g: 11.9, carbPer100g: 21.5, fatPer100g: 14.1, note: 'Receita americana (USDA); a versão brasileira pode variar um pouco.' }),
+            usda({ key: 'quarteirao', name: 'Quarteirão com queijo', unit: 'sanduíche (200 g)', fdcId: 2706900, description: 'Quarter Pounder with cheese (McDonalds)', portion: '1 cheeseburger', grams: 200, kcalPer100g: 269, proteinPer100g: 15.2, carbPer100g: 19.7, fatPer100g: 14.4, note: 'Receita americana (USDA); a versão brasileira pode variar um pouco.' }),
+            usda({ key: 'nuggets', name: 'Nuggets de frango', unit: 'unidade (16 g)', fdcId: 2706093, description: 'Chicken nuggets, from fast food', portion: '1 nugget', grams: 16, kcalPer100g: 307, proteinPer100g: 15.9, carbPer100g: 14.9, fatPer100g: 20.4 }),
+            usda({ key: 'fritas-media', name: 'Batata frita média', unit: 'porção média (145 g)', fdcId: 2709461, description: 'Potato, french fries, fast food', portion: '1 medium fast food order', grams: 145, kcalPer100g: 312, proteinPer100g: 3.43, carbPer100g: 41.4, fatPer100g: 14.7 }),
+            usda({ key: 'refrigerante-medio', name: 'Refrigerante médio (cola)', unit: 'copo médio (~500 ml)', fdcId: 2710541, description: 'Soft drink, cola', portion: '1 medium drink', grams: 512, kcalPer100g: 42, proteinPer100g: 0, carbPer100g: 10.4, fatPer100g: 0.25 }),
+            usda({ key: 'sundae', name: 'Sundae de chocolate', unit: 'unidade (180 g)', fdcId: 2705661, description: 'Ice cream sundae, hot fudge topping', portion: '1 sundae', grams: 180, kcalPer100g: 243, proteinPer100g: 3.7, carbPer100g: 31.9, fatPer100g: 11.2 }),
         ],
         presets: {
             light: { 'big-mac': 1, 'fritas-media': 1 },
@@ -293,11 +325,11 @@ export const FREE_MEAL_CATALOG: CatalogMeal[] = [
         category: 'italiana',
         icon: '🍝',
         items: [
-            usda({ key: 'lasanha', name: 'Lasanha com carne', unit: 'pedaço (232 g)', fdcId: 2708752, description: 'Lasagna with meat, from restaurant', portion: '1 piece (1/8 of 7" x 12", approx 3-1/2" x 3")', grams: 232, kcalPer100g: 185 }),
+            usda({ key: 'lasanha', name: 'Lasanha com carne', unit: 'pedaço (232 g)', fdcId: 2708752, description: 'Lasagna with meat, from restaurant', portion: '1 piece (1/8 of 7" x 12", approx 3-1/2" x 3")', grams: 232, kcalPer100g: 185, proteinPer100g: 10.8, carbPer100g: 11.4, fatPer100g: 10.7 }),
             PAO_DE_ALHO,
-            usda({ key: 'vinho-tinto', name: 'Vinho tinto', unit: 'taça (180 g)', fdcId: 2710688, description: 'Wine, red', portion: '1 glass', grams: 180, kcalPer100g: 85 }),
+            usda({ key: 'vinho-tinto', name: 'Vinho tinto', unit: 'taça (180 g)', fdcId: 2710688, description: 'Wine, red', portion: '1 glass', grams: 180, kcalPer100g: 85, proteinPer100g: 0.07, carbPer100g: 2.61, fatPer100g: 0 }),
             REFRI_LATA,
-            usda({ key: 'pudim', name: 'Pudim de leite', unit: 'porção (130 g)', fdcId: 2705683, description: 'Flan', portion: 'Quantity not specified', grams: 130, kcalPer100g: 178, note: 'Equivalente: flan.' }),
+            usda({ key: 'pudim', name: 'Pudim de leite', unit: 'porção (130 g)', fdcId: 2705683, description: 'Flan', portion: 'Quantity not specified', grams: 130, kcalPer100g: 178, proteinPer100g: 5.23, carbPer100g: 28.2, fatPer100g: 4.94, note: 'Equivalente: flan.' }),
         ],
         presets: {
             light: { lasanha: 1 },
@@ -311,9 +343,9 @@ export const FREE_MEAL_CATALOG: CatalogMeal[] = [
         category: 'brasileira',
         icon: '🥟',
         items: [
-            taco({ key: 'pastel-carne', name: 'Pastel de carne (frito)', number: 56, description: 'Pastel, de carne, frito', kcalPer100g: 388, note: 'Valor por 100 g: um pastel grande de feira costuma pesar mais que isso.' }),
-            taco({ key: 'pastel-queijo', name: 'Pastel de queijo (frito)', number: 58, description: 'Pastel, de queijo, frito', kcalPer100g: 422, note: 'Valor por 100 g: um pastel grande de feira costuma pesar mais que isso.' }),
-            taco({ key: 'caldo-de-cana', name: 'Caldo de cana', number: 473, description: 'Cana, caldo de', kcalPer100g: 65, note: '100 g de caldo equivalem a cerca de 100 ml.' }),
+            taco({ key: 'pastel-carne', name: 'Pastel de carne (frito)', number: 56, description: 'Pastel, de carne, frito', kcalPer100g: 388, proteinPer100g: 10.1, carbPer100g: 43.77, fatPer100g: 20.14, note: 'Valor por 100 g: um pastel grande de feira costuma pesar mais que isso.' }),
+            taco({ key: 'pastel-queijo', name: 'Pastel de queijo (frito)', number: 58, description: 'Pastel, de queijo, frito', kcalPer100g: 422, proteinPer100g: 8.71, carbPer100g: 48.13, fatPer100g: 22.67, note: 'Valor por 100 g: um pastel grande de feira costuma pesar mais que isso.' }),
+            taco({ key: 'caldo-de-cana', name: 'Caldo de cana', number: 473, description: 'Cana, caldo de', kcalPer100g: 65, proteinPer100g: 0, carbPer100g: 18.15, fatPer100g: 0, note: '100 g de caldo equivalem a cerca de 100 ml.' }),
         ],
         presets: {
             light: { 'pastel-carne': 1.5, 'caldo-de-cana': 3 },
@@ -327,10 +359,10 @@ export const FREE_MEAL_CATALOG: CatalogMeal[] = [
         category: 'brasileira',
         icon: '🥐',
         items: [
-            taco({ key: 'coxinha', name: 'Coxinha de frango', number: 386, description: 'Coxinha de frango, frita', kcalPer100g: 283 }),
-            taco({ key: 'quibe', name: 'Quibe frito', number: 442, description: 'Quibe, frito', kcalPer100g: 254 }),
-            taco({ key: 'empada', name: 'Empada de frango', number: 389, description: 'Empada de frango, pré-cozida, assada', kcalPer100g: 358 }),
-            taco({ key: 'pao-de-queijo', name: 'Pão de queijo', number: 140, description: 'Pão, de queijo, assado', kcalPer100g: 363 }),
+            taco({ key: 'coxinha', name: 'Coxinha de frango', number: 386, description: 'Coxinha de frango, frita', kcalPer100g: 283, proteinPer100g: 9.61, carbPer100g: 34.52, fatPer100g: 11.84 }),
+            taco({ key: 'quibe', name: 'Quibe frito', number: 442, description: 'Quibe, frito', kcalPer100g: 254, proteinPer100g: 14.89, carbPer100g: 12.34, fatPer100g: 15.8 }),
+            taco({ key: 'empada', name: 'Empada de frango', number: 389, description: 'Empada de frango, pré-cozida, assada', kcalPer100g: 358, proteinPer100g: 6.94, carbPer100g: 47.49, fatPer100g: 15.61 }),
+            taco({ key: 'pao-de-queijo', name: 'Pão de queijo', number: 140, description: 'Pão, de queijo, assado', kcalPer100g: 363, proteinPer100g: 5.12, carbPer100g: 34.24, fatPer100g: 24.57 }),
             REFRI_LATA,
         ],
         presets: {
@@ -345,10 +377,10 @@ export const FREE_MEAL_CATALOG: CatalogMeal[] = [
         category: 'mexicana',
         icon: '🌯',
         items: [
-            usda({ key: 'burrito', name: 'Burrito de carne (feijão, arroz e queijo)', unit: 'unidade (220 g)', fdcId: 2708538, description: 'Burrito, beef, with beans and rice, cheese', portion: '1 small/regular', grams: 220, kcalPer100g: 225 }),
-            usda({ key: 'taco', name: 'Taco de carne (tortilha de trigo)', unit: 'unidade (105 g)', fdcId: 2708522, description: 'Taco, flour tortilla, beef, cheese', portion: '1 small/regular', grams: 105, kcalPer100g: 257 }),
-            usda({ key: 'nachos', name: 'Nachos com carne', unit: 'porção (250 g)', fdcId: 2708578, description: 'Nachos, beef or pork', portion: '1 order', grams: 250, kcalPer100g: 265 }),
-            usda({ key: 'guacamole', name: 'Guacamole', unit: 'potinho (70 g)', fdcId: 2709307, description: 'Guacamole, NFS', portion: '1 individual container', grams: 70, kcalPer100g: 155 }),
+            usda({ key: 'burrito', name: 'Burrito de carne (feijão, arroz e queijo)', unit: 'unidade (220 g)', fdcId: 2708538, description: 'Burrito, beef, with beans and rice, cheese', portion: '1 small/regular', grams: 220, kcalPer100g: 225, proteinPer100g: 10.8, carbPer100g: 26, fatPer100g: 8.29 }),
+            usda({ key: 'taco', name: 'Taco de carne (tortilha de trigo)', unit: 'unidade (105 g)', fdcId: 2708522, description: 'Taco, flour tortilla, beef, cheese', portion: '1 small/regular', grams: 105, kcalPer100g: 257, proteinPer100g: 16.7, carbPer100g: 18.9, fatPer100g: 12.3 }),
+            usda({ key: 'nachos', name: 'Nachos com carne', unit: 'porção (250 g)', fdcId: 2708578, description: 'Nachos, beef or pork', portion: '1 order', grams: 250, kcalPer100g: 265, proteinPer100g: 10.7, carbPer100g: 19.9, fatPer100g: 16 }),
+            usda({ key: 'guacamole', name: 'Guacamole', unit: 'potinho (70 g)', fdcId: 2709307, description: 'Guacamole, NFS', portion: '1 individual container', grams: 70, kcalPer100g: 155, proteinPer100g: 1.95, carbPer100g: 8.45, fatPer100g: 14.2 }),
             CERVEJA_LATA,
         ],
         presets: {
@@ -363,10 +395,10 @@ export const FREE_MEAL_CATALOG: CatalogMeal[] = [
         category: 'chinesa',
         icon: '🥡',
         items: [
-            usda({ key: 'yakisoba', name: 'Yakisoba misto', unit: 'xícara (220 g)', fdcId: 2706724, description: 'Chow mein or chop suey, various types of meat, with noodles', portion: '1 cup', grams: 220, kcalPer100g: 134, note: 'Equivalente: chow mein com macarrão e carnes variadas.' }),
-            usda({ key: 'frango-agridoce', name: 'Frango agridoce', unit: 'xícara (252 g)', fdcId: 2706435, description: 'Sweet and sour chicken or turkey', portion: '1 cup', grams: 252, kcalPer100g: 250 }),
-            usda({ key: 'arroz-frito', name: 'Arroz frito (chop suey)', unit: 'xícara (198 g)', fdcId: 2708952, description: 'Rice, fried, NFS', portion: '1 cup', grams: 198, kcalPer100g: 174 }),
-            usda({ key: 'rolinho', name: 'Rolinho primavera (carne)', unit: 'unidade (64 g)', fdcId: 2708702, description: 'Egg roll, with beef and/or pork', portion: '1 egg roll', grams: 64, kcalPer100g: 272 }),
+            usda({ key: 'yakisoba', name: 'Yakisoba misto', unit: 'xícara (220 g)', fdcId: 2706724, description: 'Chow mein or chop suey, various types of meat, with noodles', portion: '1 cup', grams: 220, kcalPer100g: 134, proteinPer100g: 10.4, carbPer100g: 11.2, fatPer100g: 5.57, note: 'Equivalente: chow mein com macarrão e carnes variadas.' }),
+            usda({ key: 'frango-agridoce', name: 'Frango agridoce', unit: 'xícara (252 g)', fdcId: 2706435, description: 'Sweet and sour chicken or turkey', portion: '1 cup', grams: 252, kcalPer100g: 250, proteinPer100g: 10.1, carbPer100g: 23.9, fatPer100g: 12.6 }),
+            usda({ key: 'arroz-frito', name: 'Arroz frito (chop suey)', unit: 'xícara (198 g)', fdcId: 2708952, description: 'Rice, fried, NFS', portion: '1 cup', grams: 198, kcalPer100g: 174, proteinPer100g: 3.84, carbPer100g: 32.5, fatPer100g: 3.19 }),
+            usda({ key: 'rolinho', name: 'Rolinho primavera (carne)', unit: 'unidade (64 g)', fdcId: 2708702, description: 'Egg roll, with beef and/or pork', portion: '1 egg roll', grams: 64, kcalPer100g: 272, proteinPer100g: 7.58, carbPer100g: 27, fatPer100g: 14.7 }),
             REFRI_LATA,
         ],
         presets: {
@@ -381,10 +413,10 @@ export const FREE_MEAL_CATALOG: CatalogMeal[] = [
         category: 'sobremesa',
         icon: '🍨',
         items: [
-            usda({ key: 'sorvete', name: 'Sorvete de creme', unit: 'bola (120 g)', fdcId: 2705630, description: 'Ice cream, vanilla', portion: '1 scoop', grams: 120, kcalPer100g: 207 }),
-            usda({ key: 'brownie', name: 'Brownie', unit: 'unidade média (50 g)', fdcId: 2707904, description: 'Cookie, brownie, without icing', portion: '1 medium', grams: 50, kcalPer100g: 405 }),
-            usda({ key: 'sundae', name: 'Sundae com calda de chocolate', unit: 'unidade (180 g)', fdcId: 2705661, description: 'Ice cream sundae, hot fudge topping', portion: '1 sundae', grams: 180, kcalPer100g: 243 }),
-            usda({ key: 'pudim', name: 'Pudim de leite', unit: 'porção (130 g)', fdcId: 2705683, description: 'Flan', portion: 'Quantity not specified', grams: 130, kcalPer100g: 178, note: 'Equivalente: flan.' }),
+            usda({ key: 'sorvete', name: 'Sorvete de creme', unit: 'bola (120 g)', fdcId: 2705630, description: 'Ice cream, vanilla', portion: '1 scoop', grams: 120, kcalPer100g: 207, proteinPer100g: 3.5, carbPer100g: 23.6, fatPer100g: 11 }),
+            usda({ key: 'brownie', name: 'Brownie', unit: 'unidade média (50 g)', fdcId: 2707904, description: 'Cookie, brownie, without icing', portion: '1 medium', grams: 50, kcalPer100g: 405, proteinPer100g: 4.8, carbPer100g: 63.9, fatPer100g: 16.3 }),
+            usda({ key: 'sundae', name: 'Sundae com calda de chocolate', unit: 'unidade (180 g)', fdcId: 2705661, description: 'Ice cream sundae, hot fudge topping', portion: '1 sundae', grams: 180, kcalPer100g: 243, proteinPer100g: 3.7, carbPer100g: 31.9, fatPer100g: 11.2 }),
+            usda({ key: 'pudim', name: 'Pudim de leite', unit: 'porção (130 g)', fdcId: 2705683, description: 'Flan', portion: 'Quantity not specified', grams: 130, kcalPer100g: 178, proteinPer100g: 5.23, carbPer100g: 28.2, fatPer100g: 4.94, note: 'Equivalente: flan.' }),
         ],
         presets: {
             light: { sorvete: 1 },
@@ -398,8 +430,8 @@ export const FREE_MEAL_CATALOG: CatalogMeal[] = [
         category: 'lanche',
         icon: '🌭',
         items: [
-            usda({ key: 'hot-dog', name: 'Cachorro-quente simples', unit: 'unidade (102 g)', fdcId: 2707060, description: 'Hot dog sandwich, beef, on white bun', portion: '1 sandwich', grams: 102, kcalPer100g: 296, note: 'Pão + salsicha; o "dogão" brasileiro com purê e molhos pesa mais.' }),
-            usda({ key: 'batata-palha', name: 'Batata palha', unit: 'pacotinho (28 g)', fdcId: 2709444, description: 'Potato sticks, plain', portion: '1 small single serving bag', grams: 28, kcalPer100g: 522 }),
+            usda({ key: 'hot-dog', name: 'Cachorro-quente simples', unit: 'unidade (102 g)', fdcId: 2707060, description: 'Hot dog sandwich, beef, on white bun', portion: '1 sandwich', grams: 102, kcalPer100g: 296, proteinPer100g: 10.8, carbPer100g: 23.7, fatPer100g: 17.4, note: 'Pão + salsicha; o "dogão" brasileiro com purê e molhos pesa mais.' }),
+            usda({ key: 'batata-palha', name: 'Batata palha', unit: 'pacotinho (28 g)', fdcId: 2709444, description: 'Potato sticks, plain', portion: '1 small single serving bag', grams: 28, kcalPer100g: 522, proteinPer100g: 6.7, carbPer100g: 53.3, fatPer100g: 34.4 }),
             REFRI_LATA,
         ],
         presets: {
@@ -414,10 +446,10 @@ export const FREE_MEAL_CATALOG: CatalogMeal[] = [
         category: 'brasileira',
         icon: '🍛',
         items: [
-            usda({ key: 'parmegiana', name: 'Filé de frango à parmegiana', unit: 'filé (182 g)', fdcId: 2706442, description: 'Chicken or turkey parmigiana', portion: '1 patty with sauce and cheese', grams: 182, kcalPer100g: 174 }),
+            usda({ key: 'parmegiana', name: 'Filé de frango à parmegiana', unit: 'filé (182 g)', fdcId: 2706442, description: 'Chicken or turkey parmigiana', portion: '1 patty with sauce and cheese', grams: 182, kcalPer100g: 174, proteinPer100g: 16.2, carbPer100g: 8.3, fatPer100g: 8.34 }),
             ARROZ,
-            taco({ key: 'feijao', name: 'Feijão carioca cozido', number: 561, description: 'Feijão, carioca, cozido', kcalPer100g: 76 }),
-            taco({ key: 'batata-frita', name: 'Batata frita', number: 93, description: 'Batata, inglesa, frita', kcalPer100g: 267 }),
+            taco({ key: 'feijao', name: 'Feijão carioca cozido', number: 561, description: 'Feijão, carioca, cozido', kcalPer100g: 76, proteinPer100g: 4.78, carbPer100g: 13.59, fatPer100g: 0.54 }),
+            taco({ key: 'batata-frita', name: 'Batata frita', number: 93, description: 'Batata, inglesa, frita', kcalPer100g: 267, proteinPer100g: 4.97, carbPer100g: 35.64, fatPer100g: 13.11 }),
             REFRI_LATA,
         ],
         presets: {

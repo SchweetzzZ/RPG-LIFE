@@ -12,13 +12,13 @@ interface NavItem {
 // Hub fica no centro, elevado; as outras abas se dividem dos dois lados
 const leftItems: NavItem[] = [
   { label: 'Treino', to: '/workouts', icon: Dumbbell },
-  { label: 'Nutrição', to: '/nutrition', icon: UtensilsCrossed },
+  { label: 'Diário', to: '/nutrition', icon: UtensilsCrossed },
 ];
 
 const hubItem: NavItem = { label: 'Hub', to: '/', icon: Activity };
 
 const rightItems: NavItem[] = [
-  { label: 'Atividade', to: '/activity', icon: Footprints },
+  { label: 'Passos', to: '/activity', icon: Footprints },
   { label: 'Loja', to: '/rewards', icon: ShoppingBag },
   { label: 'Perfil', to: '/profile', icon: User },
 ];
@@ -33,36 +33,32 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
     <Link
       to={item.to}
       aria-current={active ? 'page' : undefined}
-      className="group relative flex flex-1 flex-col items-center justify-center py-2 px-1 text-center transition-all duration-150 min-h-[52px]"
+      className="group relative flex min-h-[54px] min-w-0 flex-1 flex-col items-center justify-center gap-1 px-0.5 py-1.5 text-center"
     >
-      {/* Indicador sutil de aba ativa */}
-      {active && <div className="absolute top-0.5 h-1 w-6 rounded-full bg-amber-400 shadow-[0_0_10px_#f59e0b]" />}
-
       <div
-        className={`relative flex items-center justify-center transition-transform duration-150 ${
-          active ? 'scale-110 text-amber-400' : 'text-zinc-500 group-hover:text-zinc-300'
+        className={`relative flex h-8 w-10 items-center justify-center rounded-md border-2 transition-colors duration-100 ${
+          active ? 'border-line bg-raised text-ink' : 'border-transparent text-ink-faint group-hover:text-ink-dim'
         }`}
       >
-        <Icon className="h-5 w-5 stroke-[1.75]" />
+        <Icon className="h-5 w-5" strokeWidth={active ? 2.25 : 1.75} />
         {item.badge && (
-          <span className="absolute -top-1 -right-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-rose-500 px-1 font-mono text-[9px] font-bold text-white">
+          <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-[3px] border-2 border-surface bg-danger px-0.5 font-num text-xs leading-none text-ink">
             {item.badge}
           </span>
         )}
       </div>
 
-      <span
-        className={`mt-1 font-mono text-[10px] tracking-tight uppercase transition-colors duration-150 ${
-          active ? 'font-semibold text-zinc-200' : 'text-zinc-500 group-hover:text-zinc-400'
-        }`}
-      >
+      <span className={`max-w-full truncate font-pixel text-[11px] leading-none ${active ? 'text-ink' : 'text-ink-faint group-hover:text-ink-dim'}`}>
         {item.label}
       </span>
+
+      {/* Marcador de aba ativa: um bloco de pixel, sem brilho. */}
+      {active && <span className="absolute bottom-0 h-1 w-4 rounded-[1px] bg-action" aria-hidden />}
     </Link>
   );
 }
 
-/** Botao central do Hub: maior e saindo acima da barra, para marcar que e a tela principal. */
+/** Botão central do Hub: um botão "físico" (mesma sombra dura do botão primário), saindo acima da barra. */
 function HubLink({ active }: { active: boolean }) {
   const Icon = hubItem.icon;
   return (
@@ -70,24 +66,16 @@ function HubLink({ active }: { active: boolean }) {
       to={hubItem.to}
       aria-current={active ? 'page' : undefined}
       aria-label={hubItem.label}
-      className="group relative flex w-20 shrink-0 flex-col items-center justify-end pb-2 min-h-[52px]"
+      className="group relative flex min-h-[54px] w-[72px] shrink-0 flex-col items-center justify-end gap-1 pb-1.5"
     >
       <div
-        className={`-mt-6 flex h-[52px] w-[52px] items-center justify-center rounded-full border-2 shadow-[0_6px_20px_rgba(0,0,0,0.6)] transition-all duration-150 group-active:translate-y-[1px] ${
-          active
-            ? 'border-amber-300 bg-amber-400 text-[#08090a] shadow-[0_0_18px_rgba(245,158,11,0.45)]'
-            : 'border-amber-400/70 bg-[#1a1612] text-amber-400 group-hover:border-amber-300'
+        className={`-mt-7 flex h-[52px] w-[52px] items-center justify-center rounded-lg border-2 border-[#0c0a08] shadow-[0_4px_0_0_#0c0a08] transition-transform duration-75 group-active:translate-y-[2px] group-active:shadow-[0_2px_0_0_#0c0a08] ${
+          active ? 'bg-action text-[#0c0a08]' : 'bg-raised text-action group-hover:brightness-110'
         }`}
       >
-        <Icon className="h-6 w-6 stroke-[2]" />
+        <Icon className="h-6 w-6" strokeWidth={2.25} />
       </div>
-      <span
-        className={`mt-1 font-mono text-[10px] font-semibold tracking-tight uppercase ${
-          active ? 'text-amber-300' : 'text-zinc-300'
-        }`}
-      >
-        {hubItem.label}
-      </span>
+      <span className={`font-pixel text-[11px] leading-none ${active ? 'text-ink' : 'text-ink-faint'}`}>{hubItem.label}</span>
     </Link>
   );
 }
@@ -102,8 +90,8 @@ export function BottomNav() {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1">
-      <div className="mx-auto max-w-md md:max-w-lg rounded-2xl border border-white/[0.08] bg-[#08090a]/90 backdrop-blur-xl shadow-2xl px-2 py-1">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <div className="mx-auto max-w-md rounded-lg border-2 border-line bg-surface px-1 shadow-[0_4px_0_0_#0c0a08,0_-8px_24px_rgba(12,10,8,0.6)] md:max-w-lg">
         <div className="flex items-end">
           {/* Os dois lados tem a mesma largura para o Hub ficar no centro exato */}
           <div className="flex flex-1 items-center justify-around">

@@ -99,6 +99,10 @@ export const FreeMealTemplateItemResponseSchema = z.object({
     name: z.string(),
     unit: z.string(),
     kcalPerUnit: z.number(),
+    // Macros por unidade em gramas (so no catalogo; nao sao gravados na refeicao agendada)
+    proteinPerUnit: z.number(),
+    carbPerUnit: z.number(),
+    fatPerUnit: z.number(),
     defaultQty: z.number(),
     source: z.object({
         name: z.string(),

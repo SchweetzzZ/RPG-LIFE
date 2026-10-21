@@ -9,6 +9,7 @@ import { ExerciseHistoryView } from '../components/workouts/ExerciseHistoryView'
 import { HistoryList } from '../components/workouts/HistoryList';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
+import { PageHeader } from '../components/layout/PageHeader';
 import { ErrorBlock, LoadingBlock } from '../components/common/StateBlocks';
 import { useWorkoutsData } from '../hooks/useWorkoutsData';
 import { workoutService } from '../services/workout.service';
@@ -47,7 +48,6 @@ function WorkoutsRouteComponent() {
         title,
         description: '',
         estimatedMinutes: 45,
-        targetMuscleGroups: [],
         scheduledDays: [],
         intensity: 'moderate',
         exercises: [],
@@ -55,7 +55,7 @@ function WorkoutsRouteComponent() {
       });
       navigate({ to: '/workouts/$id', params: { id: routine.id } });
     } catch (err) {
-      setActionError(errorMessage(err instanceof Error ? err : null, 'Não foi possível criar a rotina'));
+      setActionError(errorMessage(err instanceof Error ? err : null, 'Não foi possível criar o treino'));
       setCreating(false);
     }
   }
@@ -65,17 +65,11 @@ function WorkoutsRouteComponent() {
   }
 
   return (
-    <main className="min-h-screen bg-bg px-3 pb-28 pt-3 text-ink sm:p-4 sm:pb-28">
+    <main className="min-h-screen px-3 pb-28 pt-3 text-ink sm:p-4 sm:pb-28">
       <div className="mx-auto w-full max-w-md space-y-3 md:max-w-3xl">
         {result && <SessionResultBanner result={result} onClose={closeResult} />}
 
-        <header className="space-y-1 px-1">
-          <div className="flex items-center gap-2">
-            <Dumbbell className="h-5 w-5 text-action" />
-            <h1 className="font-pixel text-2xl text-ink">Treino</h1>
-          </div>
-          <p className="text-sm text-ink-dim">Registrar um treino já conta: o primeiro do dia rende moedas e XP.</p>
-        </header>
+        <PageHeader title="Treino" icon={Dumbbell} />
 
         <div className="grid grid-cols-2 gap-2">
           <Button variant="secondary" onClick={() => setShowHistory((v) => !v)} aria-pressed={showHistory}>
@@ -110,8 +104,8 @@ function WorkoutsRouteComponent() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') void handleCreate();
                 }}
-                aria-label="Nome da rotina"
-                placeholder="Ex.: Treino A, peito e tríceps"
+                aria-label="Nome do treino"
+                placeholder="Ex.: Peito, Costas e bíceps, Treino A"
                 className="h-11 min-w-0 flex-1 rounded-lg border-2 border-line bg-raised px-3 text-base text-ink placeholder:text-ink-faint focus:border-action focus:outline-none"
               />
               <Button
@@ -166,14 +160,14 @@ function WorkoutsRouteComponent() {
         {data && (
           <>
             <div className="flex items-center justify-between px-1 text-xs">
-              <h2 className="font-semibold uppercase tracking-wider text-ink-dim">Suas rotinas</h2>
-              <span className="text-ink-faint">{data.routines.length} cadastradas</span>
+              <h2 className="font-pixel text-[13px] uppercase text-ink-dim">Seus treinos</h2>
+              <span className="text-ink-faint">{data.routines.length} {data.routines.length === 1 ? 'cadastrado' : 'cadastrados'}</span>
             </div>
 
             {data.routines.length === 0 ? (
               <Card>
                 <p className="text-sm text-ink-dim">
-                  Nenhuma rotina ainda. Crie uma em "Novo treino" e monte os exercícios dela.
+                  Nenhum treino ainda. Crie um em "Novo treino" e monte os exercícios dele.
                 </p>
               </Card>
             ) : (

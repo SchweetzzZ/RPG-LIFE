@@ -3,7 +3,8 @@ import { Trash2 } from 'lucide-react';
 import { QuantityStepper } from './QuantityStepper';
 import { FoodSearchPicker } from './FoodSearchPicker';
 import { CustomItemForm } from './CustomItemForm';
-import { stepFor, type ExtraDraft } from '@/src/lib/meal-draft';
+import { ItemSubtotal } from './ItemSubtotal';
+import { gramsLabel, stepFor, type ExtraDraft } from '@/src/lib/meal-draft';
 import { formatNumber } from '@/src/lib/format';
 
 interface ExtraItemsEditorProps {
@@ -28,6 +29,7 @@ export function ExtraItemsEditor({ items, onChange }: ExtraItemsEditorProps) {
                 <p className="text-xs text-ink-faint">
                   {item.unit} • {formatNumber(item.kcalPerUnit)} kcal cada
                 </p>
+                <ItemSubtotal kcalPerUnit={item.kcalPerUnit} qty={item.qty} macrosPerUnit={item.macrosPerUnit ?? null} />
               </div>
               <div className="flex items-center gap-1.5">
                 <QuantityStepper
@@ -35,6 +37,7 @@ export function ExtraItemsEditor({ items, onChange }: ExtraItemsEditorProps) {
                   value={item.qty}
                   step={stepFor(item.unit)}
                   min={stepFor(item.unit)}
+                  hint={gramsLabel(item.unit, item.qty)}
                   onChange={(qty) => onChange(items.map((i) => (i.id === item.id ? { ...i, qty } : i)))}
                 />
                 <button

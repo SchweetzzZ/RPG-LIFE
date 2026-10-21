@@ -1,13 +1,11 @@
 import { useState } from 'react';
-import { Plus, Search, X } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { nameKey } from './session';
-import { EXERCISE_CATEGORIES, toCategory, type ExerciseCatalogItem, type ExerciseCategory } from '../../types/workout';
+import type { ExerciseCatalogItem } from '../../types/workout';
 
 /** O que o seletor devolve: um exercício do catálogo (existing) ou um nome novo. */
 export interface PickedExercise {
   name: string;
-  /** null = nome novo, sem categoria conhecida. */
-  category: ExerciseCategory | null;
   /** Última carga registrada; vazia para nome novo ou exercício nunca feito. */
   lastSets: ExerciseCatalogItem['lastSets'];
   existing: boolean;
@@ -17,8 +15,6 @@ interface ExercisePickerProps {
   catalog: ExerciseCatalogItem[];
   onPick: (picked: PickedExercise) => void;
   placeholder?: string;
-  /** true: ao criar um nome novo, pede a categoria antes de devolver (o exercício vai para a rotina). */
-  askCategory?: boolean;
 }
 
 const MAX_RESULTS = 8;
@@ -35,7 +31,6 @@ export function summarizeLastSets(sets: ExerciseCatalogItem['lastSets']): string
 function fromCatalog(item: ExerciseCatalogItem): PickedExercise {
   return {
     name: item.name,
-    category: item.category ? toCategory(item.category) : null,
     lastSets: item.lastSets,
     existing: true,
   };
@@ -46,12 +41,9 @@ export function ExercisePicker({
   catalog,
   onPick,
   placeholder = 'Buscar ou criar exercício...',
-  askCategory = false,
 }: ExercisePickerProps) {
   const [text, setText] = useState('');
   const [open, setOpen] = useState(false);
-  // Nome novo esperando a escolha da categoria
-  const [pendingName, setPendingName] = useState<string | null>(null);
 
   const query = nameKey(text);
   const exact = query ? catalog.find((c) => nameKey(c.name) === query) : undefined;
@@ -77,54 +69,11 @@ export function ExercisePicker({
       pick(fromCatalog(exact));
       return;
     }
-    if (askCategory) {
-      setPendingName(name);
-      setOpen(false);
-      return;
-    }
-    pick({ name, category: null, lastSets: [], existing: false });
-  }
-
-  function pickCategory(category: ExerciseCategory) {
-    if (pendingName === null) return;
-    pick({ name: pendingName, category, lastSets: [], existing: false });
-    setPendingName(null);
+    pick({ name, lastSets: [], existing: false });
   }
 
   const rowClass =
     'flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg border-2 border-line bg-raised px-3 py-1.5 text-left hover:border-ink-faint active:translate-y-[1px]';
-
-  if (pendingName !== null) {
-    return (
-      <div className="space-y-2" role="group" aria-label={`Categoria de ${pendingName}`}>
-        <div className="flex items-center justify-between gap-2">
-          <p className="min-w-0 text-sm text-ink">
-            Categoria de <span className="font-semibold">«{pendingName}»</span>
-          </p>
-          <button
-            type="button"
-            onClick={() => setPendingName(null)}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-ink-faint hover:text-ink"
-            aria-label="Cancelar novo exercício"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {EXERCISE_CATEGORIES.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => pickCategory(c)}
-              className="min-h-[44px] rounded-lg border-2 border-line bg-raised px-3 text-sm font-semibold text-ink-dim hover:border-action hover:text-action"
-            >
-              {c}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div
@@ -164,8 +113,12 @@ export function ExercisePicker({
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-semibold text-ink">{item.name}</span>
                   <span className="block truncate text-xs text-ink-faint">
-                    {item.category ?? 'Sem categoria'}
-                    {summary ? ` · última: ${summary}` : ' · nunca registrado'}
+                    {[
+                      item.routines.length > 0 ? `em ${item.routines.join(', ')}` : null,
+                      summary ? `última: ${summary}` : 'nunca registrado',
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
                   </span>
                 </span>
               </button>

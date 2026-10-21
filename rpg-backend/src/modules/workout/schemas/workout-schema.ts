@@ -33,9 +33,6 @@ export class WorkoutExercise {
     @Prop({ required: true })
     name: string;
 
-    @Prop({ required: false, default: 'Peito' })
-    category?: string;
-
     @Prop({ type: [ExerciseSetSchema], default: [] })
     sets: ExerciseSet[];
 
@@ -57,9 +54,6 @@ export class Workout {
 
     @Prop({ default: 45 })
     estimatedMinutes: number;
-
-    @Prop({ type: [String], default: [] })
-    targetMuscleGroups: string[];
 
     @Prop({ type: [Number], default: [] }) // 0: Dom, 1: Seg, 2: Ter, 3: Qua, 4: Qui, 5: Sex, 6: Sab
     scheduledDays: number[];

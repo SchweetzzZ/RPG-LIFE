@@ -17,7 +17,22 @@ function presetKcal(meal: CatalogMeal, preset: PresetName): number {
     );
 }
 
-/** Confere o catalogo antes de gravar: slugs e keys unicos, presets validos, toda kcal com fonte. */
+/** Itens com alcool: o alcool (7 kcal/g) nao entra em 4P+4C+9G, entao a checagem de coerencia pula esses. */
+const ALCOHOL_KEY = /cerveja|vinho|caipirinha|chopp|drink|whisky|vodka|cachaca/;
+
+/**
+ * Itens conferidos a mao que passam da tolerancia por causa da propria fonte (o numero NAO foi ajustado).
+ * key -> motivo.
+ */
+const MACRO_CHECK_EXCEPTIONS: Record<string, string> = {
+    // TACO 540: carboidrato (11,64 g) inclui 5,09 g de fibra; sem a fibra, 4P+4C+9G = 119 kcal (fonte: 117).
+    feijoada: 'carboidrato da TACO inclui fibra',
+};
+
+/** Tolerancia da checagem 4P+4C+9G vs kcalPerUnit (fatores de Atwater nao batem exato com cada fonte). */
+const MACRO_KCAL_TOLERANCE = 0.15;
+
+/** Confere o catalogo antes de gravar: slugs e keys unicos, presets validos, toda kcal com fonte, macros coerentes. */
 function validateCatalog(catalog: CatalogMeal[]): string[] {
     const errors: string[] = [];
     const slugs = new Set<string>();
@@ -30,6 +45,18 @@ function validateCatalog(catalog: CatalogMeal[]): string[] {
             if (keys.has(item.key)) errors.push(`${meal.slug}: key repetida ${item.key}`);
             keys.add(item.key);
             if (!(item.kcalPerUnit > 0)) errors.push(`${meal.slug}/${item.key}: kcalPerUnit invalido`);
+            const macros = [item.proteinPerUnit, item.carbPerUnit, item.fatPerUnit];
+            if (macros.some((g) => typeof g !== 'number' || !Number.isFinite(g) || g < 0)) {
+                errors.push(`${meal.slug}/${item.key}: macros obrigatorios e >= 0`);
+            } else if (!ALCOHOL_KEY.test(item.key) && !(item.key in MACRO_CHECK_EXCEPTIONS)) {
+                const fromMacros = 4 * item.proteinPerUnit + 4 * item.carbPerUnit + 9 * item.fatPerUnit;
+                const diff = Math.abs(fromMacros - item.kcalPerUnit) / item.kcalPerUnit;
+                if (diff > MACRO_KCAL_TOLERANCE) {
+                    errors.push(
+                        `${meal.slug}/${item.key}: 4P+4C+9G = ${Math.round(fromMacros)} kcal, longe de ${item.kcalPerUnit} kcal (${Math.round(diff * 100)}%)`,
+                    );
+                }
+            }
             const s = item.source;
             if (!s.name || !s.url.startsWith('https://') || !/^\d{4}-\d{2}-\d{2}$/.test(s.accessedAt) || !s.reference) {
                 errors.push(`${meal.slug}/${item.key}: fonte incompleta`);

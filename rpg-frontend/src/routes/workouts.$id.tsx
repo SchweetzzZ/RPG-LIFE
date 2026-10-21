@@ -49,7 +49,7 @@ function WorkoutRouteComponent() {
   }
 
   return (
-    <main className="min-h-screen bg-bg px-3 pb-28 pt-3 text-ink sm:p-4 sm:pb-28">
+    <main className="min-h-screen px-3 pb-28 pt-3 text-ink sm:p-4 sm:pb-28">
       <div className="mx-auto w-full max-w-md space-y-3">
         <Link
           to="/workouts"
@@ -58,7 +58,7 @@ function WorkoutRouteComponent() {
           <ArrowLeft className="h-4 w-4" />
           Treinos
         </Link>
-        {loading && <LoadingBlock label="Carregando rotina..." />}
+        {loading && <LoadingBlock label="Carregando treino..." />}
         {error && <ErrorBlock message={error} onRetry={reload} />}
       </div>
     </main>

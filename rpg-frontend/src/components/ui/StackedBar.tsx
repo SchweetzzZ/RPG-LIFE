@@ -1,10 +1,11 @@
-import type { BarTone } from './SegmentedBar';
+import { SEG_BEVEL, type BarTone } from './SegmentedBar';
 
 const FILLED: Record<BarTone, string> = {
   kcal: 'bg-kcal',
   coin: 'bg-coin',
   xp: 'bg-xp',
   action: 'bg-action',
+  danger: 'bg-danger',
 };
 
 export interface StackedPart {
@@ -36,7 +37,11 @@ export function StackedBar({ parts, max, segments = 20, label }: StackedBarProps
   return (
     <div role="img" aria-label={label} className="flex h-4 w-full gap-[2px]">
       {cells.map((tone, index) => (
-        <span key={index} className={`h-full flex-1 rounded-[2px] ${tone ? FILLED[tone] : 'bg-raised'}`} />
+        <span
+          key={`${index}-${tone ?? 'e'}`}
+          className={`h-full flex-1 rounded-[2px] ${tone ? `${FILLED[tone]} ${SEG_BEVEL} seg-in` : 'bg-raised shadow-[inset_0_2px_0_rgba(0,0,0,0.35)]'}`}
+          style={tone ? { animationDelay: `${Math.min(index, 20) * 22}ms` } : undefined}
+        />
       ))}
     </div>
   );

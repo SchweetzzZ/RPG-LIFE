@@ -4,9 +4,22 @@ import { freeMealService } from '@/src/services/free-meal.service';
 import { errorMessage } from '@/src/services/http';
 import { ExtraItemsEditor } from './ExtraItemsEditor';
 import { QuantityStepper } from './QuantityStepper';
-import { draftToInput, stepFor, sumKcal, type ExtraDraft } from '@/src/lib/meal-draft';
+import { ItemSubtotal } from './ItemSubtotal';
+import { MealTotalsHud, type HudBudget } from './MealTotalsHud';
+import {
+  draftToInput,
+  gramsLabel,
+  isLiquidNote,
+  stepFor,
+  sumKcal,
+  sumMacros,
+  templateItemMacros,
+  type ExtraDraft,
+  type MacroLine,
+} from '@/src/lib/meal-draft';
 import { Button } from '../ui/Button';
 import { formatNumber } from '@/src/lib/format';
+import type { DayState } from '@/src/types/day';
 import type {
   CreateFreeMealInput,
   FreeMealPresetName,
@@ -18,6 +31,8 @@ import type {
 interface MealBuilderModalProps {
   templates: FreeMealTemplate[];
   next: NextFreeMeals;
+  /** Meta e consumido de hoje: dá a sobra do dia para a barra do escopo "dia" (sem ela, só o total). */
+  day: DayState | null;
   onClose: () => void;
   onCreated: () => Promise<void>;
 }
@@ -33,11 +48,13 @@ function defaultQuantities(template: FreeMealTemplate): Record<string, number> {
   return Object.fromEntries(template.items.map((item) => [item.key, item.defaultQty]));
 }
 
-export function MealBuilderModal({ templates, next, onClose, onCreated }: MealBuilderModalProps) {
+export function MealBuilderModal({ templates, next, day, onClose, onCreated }: MealBuilderModalProps) {
   const [scope, setScope] = useState<FreeMealScope>('week');
   const [date, setDate] = useState(next.cycle.endDate);
   const [template, setTemplate] = useState<FreeMealTemplate | null>(null);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  // Atalho aplicado: fica marcado até a pessoa mexer em alguma quantidade
+  const [activePreset, setActivePreset] = useState<FreeMealPresetName | null>(null);
   const [title, setTitle] = useState('');
   const [extras, setExtras] = useState<ExtraDraft[]>([]);
   const [saving, setSaving] = useState(false);
@@ -48,19 +65,42 @@ export function MealBuilderModal({ templates, next, onClose, onCreated }: MealBu
     : 0;
   const totalKcal = templateKcal + sumKcal(extras);
 
+  const macroLines: MacroLine[] = [
+    ...(template?.items ?? []).map((item) => ({ qty: quantities[item.key] ?? 0, macros: templateItemMacros(item) })),
+    ...extras.map((extra) => ({ qty: extra.qty, macros: extra.macrosPerUnit ?? null })),
+  ];
+  const macros = sumMacros(macroLines);
+
   const availableKcal = scope === 'week' ? next.vaultBalanceKcal : null;
+  // Sobra de hoje igual à do backend: se já há refeição "de hoje" agendada, o servidor manda o valor exato
+  // (meta - consumido - o que as "de hoje" já resgatadas gastaram); senão, meta - consumido.
+  const dayLeftKcal =
+    next.day.length > 0 ? next.day[0].availableKcal : day ? Math.max(0, day.targetKcal - day.consumedKcal) : null;
+  const budget: HudBudget | null =
+    scope === 'week'
+      ? { label: 'Cofre', kcal: next.vaultBalanceKcal }
+      : dayLeftKcal !== null
+        ? { label: 'Sobra de hoje', kcal: dayLeftKcal }
+        : null;
   const missingTitle = !template && title.trim() === '';
   const canSubmit = totalKcal > 0 && !missingTitle && (scope === 'day' || date !== '') && !saving;
 
   function pickTemplate(value: FreeMealTemplate | null) {
     setTemplate(value);
     setQuantities(value ? defaultQuantities(value) : {});
+    setActivePreset(null);
   }
 
   function applyPreset(name: FreeMealPresetName) {
     if (!template) return;
     const preset = template.presets[name].quantities;
     setQuantities(Object.fromEntries(template.items.map((item) => [item.key, preset[item.key] ?? 0])));
+    setActivePreset(name);
+  }
+
+  function changeQty(key: string, qty: number) {
+    setQuantities((prev) => ({ ...prev, [key]: qty }));
+    setActivePreset(null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -177,35 +217,49 @@ export function MealBuilderModal({ templates, next, onClose, onCreated }: MealBu
               <div className="flex items-center justify-between">
                 <p className={sectionTitle}>Quantidades</p>
                 <div className="flex gap-1">
-                  {PRESET_NAMES.map((name) => (
-                    <button
-                      key={name}
-                      type="button"
-                      onClick={() => applyPreset(name)}
-                      className="min-h-[44px] rounded-lg border-2 border-line bg-raised px-2 text-xs text-ink hover:border-ink-faint"
-                    >
-                      {PRESET_LABELS[name]} ~{formatNumber(template.presets[name].kcal)}
-                    </button>
-                  ))}
+                  {PRESET_NAMES.map((name) => {
+                    const active = activePreset === name;
+                    return (
+                      <button
+                        key={name}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => applyPreset(name)}
+                        className={`flex min-h-[44px] flex-col items-center justify-center rounded-lg border-2 px-2 text-xs leading-tight ${
+                          active
+                            ? 'translate-y-[2px] border-action bg-action/15 text-ink shadow-[0_1px_0_0_#0c0a08]'
+                            : 'border-line bg-raised text-ink shadow-[0_3px_0_0_#0c0a08] hover:border-ink-faint'
+                        }`}
+                      >
+                        <span className="font-semibold">{PRESET_LABELS[name]}</span>
+                        <span className="font-num text-sm text-ink-dim">~{formatNumber(template.presets[name].kcal)}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
               <ul className="space-y-2">
-                {template.items.map((item) => (
-                  <li key={item.key} className="flex items-center justify-between gap-2 rounded-lg border-2 border-line bg-raised p-2.5">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-ink">{item.name}</p>
-                      <p className="text-xs text-ink-faint">
-                        {item.unit} • {formatNumber(item.kcalPerUnit)} kcal cada
-                      </p>
-                    </div>
-                    <QuantityStepper
-                      label={item.name}
-                      value={quantities[item.key] ?? 0}
-                      step={stepFor(item.unit)}
-                      onChange={(qty) => setQuantities((prev) => ({ ...prev, [item.key]: qty }))}
-                    />
-                  </li>
-                ))}
+                {template.items.map((item) => {
+                  const qty = quantities[item.key] ?? 0;
+                  return (
+                    <li key={item.key} className="flex items-center justify-between gap-2 rounded-lg border-2 border-line bg-raised p-2.5">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-ink">{item.name}</p>
+                        <p className="text-xs text-ink-faint">
+                          {item.unit} • {formatNumber(item.kcalPerUnit)} kcal cada
+                        </p>
+                        <ItemSubtotal kcalPerUnit={item.kcalPerUnit} qty={qty} macrosPerUnit={templateItemMacros(item)} />
+                      </div>
+                      <QuantityStepper
+                        label={item.name}
+                        value={qty}
+                        step={stepFor(item.unit)}
+                        hint={gramsLabel(item.unit, qty, isLiquidNote(item.source.note))}
+                        onChange={(value) => changeQty(item.key, value)}
+                      />
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}
@@ -233,19 +287,13 @@ export function MealBuilderModal({ templates, next, onClose, onCreated }: MealBu
         </div>
 
         {/* Prévia do impacto + ação */}
-        <div className="space-y-3 border-t border-line p-4">
-          <div className="space-y-0.5 text-xs text-ink-dim">
-            <p>Total estimado: <span className="font-semibold text-ink">~{formatNumber(totalKcal)} kcal</span></p>
-            {availableKcal !== null && totalKcal > 0 && (
-              <p>
-                Cofre hoje: {formatNumber(availableKcal)} kcal •{' '}
-                {availableKcal >= totalKcal
-                  ? `cobre a refeição (sobram ${formatNumber(availableKcal - totalKcal)})`
-                  : `faltam ${formatNumber(totalKcal - availableKcal)} kcal (depois de agendar, a lista mostra quanto guardar por dia)`}
-              </p>
+        <div className="space-y-3 border-t-2 border-line bg-bg/40 p-4">
+          <MealTotalsHud kcal={totalKcal} macros={macros} budget={budget}>
+            {availableKcal !== null && totalKcal > availableKcal && (
+              <p>Depois de agendar, a lista mostra quanto guardar por dia.</p>
             )}
             <p>Agendar só planeja: nada é cobrado até o resgate.</p>
-          </div>
+          </MealTotalsHud>
 
           {error && <p className="text-sm text-danger">{error}</p>}
 

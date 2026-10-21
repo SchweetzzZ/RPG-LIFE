@@ -42,6 +42,16 @@ export class FreeMealTemplateItem {
     @Prop({ type: Number, required: true, min: 0 })
     kcalPerUnit: number;
 
+    // Macros por unidade em gramas (proteina, carboidrato, gordura)
+    @Prop({ type: Number, required: true, min: 0, default: 0 })
+    proteinPerUnit: number;
+
+    @Prop({ type: Number, required: true, min: 0, default: 0 })
+    carbPerUnit: number;
+
+    @Prop({ type: Number, required: true, min: 0, default: 0 })
+    fatPerUnit: number;
+
     // Quantidade sugerida ao montar sem atalho (= preset medium; 0 = item opcional)
     @Prop({ type: Number, required: true, min: 0 })
     defaultQty: number;

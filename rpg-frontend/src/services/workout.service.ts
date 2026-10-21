@@ -17,7 +17,7 @@ export const workoutService = {
   async listRoutines(): Promise<Routine[]> {
     const { data, error, response } = await client.GET("/workout")
     if (!data) {
-      throw toApiError(response, error, "Falha ao buscar as rotinas")
+      throw toApiError(response, error, "Falha ao buscar os treinos")
     }
     return data
   },
@@ -25,7 +25,7 @@ export const workoutService = {
   async getRoutine(id: string): Promise<Routine> {
     const { data, error, response } = await client.GET("/workout/{id}", { params: { path: { id } } })
     if (!data) {
-      throw toApiError(response, error, "Rotina não encontrada")
+      throw toApiError(response, error, "Treino não encontrado")
     }
     return data
   },
@@ -33,7 +33,7 @@ export const workoutService = {
   async createRoutine(body: CreateRoutineInput): Promise<Routine> {
     const { data, error, response } = await client.POST("/workout", { body })
     if (!data) {
-      throw toApiError(response, error, "Não foi possível criar a rotina")
+      throw toApiError(response, error, "Não foi possível criar o treino")
     }
     return data
   },
@@ -41,7 +41,7 @@ export const workoutService = {
   async updateRoutine(id: string, body: UpdateRoutineInput): Promise<Routine> {
     const { data, error, response } = await client.PUT("/workout/{id}", { params: { path: { id } }, body })
     if (!data) {
-      throw toApiError(response, error, "Não foi possível salvar a rotina")
+      throw toApiError(response, error, "Não foi possível salvar o treino")
     }
     return data
   },
@@ -49,7 +49,7 @@ export const workoutService = {
   async deleteRoutine(id: string): Promise<void> {
     const { data, error, response } = await client.DELETE("/workout/{id}", { params: { path: { id } } })
     if (!data) {
-      throw toApiError(response, error, "Não foi possível remover a rotina")
+      throw toApiError(response, error, "Não foi possível remover o treino")
     }
   },
 

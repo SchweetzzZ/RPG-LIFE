@@ -1,6 +1,4 @@
-import { toCategory } from '../../types/workout';
 import type {
-  ExerciseCategory,
   ExercisePerformance,
   LogSessionInput,
   Routine,
@@ -24,7 +22,6 @@ export interface SessionExercise {
   name: string;
   /** Nome com que o exercício já existe no catálogo; null = criado agora. Se o nome mudar, vira renomeação ao salvar. */
   originalName: string | null;
-  category: ExerciseCategory;
   sets: SessionSet[];
 }
 
@@ -61,7 +58,6 @@ function buildExercise(ex: RoutineExercise, performance: ExercisePerformance[]):
       key: uid(),
       name: ex.name,
       originalName: ex.name,
-      category: toCategory(ex.category),
       sets: last.sets.map((s) => ({
         key: uid(),
         technique: toTechnique(s.technique),
@@ -77,7 +73,6 @@ function buildExercise(ex: RoutineExercise, performance: ExercisePerformance[]):
     key: uid(),
     name: ex.name,
     originalName: ex.name,
-    category: toCategory(ex.category),
     sets: prescribed.length > 0
       ? prescribed.map((s) => ({
           key: uid(),
@@ -102,14 +97,13 @@ export function buildSessionExercises(routine: Routine, performance: ExercisePer
 }
 
 /**
- * Assinatura do que está na tela (nomes, categorias, séries), sem chaves nem o ✓ de feito.
+ * Assinatura do que está na tela (nomes e séries), sem chaves nem o ✓ de feito.
  * Serve para saber se há mudanças não salvas.
  */
 export function sessionSignature(exercises: SessionExercise[]): string {
   return JSON.stringify(
     exercises.map((ex) => [
       ex.name.trim(),
-      ex.category,
       ex.sets.map((s) => [s.technique, s.weightKg, s.reps]),
     ]),
   );

@@ -9,7 +9,7 @@ export function ExerciseHistoryView({ catalog }: { catalog: ExerciseCatalogItem[
   const [selected, setSelected] = useState<string | null>(null);
 
   if (catalog.length === 0) {
-    return <p className="text-sm text-ink-dim">Nenhum exercício ainda. Crie uma rotina ou registre um treino.</p>;
+    return <p className="text-sm text-ink-dim">Nenhum exercício ainda. Crie um treino e adicione exercícios.</p>;
   }
 
   return (

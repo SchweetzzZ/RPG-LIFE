@@ -12,8 +12,8 @@ export interface RewardsData {
   day: DayState | null;
 }
 
+// Sempre busca o dia: além dos cards de refeição "de hoje", o modal de agendar usa a sobra do dia na barra.
 async function loadDay(next: NextFreeMeals): Promise<DayState | null> {
-  if (next.day.length === 0) return null;
   try {
     return await dayService.getDay(next.today);
   } catch {

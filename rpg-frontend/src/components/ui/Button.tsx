@@ -10,8 +10,8 @@ const VARIANTS: Record<ButtonVariant, string> = {
   primary:
     'w-full border-2 border-[#0c0a08] bg-action text-[#0c0a08] shadow-[0_4px_0_0_#0c0a08] hover:brightness-110 active:translate-y-[2px] active:shadow-[0_2px_0_0_#0c0a08] disabled:cursor-not-allowed disabled:opacity-50',
   secondary:
-    'w-full border-2 border-line bg-raised text-ink hover:border-ink-faint active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50',
-  coin: 'w-full border-2 border-coin/60 bg-raised text-coin hover:border-coin active:translate-y-[1px]',
+    'w-full border-2 border-line bg-raised text-ink shadow-[0_3px_0_0_#0c0a08] hover:border-ink-faint active:translate-y-[2px] active:shadow-[0_1px_0_0_#0c0a08] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:translate-y-0',
+  coin: 'w-full border-2 border-[#0c0a08] bg-coin text-[#0c0a08] shadow-[0_4px_0_0_#0c0a08] hover:brightness-110 active:translate-y-[2px] active:shadow-[0_2px_0_0_#0c0a08]',
   link: 'min-h-[44px] px-2 font-medium text-ink-dim underline underline-offset-2 hover:text-ink',
 };
 

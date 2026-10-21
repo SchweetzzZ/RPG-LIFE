@@ -6,7 +6,8 @@ import { MathSet, exerciseKey, maxWeight } from "./workout-math";
 
 export interface CatalogRoutine {
     createdAt?: Date | string;
-    exercises?: { name: string; category?: string }[];
+    title?: string;
+    exercises?: { name: string }[];
 }
 
 export interface CatalogLog {
@@ -17,7 +18,8 @@ export interface CatalogLog {
 
 export interface CatalogEntry {
     name: string;
-    category: string | null;
+    /** Treinos em que o exercicio aparece, na ordem em que foram criados */
+    routines: string[];
     timesLogged: number;
     lastDate: string | null;
     lastSets: PerformedSet[];
@@ -37,7 +39,7 @@ export function buildCatalog(routines: CatalogRoutine[], logs: CatalogLog[]): Ca
         const key = exerciseKey(name);
         let entry = entries.get(key);
         if (!entry) {
-            entry = { name: name.trim(), category: null, timesLogged: 0, lastDate: null, lastSets: [], personalBestKg: 0 };
+            entry = { name: name.trim(), routines: [], timesLogged: 0, lastDate: null, lastSets: [], personalBestKg: 0 };
             entries.set(key, entry);
         }
         return entry;
@@ -61,10 +63,11 @@ export function buildCatalog(routines: CatalogRoutine[], logs: CatalogLog[]): Ca
 
     const sortedRoutines = [...routines].sort((a, b) => time(a.createdAt) - time(b.createdAt));
     for (const routine of sortedRoutines) {
+        const title = routine.title?.trim();
         for (const ex of routine.exercises ?? []) {
             if (!ex.name?.trim()) continue;
             const entry = ensure(ex.name);
-            if (!entry.category && ex.category) entry.category = ex.category;
+            if (title && !entry.routines.includes(title)) entry.routines.push(title);
         }
     }
 

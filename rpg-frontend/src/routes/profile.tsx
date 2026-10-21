@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { User } from 'lucide-react';
+import { PageHeader } from '../components/layout/PageHeader';
 import { PrimaryGoalSelector } from '../components/profile/PrimaryGoalSelector';
 import { PhysicalProfileForm } from '../components/profile/PhysicalProfileForm';
 import { ErrorBlock, LoadingBlock } from '../components/common/StateBlocks';
@@ -15,12 +17,9 @@ function ProfileRouteComponent() {
   const { data, loading, error, reload } = useResource(profileService.getProfile);
 
   return (
-    <main className="min-h-screen bg-bg px-3 pb-28 pt-3 text-ink sm:p-4 sm:pb-28">
+    <main className="min-h-screen px-3 pb-28 pt-3 text-ink sm:p-4 sm:pb-28">
       <div className="mx-auto w-full max-w-md space-y-3">
-        <header className="px-1">
-          <h1 className="font-pixel text-2xl text-ink">Perfil</h1>
-          <p className="text-xs text-ink-faint">Seus dados para calcular as metas de calorias e macros.</p>
-        </header>
+        <PageHeader title="Perfil" icon={User} />
 
         {loading && !data && <LoadingBlock label="Carregando seu perfil..." />}
         {error && <ErrorBlock message={error} onRetry={reload} />}

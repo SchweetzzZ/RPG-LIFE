@@ -29,13 +29,11 @@ export function toWorkoutResponse(doc: WithMeta<Workout>): WorkoutResponse {
         title: doc.title,
         description: doc.description ?? '',
         estimatedMinutes: doc.estimatedMinutes,
-        targetMuscleGroups: [...(doc.targetMuscleGroups ?? [])],
         scheduledDays: [...(doc.scheduledDays ?? [])],
         intensity: toIntensity(doc.intensity),
         exercises: (doc.exercises ?? []).map((ex) => ({
             ...(ex.id ? { id: ex.id } : {}),
             name: ex.name,
-            ...(ex.category ? { category: ex.category } : {}),
             sets: (ex.sets ?? []).map((s) => ({
                 setNumber: s.setNumber,
                 weightKg: s.weightKg,
