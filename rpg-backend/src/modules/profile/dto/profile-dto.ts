@@ -2,9 +2,10 @@ import { createZodDto } from "nestjs-zod"
 import { z } from "zod"
 import { ActivityLevel, BiologicalSex, PrimaryGoal } from "../schema/profile.schema"
 import { isValidTimezone } from "../../common/utils/user-date"
+import { MAX_WEIGHT_KG, MIN_WEIGHT_KG } from "../../weight/weight-math"
 
 export const SetupProfileSchema = z.object({
-    weightKg: z.number().min(30).max(300),
+    weightKg: z.number().min(MIN_WEIGHT_KG).max(MAX_WEIGHT_KG),
     heightCm: z.number().min(100).max(250),
     age: z.number().min(13).max(100),
     // Sexo usado no calculo (formula de gasto calorico), nao identidade de genero
@@ -14,14 +15,17 @@ export const SetupProfileSchema = z.object({
     timezone: z.string().refine(isValidTimezone, { message: 'Fuso horário inválido (use um identificador IANA, ex.: America/Sao_Paulo)' }).optional(),
 })
 
-export const UpdateProfileSchema = SetupProfileSchema.partial()
+export const UpdateProfileSchema = SetupProfileSchema.partial().extend({
+    // Peso-meta opcional (F4). null apaga a meta.
+    targetWeightKg: z.number().min(MIN_WEIGHT_KG).max(MAX_WEIGHT_KG).nullable().optional(),
+})
 
 export class SetupProfileDto extends createZodDto(SetupProfileSchema) { }
 export class UpdateProfileDto extends createZodDto(UpdateProfileSchema) { }
 
 // Calculo de nutricao
 export const calculateNutrition = z.object({
-    weightKg: z.number().min(30).max(300),
+    weightKg: z.number().min(MIN_WEIGHT_KG).max(MAX_WEIGHT_KG),
     heightCm: z.number().min(100).max(250),
     age: z.number().min(13).max(100),
     biologicalSex: z.nativeEnum(BiologicalSex),
@@ -40,6 +44,7 @@ export type CalculateNutritionUpdate = z.infer<typeof calculateNutritionUpdate>
 export const ProfileResponseSchema = z.object({
     id: z.string(),
     weightKg: z.number().nullable(),
+    targetWeightKg: z.number().nullable(),
     heightCm: z.number().nullable(),
     age: z.number().nullable(),
     biologicalSex: z.nativeEnum(BiologicalSex).nullable(),

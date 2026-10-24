@@ -2,6 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { requireNutritionInput } from './nutrition-input';
 import { ProfileService } from './profile.service';
+import { WeightLogDocument } from '../weight/schema/weight-log.schema';
 import { ActivityLevel, BiologicalSex, PrimaryGoal, UserProfileDocument } from './schema/profile.schema';
 
 const complete = {
@@ -42,7 +43,7 @@ describe('PATCH /profile/nutrition: entrada do calculo', () => {
     });
 
     it('male e female geram metas diferentes (TMB 166 kcal menor para female)', async () => {
-        const service = new ProfileService({} as Model<UserProfileDocument>);
+        const service = new ProfileService({} as Model<UserProfileDocument>, {} as Model<WeightLogDocument>);
         const male = await service.calculateNutritionTargets(complete);
         const female = await service.calculateNutritionTargets({ ...complete, biologicalSex: BiologicalSex.FEMALE });
         expect(male.bmr - female.bmr).toBe(166);
@@ -52,7 +53,7 @@ describe('PATCH /profile/nutrition: entrada do calculo', () => {
     });
 
     it('perder peso aplica 20% de deficit sobre a Base', async () => {
-        const service = new ProfileService({} as Model<UserProfileDocument>);
+        const service = new ProfileService({} as Model<UserProfileDocument>, {} as Model<WeightLogDocument>);
         const r = await service.calculateNutritionTargets({ ...complete, primaryGoal: PrimaryGoal.LOSE_WEIGHT });
         expect(r.targetCalories).toBe(Math.round(2136 * 0.8));
     });

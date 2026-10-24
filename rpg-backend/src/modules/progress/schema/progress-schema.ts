@@ -29,6 +29,10 @@ export class Progress {
     @Prop({ type: String, default: null })
     lastClosedDate: string | null
 
+    // Segunda-feira (YYYY-MM-DD) da ultima semana cujo resumo (F10) o usuario ja viu
+    @Prop({ type: String, default: null })
+    lastWeeklySummarySeen: string | null
+
 }
 
 export const ProgressSchema = SchemaFactory.createForClass(Progress)

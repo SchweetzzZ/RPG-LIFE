@@ -62,7 +62,7 @@ export function PhysicalProfileForm({ initialData, primaryGoal, onSave, onLogout
     const weightKg = toNumber(weight);
     const heightCm = toNumber(height);
     const ageYears = toNumber(age);
-    if (weightKg === null || weightKg < 30 || weightKg > 300) return setError('Informe um peso entre 30 e 300 kg.');
+    if (weightKg === null || weightKg < 20 || weightKg > 400) return setError('Informe um peso entre 20 e 400 kg.');
     if (heightCm === null || heightCm < 100 || heightCm > 250) return setError('Informe uma altura entre 100 e 250 cm.');
     if (ageYears === null || ageYears < 13 || ageYears > 100) return setError('Informe uma idade entre 13 e 100 anos.');
     if (biologicalSex === '') return setError('Escolha o sexo usado no cálculo.');

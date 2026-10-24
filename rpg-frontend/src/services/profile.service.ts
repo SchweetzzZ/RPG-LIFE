@@ -12,6 +12,15 @@ export const profileService = {
         return data
     },
 
+    // Atualiza campos soltos do perfil (PATCH /profile), ex.: o peso-meta. Não recalcula as metas.
+    async updateProfile(body: UpdateProfileInput): Promise<ProfileData> {
+        const { data, error, response } = await client.PATCH('/profile', { body })
+        if (!data) {
+            throw toApiError(response, error, 'Não foi possível salvar o perfil')
+        }
+        return data
+    },
+
     // Salva o perfil físico e recalcula as metas (PATCH /profile/nutrition).
     // É o que destrava o GET /day/:date, que exige os 6 campos do perfil físico.
     async saveNutritionProfile(body: UpdateProfileInput): Promise<NutritionUpdateResult> {

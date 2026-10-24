@@ -14,6 +14,8 @@ import { EnergyModule } from './modules/energy/energy.module';
 import { VaultModule } from './modules/vault/vault.module';
 import { DayModule } from './modules/day/day.module';
 import { FreeMealModule } from './modules/free-meal/free-meal.module';
+import { WeightModule } from './modules/weight/weight.module';
+import { SummaryModule } from './modules/summary/summary.module';
 
 @Module({
   imports: [
@@ -39,6 +41,8 @@ import { FreeMealModule } from './modules/free-meal/free-meal.module';
     VaultModule,
     DayModule,
     FreeMealModule,
+    WeightModule,
+    SummaryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

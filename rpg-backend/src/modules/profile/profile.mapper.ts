@@ -13,6 +13,7 @@ export function toProfileResponse(doc: WithId<UserProfile>): ProfileResponse {
     return {
         id: String(doc._id),
         weightKg: doc.weightKg ?? null,
+        targetWeightKg: doc.targetWeightKg ?? null,
         heightCm: doc.heightCm ?? null,
         age: doc.age ?? null,
         biologicalSex: toBiologicalSex(doc.biologicalSex),

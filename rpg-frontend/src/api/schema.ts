@@ -685,6 +685,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/weight": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pesagens do período (com média móvel de 7 dias) e resumo: início, atual, variação e meta */
+        get: operations["WeightController_getWeight"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/weight/{date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Cria ou substitui o peso do dia (não aceita dia futuro). Se for o mais recente, atualiza o perfil e as metas. */
+        put: operations["WeightController_putWeight"];
+        post?: never;
+        /** Apaga o peso do dia. Se era o mais recente, o perfil volta para o anterior. */
+        delete: operations["WeightController_deleteWeight"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/summary/week/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Se o resumo da semana passada deve aparecer agora (ainda não visto e houve atividade) */
+        get: operations["SummaryController_getStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/summary/week/seen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Marca o resumo da semana (segunda informada) como visto */
+        post: operations["SummaryController_markSeen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/summary/week": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Resumo da semana (segunda a domingo): dias fechados, cofre, refeição livre, treinos, moedas, sequência e peso */
+        get: operations["SummaryController_getWeek"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -758,6 +844,7 @@ export interface components {
         ProfileResponseDto: {
             id: string;
             weightKg: number | null;
+            targetWeightKg: number | null;
             heightCm: number | null;
             age: number | null;
             /** @enum {string|null} */
@@ -783,11 +870,13 @@ export interface components {
             /** @enum {string} */
             primaryGoal?: "lose_weight" | "maintain" | "gain_muscle";
             timezone?: string;
+            targetWeightKg?: number | null;
         };
         UpdateNutritionResponseDto: {
             profile: {
                 id: string;
                 weightKg: number | null;
+                targetWeightKg: number | null;
                 heightCm: number | null;
                 age: number | null;
                 /** @enum {string|null} */
@@ -1772,6 +1861,98 @@ export interface components {
             vaultBalanceKcal: number;
             coinBalance: number;
             notice: string | null;
+        };
+        WeightResponseDto: {
+            entries: {
+                date: string;
+                weightKg: number;
+                trendKg: number | null;
+            }[];
+            summary: {
+                today: string;
+                count: number;
+                startDate: string | null;
+                startKg: number | null;
+                currentDate: string | null;
+                currentKg: number | null;
+                totalChangeKg: number | null;
+                weekChangeKg: number | null;
+                loggedToday: boolean;
+                targetWeightKg: number | null;
+                remainingKg: number | null;
+                reachedTarget: boolean;
+                /** @enum {string|null} */
+                primaryGoal: "lose_weight" | "maintain" | "gain_muscle" | null;
+            };
+        };
+        PutWeightDto: {
+            weightKg: number;
+        };
+        WeightMutationResponseDto: {
+            date: string;
+            weightKg: number | null;
+            profileWeightKg: number | null;
+            profileUpdated: boolean;
+            targetCalories: number | null;
+        };
+        WeekSummaryStatusResponseDto: {
+            pending: boolean;
+            start: string;
+            hasActivity: boolean;
+        };
+        MarkWeekSeenDto: {
+            start: string;
+        };
+        MarkWeekSeenResponseDto: {
+            lastWeeklySummarySeen: string;
+        };
+        WeekSummaryResponseDto: {
+            start: string;
+            end: string;
+            today: string;
+            inProgress: boolean;
+            days: {
+                closed: number;
+                withMeals: number;
+                total: number;
+            };
+            vault: {
+                savedKcal: number;
+                overflowKcal: number;
+                redeemedKcal: number;
+                expiredKcal: number;
+            };
+            freeMeals: {
+                id: string;
+                title: string;
+                /** @enum {string} */
+                scope: "week" | "day";
+                date: string;
+                kcal: number;
+            }[];
+            workouts: {
+                count: number;
+                records: {
+                    exerciseName: string;
+                    previousBestKg: number;
+                    bestKg: number;
+                }[];
+            };
+            rewards: {
+                coins: number;
+                xp: number;
+            };
+            streak: {
+                current: number;
+                best: number;
+            };
+            weight: {
+                entries: number;
+                changeKg: number | null;
+                endKg: number | null;
+                /** @enum {string|null} */
+                primaryGoal: "lose_weight" | "maintain" | "gain_muscle" | null;
+            };
         };
     };
     responses: never;
@@ -3089,6 +3270,143 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FreeMealResponseDto"];
+                };
+            };
+        };
+    };
+    WeightController_getWeight: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Diário de peso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeightResponseDto"];
+                };
+            };
+        };
+    };
+    WeightController_putWeight: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutWeightDto"];
+            };
+        };
+        responses: {
+            /** @description Peso registrado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeightMutationResponseDto"];
+                };
+            };
+        };
+    };
+    WeightController_deleteWeight: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Peso apagado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeightMutationResponseDto"];
+                };
+            };
+        };
+    };
+    SummaryController_getStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Situação do resumo da semana */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeekSummaryStatusResponseDto"];
+                };
+            };
+        };
+    };
+    SummaryController_markSeen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarkWeekSeenDto"];
+            };
+        };
+        responses: {
+            /** @description Resumo marcado como visto */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarkWeekSeenResponseDto"];
+                };
+            };
+        };
+    };
+    SummaryController_getWeek: {
+        parameters: {
+            query?: {
+                start?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Resumo da semana */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeekSummaryResponseDto"];
                 };
             };
         };

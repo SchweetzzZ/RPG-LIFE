@@ -1,9 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { UserProfile, UserProfileDocument, PrimaryGoal } from './schema/profile.schema';
 import { UpdateProfileDto, CalculateNutritionInput, CalculateNutritionUpdate } from './dto/profile-dto';
-import { resolveTimezone } from '../common/utils/user-date';
+import { resolveTimezone, toUserDate } from '../common/utils/user-date';
+import { WeightLog, WeightLogDocument } from '../weight/schema/weight-log.schema';
+import { roundKg } from '../weight/weight-math';
 import { requireNutritionInput } from './nutrition-input';
 import { calculateBaseKcal, calculateBmr, calculateDailyTargetKcal } from '../energy/energy-math';
 
@@ -12,6 +14,9 @@ export class ProfileService {
     constructor(
         @InjectModel(UserProfile.name)
         private readonly profileModel: Model<UserProfileDocument>,
+        // Diario de peso: editar o peso no perfil grava a pesagem de hoje (uma fonte so)
+        @InjectModel(WeightLog.name)
+        private readonly weightLogModel: Model<WeightLogDocument>,
     ) { }
 
     async getProfile(userId: string): Promise<UserProfile> {
@@ -28,13 +33,54 @@ export class ProfileService {
         return resolveTimezone(profile?.timezone);
     }
 
+    /**
+     * Atualiza o perfil. Se o peso mudou, grava (ou substitui) a pesagem de HOJE no diario de peso,
+     * assim o peso do perfil e o diario nunca divergem.
+     */
     async updateProfile(userId: string, data: UpdateProfileDto): Promise<UserProfile> {
+        const before = await this.profileModel.findOne({ user: userId }).select('weightKg timezone').lean().exec();
+        const weightKg = data.weightKg != null ? roundKg(data.weightKg) : undefined;
         const updated = await this.profileModel.findOneAndUpdate(
             { user: userId },
-            { $set: data },
+            { $set: { ...data, ...(weightKg !== undefined ? { weightKg } : {}) } },
             { new: true, upsert: true },
         );
+
+        if (weightKg !== undefined && weightKg !== before?.weightKg) {
+            const today = toUserDate(resolveTimezone(data.timezone ?? before?.timezone));
+            await this.weightLogModel.updateOne(
+                { user: new Types.ObjectId(userId), date: today },
+                { $set: { weightKg } },
+                { upsert: true },
+            );
+        }
         return updated;
+    }
+
+    /**
+     * Chamado pelo diario de peso: poe no perfil o peso da pesagem mais recente (SEM gravar pesagem)
+     * e recalcula as metas se o perfil fisico estiver completo. Nao faz nada se o peso ja e esse.
+     */
+    async syncWeightFromLog(userId: string, weightKg: number): Promise<{ changed: boolean; profile: UserProfile | null }> {
+        const current = await this.profileModel.findOne({ user: userId }).select('weightKg').lean().exec();
+        if (current?.weightKg === weightKg) {
+            return { changed: false, profile: await this.profileModel.findOne({ user: userId }).exec() };
+        }
+        const profile = await this.profileModel.findOneAndUpdate(
+            { user: userId },
+            { $set: { weightKg } },
+            { new: true, upsert: true },
+        );
+        let input: CalculateNutritionInput;
+        try {
+            input = requireNutritionInput(profile);
+        } catch {
+            // Perfil incompleto: guarda o peso; as metas sao calculadas quando o perfil for completado
+            return { changed: true, profile };
+        }
+        const targets = await this.calculateNutritionTargets(input);
+        const final = await this.saveTargets(userId, targets);
+        return { changed: true, profile: final };
     }
 
     // Perfil fisico completo para as contas do dia; 400 com o que falta se estiver incompleto
@@ -80,8 +126,16 @@ export class ProfileService {
         const updatedProfile = await this.updateProfile(userId, data as UpdateProfileDto);
 
         const targets = await this.calculateNutritionTargets(requireNutritionInput(updatedProfile))
+        const finalProfile = await this.saveTargets(userId, targets)
 
-        const finalProfile = await this.profileModel.findOneAndUpdate({
+        return {
+            profile: finalProfile,
+            targets,
+        }
+    }
+
+    private async saveTargets(userId: string, targets: Awaited<ReturnType<ProfileService['calculateNutritionTargets']>>) {
+        return this.profileModel.findOneAndUpdate({
             user: userId
         }, {
             $set: {
@@ -93,10 +147,5 @@ export class ProfileService {
         }, {
             new: true,
         })
-
-        return {
-            profile: finalProfile,
-            targets,
-        }
     }
 }

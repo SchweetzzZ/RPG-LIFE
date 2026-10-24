@@ -35,6 +35,10 @@ export class UserProfile {
     @Prop({ default: null })
     weightKg: number
 
+    // Peso-meta opcional (F4); sem meta a pessoa so acompanha a propria evolucao
+    @Prop({ type: Number, default: null })
+    targetWeightKg: number | null
+
     @Prop({ default: null })
     heightCm: number
 

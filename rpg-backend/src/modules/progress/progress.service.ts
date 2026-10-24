@@ -47,6 +47,16 @@ export class ProgressService {
         }
     }
 
+    /** Marca o resumo da semana (segunda `weekStart`) como visto. Nunca volta para uma semana mais antiga. */
+    async markWeeklySummarySeen(userId: string, weekStart: string): Promise<string> {
+        const progress = await this.getOrCreate(userId)
+        if (!progress.lastWeeklySummarySeen || progress.lastWeeklySummarySeen < weekStart) {
+            progress.lastWeeklySummarySeen = weekStart
+            await progress.save()
+        }
+        return progress.lastWeeklySummarySeen
+    }
+
     async addXp(userId: string, xp: number) {
         const progress = await this.getOrCreate(userId)
 
