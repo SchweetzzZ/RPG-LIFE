@@ -10,8 +10,7 @@ import { ErrorBlock, LoadingBlock } from '../components/common/StateBlocks';
 import { useNutritionData } from '../hooks/useNutritionData';
 import { nutritionService } from '../services/nutrition.service';
 import { errorMessage } from '../services/http';
-import type { FoodResult } from '../types/free-meal';
-import type { FoodLog, MealType } from '../types/nutrition';
+import type { FoodLog, LoggableFood, MealType, SavedMeal } from '../types/nutrition';
 
 export const Route = createFileRoute('/nutrition')({
   component: NutritionRouteComponent,
@@ -32,8 +31,12 @@ function NutritionRouteComponent() {
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  // Refeição que está copiando de ontem ou sendo salva como refeição pronta
+  const [workingMeal, setWorkingMeal] = useState<MealType | null>(null);
 
-  async function handleConfirm(food: FoodResult, grams: number) {
+  const fail = (err: unknown, fallback: string) => setActionError(errorMessage(err instanceof Error ? err : null, fallback));
+
+  async function handleConfirm(food: LoggableFood, grams: number) {
     if (!modalMeal || !data) return;
     const factor = grams / 100;
     setSaving(true);
@@ -48,6 +51,16 @@ function NutritionRouteComponent() {
         carbGrams: round1(food.nutrientsPer100g.carbs * factor),
         fatGrams: round1(food.nutrientsPer100g.fat * factor),
         date: data.summary.date,
+        // Origem do alimento: é o que permite agrupar os recentes e favoritar
+        source: food.source,
+        sourceId: food.id,
+        ...(food.brand ? { brand: food.brand } : {}),
+        nutrientsPer100g: {
+          calories: food.nutrientsPer100g.calories,
+          protein: food.nutrientsPer100g.protein,
+          carbs: food.nutrientsPer100g.carbs,
+          fat: food.nutrientsPer100g.fat,
+        },
       });
       setModalMeal(null);
       await reload();
@@ -55,6 +68,50 @@ function NutritionRouteComponent() {
       setActionError(errorMessage(err instanceof Error ? err : null, 'Não foi possível registrar o alimento'));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleLogSavedMeal(meal: SavedMeal) {
+    if (!modalMeal) return;
+    setSaving(true);
+    setActionError(null);
+    try {
+      await nutritionService.logSavedMeal(meal.id, modalMeal);
+      setModalMeal(null);
+      await reload();
+    } catch (err) {
+      fail(err, 'Não foi possível registrar a refeição pronta');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleCopyYesterday(mealType: MealType) {
+    if (!data) return;
+    setWorkingMeal(mealType);
+    setActionError(null);
+    try {
+      await nutritionService.copyMeal(data.yesterday.date, mealType);
+      await reload();
+    } catch (err) {
+      fail(err, 'Não foi possível copiar a refeição');
+    } finally {
+      setWorkingMeal(null);
+    }
+  }
+
+  async function handleSaveMeal(mealType: MealType, name: string): Promise<boolean> {
+    if (!data) return false;
+    setWorkingMeal(mealType);
+    setActionError(null);
+    try {
+      await nutritionService.saveMeal(name, data.summary.date, mealType);
+      return true;
+    } catch (err) {
+      fail(err, 'Não foi possível salvar a refeição');
+      return false;
+    } finally {
+      setWorkingMeal(null);
     }
   }
 
@@ -101,9 +158,13 @@ function NutritionRouteComponent() {
                 key={meal.type}
                 meal={meal}
                 logs={data.summary.logs.filter((log) => log.mealType === meal.type)}
+                yesterdayLogs={data.yesterday.logs.filter((log) => log.mealType === meal.type)}
                 busyId={busyId}
+                working={workingMeal === meal.type}
                 onAdd={setModalMeal}
                 onDelete={handleDelete}
+                onCopyYesterday={handleCopyYesterday}
+                onSave={handleSaveMeal}
               />
             ))}
           </>
@@ -111,7 +172,13 @@ function NutritionRouteComponent() {
       </div>
 
       {modalMeal && (
-        <FoodSearchModal mealTitle={modalTitle} saving={saving} onConfirm={handleConfirm} onClose={() => setModalMeal(null)} />
+        <FoodSearchModal
+          mealTitle={modalTitle}
+          saving={saving}
+          onConfirm={handleConfirm}
+          onLogSavedMeal={handleLogSavedMeal}
+          onClose={() => setModalMeal(null)}
+        />
       )}
     </main>
   );

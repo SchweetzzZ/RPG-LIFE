@@ -293,6 +293,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/nutrition/log/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["NutritionController_copyMeal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nutrition/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["NutritionController_getRecent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nutrition/favorites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["NutritionController_getFavorites"];
+        put?: never;
+        post: operations["NutritionController_addFavorite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nutrition/favorites/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["NutritionController_removeFavorite"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nutrition/saved-meals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["NutritionController_getSavedMeals"];
+        put?: never;
+        post: operations["NutritionController_createSavedMeal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nutrition/saved-meals/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["NutritionController_deleteSavedMeal"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nutrition/saved-meals/{id}/log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["NutritionController_logSavedMeal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workout": {
         parameters: {
             query?: never;
@@ -778,6 +890,16 @@ export interface components {
             carbGrams: number;
             fatGrams: number;
             date?: string;
+            /** @enum {string} */
+            source?: "TACO" | "OPEN_FOOD_FACTS" | "DIARY";
+            sourceId?: string;
+            brand?: string;
+            nutrientsPer100g?: {
+                calories: number;
+                protein: number;
+                carbs: number;
+                fat: number;
+            };
         };
         FoodLogResponseDto: {
             id: string;
@@ -833,6 +955,114 @@ export interface components {
                 fat: number;
                 fiber?: number;
             };
+        };
+        CopyMealDto: {
+            fromDate: string;
+            /** @enum {string} */
+            mealType: "breakfast" | "lunch" | "dinner" | "snack";
+            /** @enum {string} */
+            toMealType?: "breakfast" | "lunch" | "dinner" | "snack";
+        };
+        CopiedLogsResponseDto: {
+            copied: number;
+            logs: {
+                id: string;
+                date: string;
+                /** @enum {string} */
+                mealType: "breakfast" | "lunch" | "dinner" | "snack";
+                foodName: string;
+                amountGrams: number;
+                calories: number;
+                proteinGrams: number;
+                carbGrams: number;
+                fatGrams: number;
+                createdAt?: string;
+            }[];
+        };
+        RecentFoodResponseDto: {
+            id: string;
+            name: string;
+            /** @enum {string} */
+            source: "TACO" | "OPEN_FOOD_FACTS" | "DIARY";
+            brand?: string;
+            barcode?: string;
+            /** @default 100 */
+            servingSizeGrams: number;
+            nutrientsPer100g: {
+                calories: number;
+                protein: number;
+                carbs: number;
+                fat: number;
+                fiber?: number;
+            };
+            lastAmountGrams: number;
+            timesLogged: number;
+            lastDate: string;
+        };
+        FavoriteFoodResponseDto: {
+            id: string;
+            name: string;
+            /** @enum {string} */
+            source: "TACO" | "OPEN_FOOD_FACTS" | "DIARY";
+            brand?: string;
+            barcode?: string;
+            /** @default 100 */
+            servingSizeGrams: number;
+            nutrientsPer100g: {
+                calories: number;
+                protein: number;
+                carbs: number;
+                fat: number;
+                fiber?: number;
+            };
+            favoriteId: string;
+        };
+        CreateFavoriteFoodDto: {
+            /** @enum {string} */
+            source: "TACO" | "OPEN_FOOD_FACTS" | "DIARY";
+            id: string;
+            name: string;
+            brand?: string;
+            barcode?: string;
+            /** @default 100 */
+            servingSizeGrams: number;
+            nutrientsPer100g: {
+                calories: number;
+                protein: number;
+                carbs: number;
+                fat: number;
+            };
+        };
+        DeletedResponseDto: {
+            message: string;
+        };
+        SavedMealResponseDto: {
+            id: string;
+            name: string;
+            items: {
+                calories: number;
+                proteinGrams: number;
+                carbGrams: number;
+                fatGrams: number;
+                foodName: string;
+                amountGrams: number;
+            }[];
+            totals: {
+                calories: number;
+                proteinGrams: number;
+                carbGrams: number;
+                fatGrams: number;
+            };
+        };
+        CreateSavedMealDto: {
+            name: string;
+            fromDate: string;
+            /** @enum {string} */
+            mealType: "breakfast" | "lunch" | "dinner" | "snack";
+        };
+        LogSavedMealDto: {
+            /** @enum {string} */
+            mealType: "breakfast" | "lunch" | "dinner" | "snack";
         };
         CreateWorkoutDtoClass: {
             title: string;
@@ -1054,7 +1284,6 @@ export interface components {
         };
         ExerciseCatalogItemResponseDto: {
             name: string;
-            /** @description Treinos (rotinas) em que o exercicio aparece, na ordem em que foram criados */
             routines: string[];
             timesLogged: number;
             lastDate: string | null;
@@ -2013,6 +2242,13 @@ export interface operations {
                     "application/json": components["schemas"]["FoodLogResponseDto"];
                 };
             };
+            /** @description O dia ja foi fechado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     NutritionController_getDailySumaty: {
@@ -2056,6 +2292,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["FoodLogDeletedResponseDto"];
                 };
+            };
+            /** @description O dia ja foi fechado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -2102,6 +2345,257 @@ export interface operations {
                 };
             };
             /** @description Produto nao encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    NutritionController_copyMeal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CopyMealDto"];
+            };
+        };
+        responses: {
+            /** @description Itens da refeicao copiados para hoje */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CopiedLogsResponseDto"];
+                };
+            };
+            /** @description Hoje ja foi fechado ou a origem e invalida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A refeicao de origem esta vazia */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    NutritionController_getRecent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Alimentos mais usados nos ultimos 30 dias */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecentFoodResponseDto"][];
+                };
+            };
+        };
+    };
+    NutritionController_getFavorites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Alimentos favoritos */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FavoriteFoodResponseDto"][];
+                };
+            };
+        };
+    };
+    NutritionController_addFavorite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFavoriteFoodDto"];
+            };
+        };
+        responses: {
+            /** @description Alimento marcado como favorito */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FavoriteFoodResponseDto"];
+                };
+            };
+        };
+    };
+    NutritionController_removeFavorite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Favorito removido */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeletedResponseDto"];
+                };
+            };
+            /** @description Favorito nao encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    NutritionController_getSavedMeals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Refeicoes prontas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedMealResponseDto"][];
+                };
+            };
+        };
+    };
+    NutritionController_createSavedMeal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSavedMealDto"];
+            };
+        };
+        responses: {
+            /** @description Refeicao do diario salva como refeicao pronta */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedMealResponseDto"];
+                };
+            };
+            /** @description A refeicao de origem esta vazia */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    NutritionController_deleteSavedMeal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Refeicao pronta removida */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeletedResponseDto"];
+                };
+            };
+            /** @description Refeicao pronta nao encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    NutritionController_logSavedMeal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LogSavedMealDto"];
+            };
+        };
+        responses: {
+            /** @description Itens da refeicao pronta registrados hoje */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CopiedLogsResponseDto"];
+                };
+            };
+            /** @description Hoje ja foi fechado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Refeicao pronta nao encontrada */
             404: {
                 headers: {
                     [name: string]: unknown;
