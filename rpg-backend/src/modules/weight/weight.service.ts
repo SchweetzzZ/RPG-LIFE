@@ -6,7 +6,7 @@ import { ProfileService } from '../profile/profile.service';
 import { UserProfile } from '../profile/schema/profile.schema';
 import { toUserDate } from '../common/utils/user-date';
 import { WeightMutationResponse, WeightResponse } from './dto/weight-dto';
-import { WeightPoint, reachedTarget, roundKg, weekChangeKg, withTrend } from './weight-math';
+import { WeightPoint, reachedTarget, roundKg, targetProgress, weekChangeKg, withTrend } from './weight-math';
 
 @Injectable()
 export class WeightService {
@@ -55,6 +55,9 @@ export class WeightService {
                 remainingKg: targetWeightKg !== null && latest ? roundKg(Math.abs(latest.weightKg - targetWeightKg)) : null,
                 reachedTarget: targetWeightKg !== null && first !== null && latest !== null
                     && reachedTarget(first.weightKg, latest.weightKg, targetWeightKg),
+                targetProgress: targetWeightKg !== null && first !== null && latest !== null
+                    ? targetProgress(first.weightKg, latest.weightKg, targetWeightKg)
+                    : null,
                 primaryGoal: profile?.primaryGoal ?? null,
             },
         };
@@ -75,7 +78,26 @@ export class WeightService {
             { $set: { weightKg: value } },
             { upsert: true },
         );
-        return { date, weightKg: value, ...(await this.syncProfile(userId)) };
+        const synced = await this.syncProfile(userId);
+        const targetJustReached = await this.checkTargetReached(userId, date);
+        return { date, weightKg: value, ...synced, targetJustReached };
+    }
+
+    /**
+     * A pesagem gravada alcancou o peso-meta pela primeira vez? So vale se ela for a mais recente.
+     * Marca `targetReachedAt` no perfil (uma vez por meta: trocar a meta limpa a marca).
+     */
+    private async checkTargetReached(userId: string, date: string): Promise<boolean> {
+        const profile = await this.findProfile(userId);
+        const targetKg = profile?.targetWeightKg ?? null;
+        if (targetKg === null || profile?.targetReachedAt) return false;
+
+        const all = await this.points(userId);
+        const first = all[0];
+        const latest = all[all.length - 1];
+        if (!first || !latest || latest.date !== date) return false;
+        if (!reachedTarget(first.weightKg, latest.weightKg, targetKg)) return false;
+        return this.profileService.markTargetReached(userId, date);
     }
 
     /** DELETE /weight/:date. Se era a mais recente, o perfil volta para a pesagem anterior. */
@@ -84,7 +106,7 @@ export class WeightService {
         if (result.deletedCount === 0) {
             throw new NotFoundException('Não há peso registrado nesse dia');
         }
-        return { date, weightKg: null, ...(await this.syncProfile(userId)) };
+        return { date, weightKg: null, ...(await this.syncProfile(userId)), targetJustReached: false };
     }
 
     /**

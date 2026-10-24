@@ -155,13 +155,27 @@ function SummaryBody({ summary }: { summary: WeekSummary }) {
           {weight.changeKg !== null ? (
             <p className="text-sm text-ink">
               <span className={`font-num text-2xl ${deltaTone(weight.changeKg, weight.primaryGoal)}`}>{formatDeltaKg(weight.changeKg)}</span>
-              {weight.endKg !== null && <span className="text-ink-dim"> na semana · {formatKg(weight.endKg)}</span>}
+              {weight.endKg !== null && <span className="text-ink-dim"> na semana · <span className="whitespace-nowrap">{formatKg(weight.endKg)}</span></span>}
+              <WeekTargetNote weight={weight} />
             </p>
           ) : (
-            weight.endKg !== null && <p className="text-sm text-ink">{formatKg(weight.endKg)} <span className="text-ink-dim">· primeira pesagem</span></p>
+            weight.endKg !== null && (
+              <p className="text-sm text-ink">
+                {formatKg(weight.endKg)} <span className="text-ink-dim">· primeira pesagem</span>
+                <WeekTargetNote weight={weight} />
+              </p>
+            )
           )}
         </Row>
       )}
     </div>
   );
+}
+
+/** "· faltam 3,8 kg para a meta" ou "· meta alcançada!" (nada sem meta). */
+function WeekTargetNote({ weight }: { weight: WeekSummary['weight'] }) {
+  if (weight.targetWeightKg === null) return null;
+  if (weight.reachedTarget) return <span className="text-coin"> · meta alcançada!</span>;
+  if (weight.remainingKg === null) return null;
+  return <span className="text-ink-dim"> · faltam <span className="whitespace-nowrap">{formatKg(weight.remainingKg)}</span> para a meta</span>;
 }

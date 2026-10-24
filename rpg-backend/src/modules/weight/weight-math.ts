@@ -72,3 +72,14 @@ export function reachedTarget(startKg: number, currentKg: number, targetKg: numb
     if (startKg >= targetKg) return currentKg <= targetKg;
     return currentKg >= targetKg;
 }
+
+/**
+ * Progresso ate o peso-meta, de 0 a 100 (inteiro). O inicio e a primeira pesagem.
+ * Indo para o lado contrario = 0; passou da meta = 100; inicio ja na meta = 100.
+ */
+export function targetProgress(startKg: number, currentKg: number, targetKg: number): number {
+    const total = targetKg - startKg;
+    if (total === 0) return 100;
+    const done = (currentKg - startKg) / total;
+    return Math.round(Math.min(1, Math.max(0, done)) * 100);
+}

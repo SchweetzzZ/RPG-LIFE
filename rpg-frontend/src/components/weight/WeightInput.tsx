@@ -11,10 +11,12 @@ interface WeightInputProps {
   onCancel?: () => void;
   submitLabel?: string;
   autoFocus?: boolean;
+  /** Avisa o valor digitado a cada tecla (null se vazio ou inválido), ex.: para checar a meta. */
+  onValueChange?: (kg: number | null) => void;
 }
 
 /** Campo de peso (kg, uma casa) com salvar/cancelar. Valida 20–400 kg antes de chamar a API. */
-export function WeightInput({ initialKg = null, onSubmit, onCancel, submitLabel = 'Salvar', autoFocus }: WeightInputProps) {
+export function WeightInput({ initialKg = null, onSubmit, onCancel, submitLabel = 'Salvar', autoFocus, onValueChange }: WeightInputProps) {
   const [text, setText] = useState(initialKg === null ? '' : String(initialKg).replace('.', ','));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +48,10 @@ export function WeightInput({ initialKg = null, onSubmit, onCancel, submitLabel 
             autoFocus={autoFocus}
             placeholder="Ex.: 82,4"
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value);
+              onValueChange?.(parseKg(e.target.value));
+            }}
             className="h-11 w-full rounded-lg border-2 border-line bg-raised pl-3 pr-10 font-num text-xl text-ink focus:border-action focus:outline-none"
           />
           <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-ink-faint">kg</span>

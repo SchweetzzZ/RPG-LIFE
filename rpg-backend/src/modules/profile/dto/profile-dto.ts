@@ -45,6 +45,8 @@ export const ProfileResponseSchema = z.object({
     id: z.string(),
     weightKg: z.number().nullable(),
     targetWeightKg: z.number().nullable(),
+    // Dia em que a meta atual foi alcancada (null = ainda nao)
+    targetReachedAt: z.string().nullable(),
     heightCm: z.number().nullable(),
     age: z.number().nullable(),
     biologicalSex: z.nativeEnum(BiologicalSex).nullable(),

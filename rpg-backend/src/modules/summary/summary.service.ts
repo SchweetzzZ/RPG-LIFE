@@ -12,7 +12,7 @@ import { ProgressService } from '../progress/progress.service';
 import { WeightService } from '../weight/weight.service';
 import { addDays, dayOfWeek, daysBetween, toUserDate } from '../common/utils/user-date';
 import { weekWindow } from '../vault/cycle-math';
-import { changeBetween } from '../weight/weight-math';
+import { changeBetween, reachedTarget, roundKg } from '../weight/weight-math';
 import { REWARD_REASONS, sumRewards, weekRecords } from './summary-math';
 import { WeekSummaryResponse } from './dto/summary-dto';
 
@@ -117,6 +117,9 @@ export class SummaryService {
         }
 
         const weekWeights = weights.filter((w) => w.date >= start && w.date <= end);
+        const endKg = weekWeights.length > 0 ? weekWeights[weekWeights.length - 1].weightKg : null;
+        const targetWeightKg = profile?.targetWeightKg ?? null;
+        const firstKg = weights[0]?.weightKg ?? null;
 
         return {
             start,
@@ -148,8 +151,12 @@ export class SummaryService {
             weight: {
                 entries: weekWeights.length,
                 changeKg: changeBetween(weights, start, end),
-                endKg: weekWeights.length > 0 ? weekWeights[weekWeights.length - 1].weightKg : null,
+                endKg,
                 primaryGoal: profile?.primaryGoal ?? null,
+                targetWeightKg,
+                remainingKg: targetWeightKg !== null && endKg !== null ? roundKg(Math.abs(endKg - targetWeightKg)) : null,
+                reachedTarget: targetWeightKg !== null && endKg !== null && firstKg !== null
+                    && reachedTarget(firstKg, endKg, targetWeightKg),
             },
         };
     }

@@ -39,6 +39,10 @@ export class UserProfile {
     @Prop({ type: Number, default: null })
     targetWeightKg: number | null
 
+    // Dia (YYYY-MM-DD) em que a meta atual foi alcancada; volta a null quando a meta muda
+    @Prop({ type: String, default: null })
+    targetReachedAt: string | null
+
     @Prop({ default: null })
     heightCm: number
 

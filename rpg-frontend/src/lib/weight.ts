@@ -37,3 +37,27 @@ export function weightError(value: number | null): string | null {
   if (value < MIN_WEIGHT_KG || value > MAX_WEIGHT_KG) return `O peso deve ficar entre ${MIN_WEIGHT_KG} e ${MAX_WEIGHT_KG} kg.`;
   return null;
 }
+
+/** Abaixo disso (e sem ter chegado), o card mostra "Falta pouco!". */
+export const ALMOST_THERE_KG = 1;
+/** Com o objetivo Manter, meta a partir desta distância do peso atual gera aviso. */
+export const MAINTAIN_CONFLICT_KG = 2;
+
+/**
+ * Meta incoerente com o objetivo? Devolve o aviso (discreto, não bloqueia salvar) ou null.
+ * Ex.: objetivo Emagrecer com meta acima do peso atual.
+ */
+export function targetConflict(currentKg: number | null, targetKg: number | null, goal: PrimaryGoal | null): string | null {
+  if (currentKg === null || targetKg === null || goal === null) return null;
+  if (goal === 'lose_weight' && targetKg > currentKg) {
+    return 'Sua meta está acima do peso atual, mas o objetivo é Emagrecer.';
+  }
+  if (goal === 'gain_muscle' && targetKg < currentKg) {
+    return 'Sua meta está abaixo do peso atual, mas o objetivo é Ganhar massa.';
+  }
+  if (goal === 'maintain' && Math.abs(targetKg - currentKg) >= MAINTAIN_CONFLICT_KG) {
+    const suggested = targetKg < currentKg ? 'Emagrecer' : 'Ganhar massa';
+    return `Com o objetivo Manter, a dieta não leva até a meta. Para chegar em ${formatKg(targetKg)}, mude o objetivo para ${suggested}.`;
+  }
+  return null;
+}

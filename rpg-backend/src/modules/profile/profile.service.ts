@@ -38,11 +38,20 @@ export class ProfileService {
      * assim o peso do perfil e o diario nunca divergem.
      */
     async updateProfile(userId: string, data: UpdateProfileDto): Promise<UserProfile> {
-        const before = await this.profileModel.findOne({ user: userId }).select('weightKg timezone').lean().exec();
+        const before = await this.profileModel.findOne({ user: userId }).select('weightKg timezone targetWeightKg').lean().exec();
         const weightKg = data.weightKg != null ? roundKg(data.weightKg) : undefined;
+        // Meta nova (ou removida): a comemoracao de "meta alcancada" volta a valer
+        const targetChanged = data.targetWeightKg !== undefined
+            && (data.targetWeightKg ?? null) !== (before?.targetWeightKg ?? null);
         const updated = await this.profileModel.findOneAndUpdate(
             { user: userId },
-            { $set: { ...data, ...(weightKg !== undefined ? { weightKg } : {}) } },
+            {
+                $set: {
+                    ...data,
+                    ...(weightKg !== undefined ? { weightKg } : {}),
+                    ...(targetChanged ? { targetReachedAt: null } : {}),
+                },
+            },
             { new: true, upsert: true },
         );
 
@@ -55,6 +64,18 @@ export class ProfileService {
             );
         }
         return updated;
+    }
+
+    /**
+     * Marca o dia em que a meta atual foi alcancada. Idempotente: so grava se ainda estava vazio.
+     * Devolve true quando gravou agora (a primeira vez para essa meta).
+     */
+    async markTargetReached(userId: string, date: string): Promise<boolean> {
+        const result = await this.profileModel.updateOne(
+            { user: userId, targetReachedAt: null },
+            { $set: { targetReachedAt: date } },
+        );
+        return result.modifiedCount > 0;
     }
 
     /**

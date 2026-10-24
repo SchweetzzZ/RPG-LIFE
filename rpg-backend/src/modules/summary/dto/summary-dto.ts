@@ -71,6 +71,11 @@ export const WeekSummaryResponseSchema = z.object({
         // Ultimo peso da semana
         endKg: z.number().nullable(),
         primaryGoal: z.nativeEnum(PrimaryGoal).nullable(),
+        targetWeightKg: z.number().nullable(),
+        // Distancia do ultimo peso da semana ate a meta (null sem meta ou sem pesagem na semana)
+        remainingKg: z.number().nullable(),
+        // O ultimo peso da semana alcanca a meta (inicio = primeira pesagem de todas)
+        reachedTarget: z.boolean(),
     }),
 });
 

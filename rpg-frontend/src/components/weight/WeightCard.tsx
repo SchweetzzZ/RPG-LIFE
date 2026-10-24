@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Scale } from 'lucide-react';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import type { WeightSummary } from '@/src/types/weight';
 import { weightService } from '@/src/services/weight.service';
 import { formatDay } from '@/src/lib/format';
@@ -8,6 +8,8 @@ import { deltaTone, formatDeltaKg, formatKg } from '@/src/lib/weight';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { WeightInput } from './WeightInput';
+import { TargetProgress } from './TargetProgress';
+import { TargetReachedModal } from './TargetReachedModal';
 
 interface WeightCardProps {
   summary: WeightSummary;
@@ -17,13 +19,24 @@ interface WeightCardProps {
 
 /** Hub: último peso e atalho para registrar o de hoje. O app nunca cobra frequência. */
 export function WeightCard({ summary, onSaved }: WeightCardProps) {
+  const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
-  const { currentKg, currentDate, loggedToday, weekChangeKg, primaryGoal, today } = summary;
+  // Meta alcançada agora: abre a comemoração (com a meta e a kcal da hora do registro)
+  const [reached, setReached] = useState<{ targetKg: number; previousCalories: number | null } | null>(null);
+  const { currentKg, currentDate, loggedToday, weekChangeKg, primaryGoal, today, targetWeightKg } = summary;
 
   const save = async (weightKg: number) => {
-    await weightService.putWeight(today, weightKg);
+    const result = await weightService.putWeight(today, weightKg);
     setEditing(false);
+    if (result.targetJustReached && targetWeightKg !== null) {
+      setReached({ targetKg: targetWeightKg, previousCalories: result.targetCalories });
+    }
     await onSaved();
+  };
+
+  const closeReached = (goalChanged: boolean) => {
+    setReached(null);
+    if (goalChanged) void onSaved();
   };
 
   return (
@@ -49,6 +62,8 @@ export function WeightCard({ summary, onSaved }: WeightCardProps) {
           <p className="text-sm text-ink-dim">Anote seu peso nos dias em que se pesar e acompanhe a tendência.</p>
         )}
 
+        <TargetProgress summary={summary} />
+
         {editing ? (
           <WeightInput
             autoFocus
@@ -70,6 +85,18 @@ export function WeightCard({ summary, onSaved }: WeightCardProps) {
           </Button>
         )}
       </div>
+      {reached && (
+        <TargetReachedModal
+          targetKg={reached.targetKg}
+          goal={primaryGoal}
+          previousCalories={reached.previousCalories}
+          onClose={closeReached}
+          onNewTarget={() => {
+            setReached(null);
+            void navigate({ to: '/profile', hash: 'peso' });
+          }}
+        />
+      )}
     </Card>
   );
 }

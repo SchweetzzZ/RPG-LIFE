@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Flag, Pencil, Scale, Trash2, Trophy } from 'lucide-react';
+import { Flag, Pencil, Scale, Trash2 } from 'lucide-react';
 import type { WeightData, WeightEntry } from '@/src/types/weight';
 import { weightService } from '@/src/services/weight.service';
 import { profileService } from '@/src/services/profile.service';
@@ -7,11 +7,14 @@ import { errorMessage } from '@/src/services/http';
 import { useResource } from '@/src/hooks/useResource';
 import { addDays } from '@/src/lib/day';
 import { formatDay } from '@/src/lib/format';
-import { deltaTone, formatDeltaKg, formatKg } from '@/src/lib/weight';
+import { deltaTone, formatDeltaKg, formatKg, targetConflict } from '@/src/lib/weight';
 import { Card } from '../ui/Card';
 import { ErrorBlock } from '../common/StateBlocks';
 import { WeightChart } from './WeightChart';
 import { WeightInput } from './WeightInput';
+import { TargetProgress } from './TargetProgress';
+import { TargetConflictNote } from './TargetConflictNote';
+import { TargetReachedModal } from './TargetReachedModal';
 
 type Period = '1m' | '3m' | 'all';
 const PERIODS: { value: Period; label: string; days: number | null }[] = [
@@ -62,10 +65,16 @@ function WeightBody({ data, onChanged }: { data: WeightData; onChanged: () => Pr
   // Dia sendo registrado/editado no formulário (hoje por padrão)
   const [date, setDate] = useState(today);
   const editingEntry = entries.find((e) => e.date === date) ?? null;
+  // Editor do peso-meta aberto (aqui para o "Definir nova meta" da comemoração abrir direto)
+  const [editingTarget, setEditingTarget] = useState(false);
+  const [reached, setReached] = useState<{ targetKg: number; previousCalories: number | null } | null>(null);
 
   const save = async (weightKg: number) => {
-    await weightService.putWeight(date, weightKg);
+    const result = await weightService.putWeight(date, weightKg);
     setDate(today);
+    if (result.targetJustReached && summary.targetWeightKg !== null) {
+      setReached({ targetKg: summary.targetWeightKg, previousCalories: result.targetCalories });
+    }
     await onChanged();
   };
 
@@ -81,7 +90,7 @@ function WeightBody({ data, onChanged }: { data: WeightData; onChanged: () => Pr
   return (
     <div className="space-y-4">
       <SummaryBlock data={data} />
-      <TargetBlock data={data} onChanged={onChanged} />
+      <TargetBlock data={data} editing={editingTarget} setEditing={setEditingTarget} onChanged={onChanged} />
 
       <div id="peso-form" className="scroll-mt-20 space-y-2 rounded-lg border-2 border-line bg-raised/40 p-3">
         <div className="flex items-center justify-between gap-2">
@@ -124,6 +133,23 @@ function WeightBody({ data, onChanged }: { data: WeightData; onChanged: () => Pr
           <EntryList entries={entries} onEdit={edit} onChanged={onChanged} goal={summary.primaryGoal} />
         </div>
       )}
+
+      {reached && (
+        <TargetReachedModal
+          targetKg={reached.targetKg}
+          goal={summary.primaryGoal}
+          previousCalories={reached.previousCalories}
+          onClose={(goalChanged) => {
+            setReached(null);
+            if (goalChanged) void onChanged();
+          }}
+          onNewTarget={() => {
+            setReached(null);
+            setEditingTarget(true);
+            document.getElementById('peso')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -159,10 +185,24 @@ function SummaryBlock({ data }: { data: WeightData }) {
   );
 }
 
-function TargetBlock({ data, onChanged }: { data: WeightData; onChanged: () => Promise<void> }) {
-  const { targetWeightKg, remainingKg, reachedTarget } = data.summary;
-  const [editing, setEditing] = useState(false);
+interface TargetBlockProps {
+  data: WeightData;
+  editing: boolean;
+  setEditing: (editing: boolean) => void;
+  onChanged: () => Promise<void>;
+}
+
+function TargetBlock({ data, editing, setEditing, onChanged }: TargetBlockProps) {
+  const { summary } = data;
+  const { targetWeightKg, reachedTarget, currentKg, primaryGoal } = summary;
   const [error, setError] = useState<string | null>(null);
+  // Valor sendo digitado no editor: o aviso de meta incoerente aparece na hora
+  const [draftKg, setDraftKg] = useState<number | null>(targetWeightKg);
+
+  const openEditor = () => {
+    setDraftKg(targetWeightKg);
+    setEditing(true);
+  };
 
   const saveTarget = async (value: number | null) => {
     await profileService.updateProfile({ targetWeightKg: value });
@@ -183,7 +223,14 @@ function TargetBlock({ data, onChanged }: { data: WeightData; onChanged: () => P
     return (
       <div className="space-y-2">
         <span className="text-sm text-ink-dim">Peso-meta (opcional)</span>
-        <WeightInput autoFocus initialKg={targetWeightKg} onSubmit={saveTarget} onCancel={() => setEditing(false)} />
+        <WeightInput
+          autoFocus
+          initialKg={targetWeightKg}
+          onSubmit={saveTarget}
+          onCancel={() => setEditing(false)}
+          onValueChange={setDraftKg}
+        />
+        <TargetConflictNote message={targetConflict(currentKg, draftKg, primaryGoal)} />
       </div>
     );
   }
@@ -192,7 +239,7 @@ function TargetBlock({ data, onChanged }: { data: WeightData; onChanged: () => P
     return (
       <button
         type="button"
-        onClick={() => setEditing(true)}
+        onClick={openEditor}
         className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-medium text-ink-dim underline underline-offset-2 hover:text-ink"
       >
         <Flag className="h-4 w-4" />
@@ -202,22 +249,20 @@ function TargetBlock({ data, onChanged }: { data: WeightData; onChanged: () => P
   }
 
   return (
-    <div className="space-y-1 border-t-2 border-line pt-3">
-    <div className="flex items-center justify-between gap-2">
-      <p className="flex flex-wrap items-center gap-x-1.5 text-sm text-ink">
-        {reachedTarget ? <Trophy className="h-4 w-4 text-coin" /> : <Flag className="h-4 w-4 text-coin" />}
-        Meta <span className="whitespace-nowrap font-num text-lg">{formatKg(targetWeightKg)}</span>
-        {reachedTarget ? (
-          <span className="text-coin">· alcançada!</span>
-        ) : (
-          remainingKg !== null && <span className="text-ink-dim">· faltam <span className="whitespace-nowrap font-num text-lg text-ink">{formatKg(remainingKg)}</span></span>
-        )}
-      </p>
-      <div className="flex shrink-0 gap-1">
-        <button type="button" onClick={() => setEditing(true)} className="min-h-[44px] px-2 text-xs text-ink-dim underline underline-offset-2 hover:text-ink">Mudar</button>
-        <button type="button" onClick={removeTarget} className="min-h-[44px] px-2 text-xs text-ink-dim underline underline-offset-2 hover:text-ink">Remover</button>
+    <div className="space-y-2 border-t-2 border-line pt-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="flex items-center gap-1.5 text-sm font-semibold text-ink">
+          <Flag className="h-4 w-4 text-coin" />
+          Peso-meta
+        </p>
+        <div className="flex shrink-0 gap-1">
+          <button type="button" onClick={openEditor} className="min-h-[44px] px-2 text-xs text-ink-dim underline underline-offset-2 hover:text-ink">Mudar</button>
+          <button type="button" onClick={removeTarget} className="min-h-[44px] px-2 text-xs text-ink-dim underline underline-offset-2 hover:text-ink">Remover</button>
+        </div>
       </div>
-    </div>
+      <TargetProgress summary={summary} />
+      {/* Depois de chegar, "meta abaixo do peso" deixa de ser incoerência: a comemoração já sugere o próximo passo */}
+      {!reachedTarget && <TargetConflictNote message={targetConflict(currentKg, targetWeightKg, primaryGoal)} />}
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}
     </div>
   );

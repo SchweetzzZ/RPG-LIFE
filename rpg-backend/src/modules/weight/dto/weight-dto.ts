@@ -55,6 +55,8 @@ export const WeightSummarySchema = z.object({
     // Distancia ate a meta, sempre positiva (null sem meta ou sem pesagem)
     remainingKg: z.number().nullable(),
     reachedTarget: z.boolean(),
+    // Progresso ate a meta, 0 a 100, a partir da primeira pesagem (null sem meta ou sem pesagem)
+    targetProgress: z.number().nullable(),
     // Objetivo do perfil: decide a cor da variacao no front
     primaryGoal: z.nativeEnum(PrimaryGoal).nullable(),
 });
@@ -74,6 +76,8 @@ export const WeightMutationResponseSchema = z.object({
     // true = o peso do perfil mudou e as metas foram recalculadas (se o perfil estava completo)
     profileUpdated: z.boolean(),
     targetCalories: z.number().nullable(),
+    // true = essa pesagem alcancou o peso-meta pela primeira vez (a comemoracao acontece uma vez por meta)
+    targetJustReached: z.boolean(),
 });
 
 export type WeightResponse = z.infer<typeof WeightResponseSchema>;

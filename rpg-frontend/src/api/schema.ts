@@ -845,6 +845,7 @@ export interface components {
             id: string;
             weightKg: number | null;
             targetWeightKg: number | null;
+            targetReachedAt: string | null;
             heightCm: number | null;
             age: number | null;
             /** @enum {string|null} */
@@ -877,6 +878,7 @@ export interface components {
                 id: string;
                 weightKg: number | null;
                 targetWeightKg: number | null;
+                targetReachedAt: string | null;
                 heightCm: number | null;
                 age: number | null;
                 /** @enum {string|null} */
@@ -1881,6 +1883,7 @@ export interface components {
                 targetWeightKg: number | null;
                 remainingKg: number | null;
                 reachedTarget: boolean;
+                targetProgress: number | null;
                 /** @enum {string|null} */
                 primaryGoal: "lose_weight" | "maintain" | "gain_muscle" | null;
             };
@@ -1894,6 +1897,7 @@ export interface components {
             profileWeightKg: number | null;
             profileUpdated: boolean;
             targetCalories: number | null;
+            targetJustReached: boolean;
         };
         WeekSummaryStatusResponseDto: {
             pending: boolean;
@@ -1952,6 +1956,9 @@ export interface components {
                 endKg: number | null;
                 /** @enum {string|null} */
                 primaryGoal: "lose_weight" | "maintain" | "gain_muscle" | null;
+                targetWeightKg: number | null;
+                remainingKg: number | null;
+                reachedTarget: boolean;
             };
         };
     };

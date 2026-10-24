@@ -1,4 +1,4 @@
-import { changeBetween, reachedTarget, roundKg, weekChangeKg, withTrend } from './weight-math';
+import { changeBetween, reachedTarget, roundKg, targetProgress, weekChangeKg, withTrend } from './weight-math';
 
 const p = (date: string, weightKg: number) => ({ date, weightKg });
 
@@ -35,5 +35,13 @@ describe('weight-math', () => {
         expect(reachedTarget(95, 85, 85)).toBe(true);
         expect(reachedTarget(95, 86, 85)).toBe(false);
         expect(reachedTarget(60, 66, 65)).toBe(true);
+    });
+
+    it('progresso ate a meta (0 a 100)', () => {
+        expect(targetProgress(96, 92, 88)).toBe(50);
+        expect(targetProgress(96, 97, 88)).toBe(0);
+        expect(targetProgress(96, 87, 88)).toBe(100);
+        expect(targetProgress(60, 62.5, 65)).toBe(50);
+        expect(targetProgress(80, 80, 80)).toBe(100);
     });
 });
